@@ -22,13 +22,12 @@ VLLM_REAL_TELEMETRY_RELIABILITY = VLLMMetricReliability(
         "prompt_token_ids when return_token_ids=true",
         "prefix_cache_hit_tokens from usage.prompt_tokens_details.cached_tokens",
         "queue_latency_ms from per-request queue_time_ms",
-        "ttft_ms from per-request time_to_first_token_ms",
+        "ttft_ms/prefill_path_latency_ms from per-request time_to_first_token_ms",
         "decode_latency_ms from per-request generation_time_ms",
         "tpot_ms from per-request mean_itl_ms",
     ],
     derived=[
         "prefix_cache_miss_tokens = input_tokens - cached_tokens",
-        "prefill_latency_ms = time_to_first_token_ms as closest request-level prefill proxy",
     ],
     unavailable=[
         "request-level KV-cache capacity",
@@ -37,9 +36,10 @@ VLLM_REAL_TELEMETRY_RELIABILITY = VLLMMetricReliability(
     ],
     approximated=[
         (
-            "prefill_latency_ms because vLLM per-request metrics do not isolate pure "
-            "prefill kernel time"
+            "prefill_path_latency_ms because vLLM per-request timing is "
+            "scheduled-to-first-token, not pure prefill kernel time"
         ),
+        "prefill_path_latency_ms from scheduled-to-first-token timing",
         "decode_latency_ms when only mean_itl_ms is available",
     ],
 )
@@ -110,7 +110,7 @@ class VLLMTelemetryProvider:
                 ms_keys=["mean_itl_ms", "time_per_output_token_ms"],
                 second_keys=["mean_itl", "time_per_output_token", "tpot"],
             )
-            prefill_ms = ttft_ms
+            prefill_path_ms = ttft_ms
             if decode_ms is None and tpot_ms is not None and output_tokens is not None:
                 decode_ms = tpot_ms * max(output_tokens - 1, 0)
 
@@ -151,7 +151,8 @@ class VLLMTelemetryProvider:
                     model=model,
                     backend=self.backend_name,
                     queue_latency_ms=queue_ms,
-                    prefill_latency_ms=prefill_ms,
+                    prefill_latency_ms=None,
+                    prefill_path_latency_ms=prefill_path_ms,
                     decode_latency_ms=decode_ms,
                     ttft_ms=ttft_ms,
                     tpot_ms=tpot_ms,
@@ -163,7 +164,22 @@ class VLLMTelemetryProvider:
                     metadata={
                         "raw_metrics": metrics,
                         "metric_reliability": {
-                            "prefill_latency_ms": "approximated_from_time_to_first_token_ms",
+                            "prefill_latency_ms": "unavailable",
+                            "prefill_path_latency_ms": (
+                                "proxy_from_scheduled_to_first_token_ms"
+                            ),
+                            "measurement_semantics": {
+                                "time_to_first_token_ms": "scheduled_to_first_token",
+                            },
+                            "measurement_quality": {
+                                "prefill_path_latency_ms": "proxy",
+                                "queue_latency_ms": "direct",
+                                "decode_latency_ms": (
+                                    "direct"
+                                    if "generation_time_ms" in metrics
+                                    else "derived"
+                                ),
+                            },
                             "decode_latency_ms": (
                                 "direct_generation_time_ms"
                                 if "generation_time_ms" in metrics

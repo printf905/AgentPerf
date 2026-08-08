@@ -94,9 +94,9 @@ Thresholds are code-level configuration objects today, not CLI flags.
 | `PREFIX_CACHE_OPPORTUNITY` | minimum shared prefix ratio | 60% |
 | `PREFIX_CACHE_OPPORTUNITY` | minimum shared prefix tokens | 50 approximate tokens |
 | `PREFIX_CACHE_OPPORTUNITY` | maximum actual prefix-cache hit ratio | 35% |
-| `PREFIX_CACHE_OPPORTUNITY` | minimum prefill fraction of TTFT | 50% |
+| `PREFIX_CACHE_OPPORTUNITY` | minimum prefill/prefill-path fraction of TTFT | 50% |
 | `PREFILL_BOTTLENECK` | minimum affected requests | 2 |
-| `PREFILL_BOTTLENECK` | minimum prefill fraction of TTFT | 60% |
+| `PREFILL_BOTTLENECK` | minimum prefill/prefill-path fraction of TTFT | 60% |
 | `PREFILL_BOTTLENECK` | minimum P95 input tokens | 100 tokens |
 
 The low token thresholds are intentional for the synthetic MVP fixtures and unit tests. Real trace ingestion should revisit these defaults per workload class and model tokenizer.

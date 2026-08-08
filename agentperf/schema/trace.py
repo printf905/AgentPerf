@@ -40,6 +40,7 @@ class ServingRequest:
     ended_at: str | None = None
     queue_latency_ms: float | None = None
     prefill_latency_ms: float | None = None
+    prefill_path_latency_ms: float | None = None
     decode_latency_ms: float | None = None
     ttft_ms: float | None = None
     tpot_ms: float | None = None
@@ -55,7 +56,12 @@ class ServingRequest:
 
     @property
     def total_model_latency_ms(self) -> float | None:
-        parts = [self.queue_latency_ms, self.prefill_latency_ms, self.decode_latency_ms]
+        prefill_or_path = (
+            self.prefill_latency_ms
+            if self.prefill_latency_ms is not None
+            else self.prefill_path_latency_ms
+        )
+        parts = [self.queue_latency_ms, prefill_or_path, self.decode_latency_ms]
         known = [part for part in parts if part is not None]
         if known:
             return float(sum(known))
@@ -307,6 +313,7 @@ def _parse_serving_request(data: Any) -> ServingRequest:
         ended_at=_optional_str(data, "ended_at"),
         queue_latency_ms=_optional_float(data, "queue_latency_ms"),
         prefill_latency_ms=_optional_float(data, "prefill_latency_ms"),
+        prefill_path_latency_ms=_optional_float(data, "prefill_path_latency_ms"),
         decode_latency_ms=_optional_float(data, "decode_latency_ms"),
         ttft_ms=_optional_float(data, "ttft_ms"),
         tpot_ms=_optional_float(data, "tpot_ms"),
