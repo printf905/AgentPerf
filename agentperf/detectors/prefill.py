@@ -4,7 +4,12 @@ from dataclasses import dataclass
 
 from agentperf.detectors.base import DetectorContext
 from agentperf.metrics.cache import prefix_cache_hit_ratio
-from agentperf.metrics.latency import percentile, prefill_fraction_of_ttft
+from agentperf.metrics.latency import (
+    percentile,
+    prefill_fraction_of_ttft,
+    prefill_or_path_label,
+    prefill_or_path_latency_ms,
+)
 from agentperf.schema.findings import Finding, FindingProvenance, Severity
 from agentperf.schema.trace import ServingRequest
 
@@ -43,13 +48,20 @@ class PrefillBottleneckDetector:
         hit_ratio = prefix_cache_hit_ratio(affected)
         affected_ids = _affected_span_ids(context, affected)
         severity: Severity = "HIGH" if max(prefill_fractions) >= 0.75 else "MEDIUM"
+        latency_semantics = prefill_or_path_label(affected)
+        fraction_key = (
+            "prefill_path_proxy_fraction_of_ttft_avg"
+            if latency_semantics == "prefill_path_proxy"
+            else "prefill_fraction_of_ttft_avg"
+        )
 
         evidence = {
             "affected_requests": len(affected),
-            "prefill_fraction_of_ttft_avg": round(
+            fraction_key: round(
                 sum(prefill_fractions) / len(prefill_fractions),
                 4,
             ),
+            "latency_semantics": latency_semantics,
             "p95_input_tokens": int(round(p95_input)),
             "ttft_p95_ms": round(percentile([float(value) for value in ttfts], 0.95) or 0, 1),
         }
@@ -63,8 +75,8 @@ class PrefillBottleneckDetector:
                 severity=severity,
                 title="Prefill dominates TTFT for long prompts",
                 summary=(
-                    "Serving telemetry attributes most time-to-first-token latency to prefill, "
-                    "and the affected requests have long input prompts."
+                    "Serving telemetry attributes most time-to-first-token latency to the "
+                    "prefill path, and the affected requests have long input prompts."
                 ),
                 evidence=evidence,
                 affected_spans=affected_ids,
@@ -75,8 +87,8 @@ class PrefillBottleneckDetector:
                 confidence="HIGH",
                 validation_plan=[
                     (
-                        "Replay the workload and compare TTFT P50/P95, prefill latency, "
-                        "input length, and task quality."
+                        "Replay the workload and compare TTFT P50/P95, prefill/prefill-path "
+                        "latency, input length, and task quality."
                     ),
                     (
                         "If prefix-cache telemetry is available, compare hit ratio before "
@@ -94,6 +106,9 @@ class PrefillBottleneckDetector:
                         "prefill_latency_ms": [
                             request.prefill_latency_ms for request in affected
                         ],
+                        "prefill_path_latency_ms": [
+                            prefill_or_path_latency_ms(request) for request in affected
+                        ],
                         "queue_latency_ms": [
                             request.queue_latency_ms for request in affected
                         ],
@@ -105,7 +120,10 @@ class PrefillBottleneckDetector:
                     },
                     derived_metrics=evidence,
                     notes=[
-                        "Prefill dominance uses normalized serving timings when available.",
+                        (
+                            "Prefill-path dominance uses true prefill latency when available; "
+                            "otherwise it uses an explicitly labeled proxy."
+                        ),
                     ],
                 ),
             )

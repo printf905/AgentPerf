@@ -15,6 +15,8 @@ from uuid import uuid4
 
 from agentperf.analyzer import analyze_run
 from agentperf.backends.vllm import VLLMTelemetryProvider
+from agentperf.metrics.cache import prefix_cache_hit_ratio
+from agentperf.metrics.latency import percentile, prefill_or_path_latency_ms
 from agentperf.reporters.terminal import render_report
 from agentperf.schema.trace import AgentRun
 
@@ -84,8 +86,13 @@ def main() -> int:
     baseline = build_recording("real-vllm-baseline", args.model, environment, baseline_records)
     improved = build_recording("real-vllm-improved", args.model, environment, improved_records)
 
+    (args.output_dir / "environment.json").write_text(
+        json.dumps(environment, indent=2),
+        encoding="utf-8",
+    )
+
     write_artifacts(args.output_dir, "baseline", baseline)
-    write_artifacts(args.output_dir, "improved", improved)
+    write_artifacts(args.output_dir, "optimized", improved)
     compare_path = args.output_dir / "comparison.json"
     compare_path.write_text(
         json.dumps(
@@ -230,9 +237,13 @@ def build_recording(
 
 
 def write_artifacts(output_dir: Path, name: str, recording: dict[str, Any]) -> None:
-    recording_path = output_dir / f"{name}_recording.json"
-    trace_path = output_dir / f"{name}_normalized_trace.json"
-    report_path = output_dir / f"{name}_agentperf_report.txt"
+    raw_dir = output_dir / name / "raw"
+    normalized_dir = output_dir / name / "normalized"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    normalized_dir.mkdir(parents=True, exist_ok=True)
+    recording_path = raw_dir / "recording.json"
+    trace_path = normalized_dir / "trace.json"
+    report_path = output_dir / name / "report.txt"
     recording_path.write_text(json.dumps(recording, indent=2), encoding="utf-8")
     run = VLLMTelemetryProvider().build_run(recording)
     trace_path.write_text(json.dumps(_agent_run_to_json(run), indent=2), encoding="utf-8")
@@ -247,6 +258,7 @@ def summarize_recording(recording: dict[str, Any]) -> dict[str, Any]:
         "requests": len(recording.get("records", [])),
         "input_tokens": sum(request.input_tokens or 0 for request in run.serving_requests),
         "output_tokens": sum(request.output_tokens or 0 for request in run.serving_requests),
+        "prefix_cache_hit_ratio": prefix_cache_hit_ratio(run.serving_requests),
         "prefix_cache_hit_tokens": sum(
             request.prefix_cache_hit_tokens or 0 for request in run.serving_requests
         ),
@@ -254,14 +266,61 @@ def summarize_recording(recording: dict[str, Any]) -> dict[str, Any]:
             request.prefix_cache_miss_tokens or 0 for request in run.serving_requests
         ),
         "queue_latency_ms": sum(request.queue_latency_ms or 0 for request in run.serving_requests),
-        "prefill_latency_ms": sum(
-            request.prefill_latency_ms or 0 for request in run.serving_requests
+        "queue_latency_p50_ms": _p(run, "queue_latency_ms", 0.50),
+        "queue_latency_p95_ms": _p(run, "queue_latency_ms", 0.95),
+        "prefill_or_path_latency_ms": sum(
+            prefill_or_path_latency_ms(request) or 0 for request in run.serving_requests
+        ),
+        "prefill_or_path_latency_p50_ms": percentile(
+            [
+                value
+                for request in run.serving_requests
+                if (value := prefill_or_path_latency_ms(request)) is not None
+            ],
+            0.50,
+        ),
+        "prefill_or_path_latency_p95_ms": percentile(
+            [
+                value
+                for request in run.serving_requests
+                if (value := prefill_or_path_latency_ms(request)) is not None
+            ],
+            0.95,
         ),
         "decode_latency_ms": sum(
             request.decode_latency_ms or 0 for request in run.serving_requests
         ),
+        "decode_latency_p50_ms": _p(run, "decode_latency_ms", 0.50),
+        "decode_latency_p95_ms": _p(run, "decode_latency_ms", 0.95),
+        "tpot_p50_ms": _p(run, "tpot_ms", 0.50),
+        "tpot_p95_ms": _p(run, "tpot_ms", 0.95),
+        "client_latency_p50_ms": percentile(
+            [
+                float(record["client_elapsed_ms"])
+                for record in recording.get("records", [])
+                if isinstance(record, dict) and record.get("client_elapsed_ms") is not None
+            ],
+            0.50,
+        ),
+        "client_latency_p95_ms": percentile(
+            [
+                float(record["client_elapsed_ms"])
+                for record in recording.get("records", [])
+                if isinstance(record, dict) and record.get("client_elapsed_ms") is not None
+            ],
+            0.95,
+        ),
         "detectors_fired": [finding.id for finding in report.findings],
     }
+
+
+def _p(run: AgentRun, field: str, quantile: float) -> float | None:
+    values: list[float] = []
+    for request in run.serving_requests:
+        value = getattr(request, field)
+        if value is not None:
+            values.append(float(value))
+    return percentile(values, quantile)
 
 
 def collect_environment(
@@ -358,6 +417,7 @@ def _agent_run_to_json(run: AgentRun) -> dict[str, Any]:
                 "backend": request.backend,
                 "queue_latency_ms": request.queue_latency_ms,
                 "prefill_latency_ms": request.prefill_latency_ms,
+                "prefill_path_latency_ms": request.prefill_path_latency_ms,
                 "decode_latency_ms": request.decode_latency_ms,
                 "ttft_ms": request.ttft_ms,
                 "tpot_ms": request.tpot_ms,

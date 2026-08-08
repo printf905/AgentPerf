@@ -41,12 +41,21 @@ def test_parse_agent_and_serving_trace() -> None:
 
 def test_parse_serving_only_trace() -> None:
     run = parse_agentperf_trace(
-        {"serving_requests": [{"serving_request_id": "srv-1", "prefill_latency_ms": 10}]}
+        {
+            "serving_requests": [
+                {
+                    "serving_request_id": "srv-1",
+                    "prefill_latency_ms": 10,
+                    "prefill_path_latency_ms": 12,
+                }
+            ]
+        }
     )
 
     assert run.agent_run_id == "serving-only"
     assert run.llm_calls == []
     assert len(run.serving_requests) == 1
+    assert run.serving_requests[0].prefill_path_latency_ms == 12
 
 
 def test_malformed_trace_has_clear_error() -> None:
@@ -59,4 +68,3 @@ def test_numeric_fields_are_validated() -> None:
         parse_agentperf_trace(
             {"serving_requests": [{"serving_request_id": "srv-1", "prefill_latency_ms": "slow"}]}
         )
-

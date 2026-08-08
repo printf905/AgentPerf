@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from agentperf.analyzer import AnalysisReport
 from agentperf.metrics.cache import prefix_cache_hit_ratio
-from agentperf.metrics.latency import percentile, total_tool_latency_ms
+from agentperf.metrics.latency import (
+    percentile,
+    prefill_or_path_label,
+    prefill_or_path_latency_ms,
+    total_tool_latency_ms,
+)
 from agentperf.metrics.tokens import call_input_tokens, call_output_tokens
 
 
@@ -34,7 +39,7 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
     )
 
     queue_ms = sum(request.queue_latency_ms or 0 for request in serving)
-    prefill_ms = sum(request.prefill_latency_ms or 0 for request in serving)
+    prefill_ms = sum(prefill_or_path_latency_ms(request) or 0 for request in serving)
     decode_ms = sum(request.decode_latency_ms or 0 for request in serving)
     tool_ms = total_tool_latency_ms(run)
     lines.extend(
@@ -42,7 +47,10 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
             "Latency",
             "-" * 60,
             _row("Queue", _format_seconds(queue_ms)),
-            _row("Prefill", _format_seconds(prefill_ms)),
+            _row(
+                _prefill_report_label(prefill_or_path_label(serving)),
+                _format_seconds(prefill_ms),
+            ),
             _row("Decode", _format_seconds(decode_ms)),
             _row("Tools", _format_seconds(tool_ms)),
             "",
@@ -141,3 +149,9 @@ def _format_ratio(value: float | None) -> str:
 
 def _compact_dict(value: dict[str, object]) -> str:
     return "; ".join(f"{key}={item}" for key, item in value.items())
+
+
+def _prefill_report_label(label: str) -> str:
+    if label == "prefill_path_proxy":
+        return "Prefill path proxy"
+    return "Prefill"

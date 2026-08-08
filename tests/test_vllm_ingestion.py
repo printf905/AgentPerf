@@ -50,11 +50,18 @@ def test_vllm_adapter_preserves_units_and_derived_fields() -> None:
 
     assert serving.queue_latency_ms == 5.0
     assert serving.ttft_ms == 80.0
-    assert serving.prefill_latency_ms == 80.0
+    assert serving.prefill_latency_ms is None
+    assert serving.prefill_path_latency_ms == 80.0
     assert serving.decode_latency_ms == 24.0
     assert serving.tpot_ms == 12.0
     assert serving.prefix_cache_hit_tokens == 2
     assert serving.prefix_cache_miss_tokens == 20
+    assert (
+        serving.metadata["metric_reliability"]["measurement_semantics"][
+            "time_to_first_token_ms"
+        ]
+        == "scheduled_to_first_token"
+    )
 
 
 def test_vllm_adapter_handles_missing_optional_telemetry() -> None:
@@ -75,6 +82,7 @@ def test_vllm_adapter_handles_missing_optional_telemetry() -> None:
     serving = run.serving_requests[0]
     assert serving.queue_latency_ms is None
     assert serving.prefill_latency_ms is None
+    assert serving.prefill_path_latency_ms is None
     assert serving.prefix_cache_hit_tokens is None
     assert serving.tokenization_mode == "UNKNOWN"
     assert run.llm_calls[0].tokenization_mode == "APPROXIMATE"
@@ -95,6 +103,7 @@ def test_vllm_seconds_fallback_is_converted_to_milliseconds() -> None:
 
     assert serving.queue_latency_ms == 6.0
     assert serving.ttft_ms == 90.0
+    assert serving.prefill_path_latency_ms == 90.0
     assert serving.decode_latency_ms == 30.0
     assert serving.tpot_ms == 15.0
 
@@ -161,6 +170,14 @@ def test_finding_provenance_reaches_terminal_debug_output() -> None:
     assert "req-1" in output
     assert "serving request ids" in output
     assert "chatcmpl-req-1" in output
+
+
+def test_vllm_report_labels_prefill_path_proxy() -> None:
+    report = analyze_run(VLLMTelemetryProvider().build_run(load_fixture()))
+    output = render_report(report)
+
+    assert "Prefill path proxy" in output
+    assert "Prefill                            " not in output
 
 
 def test_cli_analyze_vllm_recording_success(capsys) -> None:  # type: ignore[no-untyped-def]

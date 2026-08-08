@@ -1,6 +1,7 @@
 # Detector Calibration Review
 
-Status: synthetic validation complete; real vLLM execution pending.
+Status: synthetic validation complete; real vLLM execution package prepared;
+live execution pending on a supported NVIDIA GPU host.
 
 This document records detector assumptions before threshold tuning. Thresholds
 remain configurable in detector constructors and should not be changed just to
@@ -51,7 +52,7 @@ Synthetic assumptions that held:
 
 - agent calls can share a large theoretical prefix;
 - serving telemetry can show low actual cached-token ratio;
-- high TTFT/prefill proxy strengthens the evidence;
+- high TTFT/prefill-path proxy strengthens the evidence;
 - healthy large-context traces with high cache reuse should not fire.
 
 Real vLLM assumptions:
@@ -60,14 +61,17 @@ Real vLLM assumptions:
   signal when prompt-token details are enabled;
 - the runner's client request ID and vLLM response ID provide explicit
   correlation;
-- `time_to_first_token_ms` is the best available request-level prefill proxy,
-  not pure prefill time.
+- vLLM `time_to_first_token_ms` is scheduled-to-first-token. AgentPerf maps it
+  to `prefill_path_latency_ms`, not pure `prefill_latency_ms`;
+- true request-level prefill kernel time remains unavailable in the OpenAI
+  response.
 
 Pending real-trace checks:
 
 - whether vLLM reports cached tokens consistently for the selected model and
   server configuration;
-- whether the baseline workload actually produces low cache reuse;
+- whether the baseline workload actually produces low cache reuse when measured
+  via `usage.prompt_tokens_details.cached_tokens`;
 - whether the improved workload produces higher cached-token ratio without
   altering task semantics;
 - whether chat-template or message ordering makes the theoretical common prefix
@@ -85,14 +89,14 @@ False-negative risks:
 
 - prefix-cache problems may exist even when cached-token details are unavailable;
 - per-request cached token counts may hide server-wide KV pressure;
-- a workload with cache opportunity but low TTFT may not pass the current
-  prefill-strength evidence threshold.
+- a workload with cache opportunity but low scheduled-to-first-token latency may
+  not pass the current prefill-path-strength evidence threshold.
 
 ## PREFILL_BOTTLENECK
 
 Synthetic assumptions that held:
 
-- request-level latency can be decomposed into queue, prefill, and decode;
+- request-level latency can be decomposed into queue, prefill-path, and decode;
 - high input length plus high prefill fraction is more useful than reporting
   "prefill is slow";
 - the detector should cross-link conceptually with duplication and prefix-cache
@@ -100,20 +104,23 @@ Synthetic assumptions that held:
 
 Real vLLM assumptions:
 
-- vLLM per-request `time_to_first_token_ms` is used as a prefill proxy;
+- vLLM per-request `time_to_first_token_ms` is used only as
+  `prefill_path_latency_ms`, a scheduled-to-first-token proxy;
 - queue time is separate when per-request metrics are enabled;
 - generation time or mean inter-token latency provides decode evidence.
 
 Pending real-trace checks:
 
-- whether TTFT proxy values are stable enough across repeated runs to support a
-  meaningful demo;
-- whether queue time is low enough that prefill remains the dominant component;
+- whether scheduled-to-first-token proxy values are stable enough across
+  repeated runs to support a meaningful demo;
+- whether queue time is low enough that the prefill path remains the dominant
+  component;
 - whether output length variation distorts the decode comparison.
 
 False-positive risks:
 
-- `time_to_first_token_ms` includes work beyond pure prefill;
+- `time_to_first_token_ms` is not pure prefill and includes work through first
+  output token;
 - cold-start, model-load, or warmup artifacts may look like prefill bottlenecks;
 - server queueing may be hidden if the backend reports scheduled-to-first-token
   TTFT rather than client-observed TTFT.
@@ -126,15 +133,29 @@ False-negative risks:
 - server-level prefill saturation may not appear in one request's normalized
   telemetry.
 
+## M2 Execution Package
+
+The M2 runbook and scripts define the first real validation protocol:
+
+- `docs/REAL_VLLM_RUNBOOK.md`;
+- `scripts/remote_vllm/setup.sh`;
+- `scripts/remote_vllm/start_server.sh`;
+- `scripts/remote_vllm/smoke_test.sh`;
+- `scripts/remote_vllm/run_experiment.sh`;
+- `scripts/remote_vllm/collect_artifacts.sh`.
+
+The smoke test must pass before running the experiment. If any critical vLLM
+field is absent, AgentPerf should not fabricate it.
+
 ## Threshold Policy
 
 No threshold changes were made from real data in this pass because a real vLLM
-run could not be executed on the local Apple M2 host.
+run has not yet been executed on a supported NVIDIA GPU host.
 
 The first threshold review should use:
 
-- at least one warmup run;
-- multiple measured repetitions;
+- 3 warmup repetitions;
+- at least 10 measured repetitions per configuration;
 - unchanged tasks between baseline and improved configurations;
 - captured raw vLLM responses;
 - AgentPerf reports with provenance enabled;

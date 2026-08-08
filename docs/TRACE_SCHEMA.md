@@ -137,6 +137,7 @@ Optional:
 - `ended_at`
 - `queue_latency_ms`
 - `prefill_latency_ms`
+- `prefill_path_latency_ms`
 - `decode_latency_ms`
 - `ttft_ms`
 - `tpot_ms`
@@ -197,6 +198,17 @@ Findings may include a `provenance` object with:
 - notes about approximations or missing telemetry.
 
 The terminal reporter can print this with `--show-provenance`.
+
+## Prefill Timing Semantics
+
+`prefill_latency_ms` is reserved for a backend measurement that represents true
+request-level prefill latency.
+
+`prefill_path_latency_ms` is for a related but less precise measurement, such as
+vLLM's scheduled-to-first-token timing. That value is useful evidence for the
+prefill path, but it is not pure GPU prefill kernel time. Backends that only
+expose scheduled-to-first-token timing should populate `prefill_path_latency_ms`
+and leave `prefill_latency_ms` unset.
 
 ## OpenTelemetry Alignment
 

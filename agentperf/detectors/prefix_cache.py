@@ -5,7 +5,11 @@ from statistics import mean
 
 from agentperf.detectors.base import DetectorContext
 from agentperf.metrics.cache import prefix_cache_hit_ratio
-from agentperf.metrics.latency import mean_prefill_fraction
+from agentperf.metrics.latency import (
+    mean_prefill_fraction,
+    prefill_or_path_label,
+    prefill_or_path_latency_ms,
+)
 from agentperf.metrics.tokens import approximate_tokens, common_prefix_len
 from agentperf.schema.findings import Finding, FindingProvenance
 from agentperf.schema.trace import LLMCall, ServingRequest
@@ -47,6 +51,12 @@ class PrefixCacheOpportunityDetector:
             return []
         if prefill_fraction < self.config.min_prefill_fraction_of_ttft:
             return []
+        latency_semantics = prefill_or_path_label(group.requests)
+        prefill_fraction_key = (
+            "prefill_path_proxy_fraction_of_ttft"
+            if latency_semantics == "prefill_path_proxy"
+            else "prefill_fraction_of_ttft"
+        )
 
         return [
             Finding(
@@ -55,8 +65,8 @@ class PrefixCacheOpportunityDetector:
                 title="Large shared prefix with low prefix-cache reuse",
                 summary=(
                     "Correlated requests share substantial stable prefix content, but serving "
-                    "telemetry reports low actual prefix-cache reuse while prefill contributes "
-                    "materially to TTFT."
+                    "telemetry reports low actual prefix-cache reuse while the prefill path "
+                    "contributes materially to TTFT."
                 ),
                 evidence={
                     "affected_requests": len(group.request_ids),
@@ -64,7 +74,8 @@ class PrefixCacheOpportunityDetector:
                     "shared_prefix_tokens": group.shared_prefix_tokens,
                     "shared_prefix_ratio": round(group.shared_prefix_ratio, 4),
                     "actual_prefix_cache_hit_ratio": round(hit_ratio, 4),
-                    "prefill_fraction_of_ttft": round(prefill_fraction, 4),
+                    prefill_fraction_key: round(prefill_fraction, 4),
+                    "latency_semantics": latency_semantics,
                 },
                 affected_spans=group.call_ids + group.request_ids,
                 recommendation=(
@@ -75,8 +86,8 @@ class PrefixCacheOpportunityDetector:
                 validation_plan=[
                     "Replay the same workload after the prompt-structure change.",
                     (
-                        "Compare prefix-cache hit ratio, TTFT P50/P95, prefill latency, "
-                        "total token processing, and task quality."
+                        "Compare prefix-cache hit ratio, TTFT P50/P95, prefill-path "
+                        "latency, total token processing, and task quality."
                     ),
                 ],
                 provenance=FindingProvenance(
@@ -99,17 +110,25 @@ class PrefixCacheOpportunityDetector:
                         "prefill_latency_ms": [
                             request.prefill_latency_ms for request in group.requests
                         ],
+                        "prefill_path_latency_ms": [
+                            prefill_or_path_latency_ms(request) for request in group.requests
+                        ],
                         "ttft_ms": [request.ttft_ms for request in group.requests],
                     },
                     derived_metrics={
                         "shared_prefix_tokens": group.shared_prefix_tokens,
                         "shared_prefix_ratio": group.shared_prefix_ratio,
                         "actual_prefix_cache_hit_ratio": hit_ratio,
-                        "prefill_fraction_of_ttft": prefill_fraction,
+                        prefill_fraction_key: prefill_fraction,
+                        "latency_semantics": latency_semantics,
                     },
                     notes=[
                         "Correlation is based on explicit request identifiers only.",
                         "Shared prefix is exact token/text prefix over normalized prompts.",
+                        (
+                            "Latency semantics are labeled as true prefill when available, "
+                            "otherwise as a prefill-path proxy."
+                        ),
                     ],
                 ),
             )

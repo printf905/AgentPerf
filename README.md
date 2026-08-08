@@ -201,6 +201,7 @@ No live vLLM benchmark artifacts are included in this repository.
 - [docs/BENCHMARK_PLAN.md](docs/BENCHMARK_PLAN.md)
 - [docs/BACKEND_SELECTION.md](docs/BACKEND_SELECTION.md)
 - [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md)
+- [docs/REAL_VLLM_RUNBOOK.md](docs/REAL_VLLM_RUNBOOK.md)
 - [docs/DETECTOR_CALIBRATION.md](docs/DETECTOR_CALIBRATION.md)
 
 ## Roadmap
