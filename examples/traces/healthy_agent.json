@@ -1,0 +1,81 @@
+{
+  "schema_version": "0.1",
+  "synthetic": true,
+  "agent_run": {
+    "agent_run_id": "synthetic-healthy",
+    "name": "healthy synthetic agent",
+    "started_at": "2026-08-01T00:00:00Z",
+    "ended_at": "2026-08-01T00:00:05Z",
+    "steps": [
+      {
+        "agent_step_id": "step-1",
+        "llm_calls": [
+          {
+            "llm_call_id": "llm-1",
+            "llm_request_id": "req-1",
+            "serving_request_id": "srv-1",
+            "model": "synthetic-8b",
+            "provider": "local",
+            "prompt": {
+              "system": "You are a concise support triage agent.",
+              "user": "Classify a short password reset request and produce one routing label."
+            },
+            "input_tokens": 120,
+            "output_tokens": 18
+          },
+          {
+            "llm_call_id": "llm-2",
+            "llm_request_id": "req-2",
+            "serving_request_id": "srv-2",
+            "model": "synthetic-8b",
+            "provider": "local",
+            "prompt": {
+              "system": "You are a concise support triage agent.",
+              "user": "Classify a billing address request and produce one routing label."
+            },
+            "input_tokens": 126,
+            "output_tokens": 16
+          }
+        ],
+        "tool_calls": [
+          {
+            "tool_call_id": "tool-1",
+            "name": "ticket_lookup",
+            "latency_ms": 320
+          }
+        ]
+      }
+    ]
+  },
+  "serving_requests": [
+    {
+      "serving_request_id": "srv-1",
+      "llm_request_id": "req-1",
+      "backend": "synthetic-vllm",
+      "queue_latency_ms": 20,
+      "prefill_latency_ms": 80,
+      "decode_latency_ms": 140,
+      "ttft_ms": 140,
+      "tpot_ms": 16,
+      "input_tokens": 120,
+      "output_tokens": 18,
+      "prefix_cache_hit_tokens": 95,
+      "prefix_cache_miss_tokens": 25
+    },
+    {
+      "serving_request_id": "srv-2",
+      "llm_request_id": "req-2",
+      "backend": "synthetic-vllm",
+      "queue_latency_ms": 25,
+      "prefill_latency_ms": 70,
+      "decode_latency_ms": 130,
+      "ttft_ms": 125,
+      "tpot_ms": 15,
+      "input_tokens": 126,
+      "output_tokens": 16,
+      "prefix_cache_hit_tokens": 105,
+      "prefix_cache_miss_tokens": 21
+    }
+  ]
+}
+

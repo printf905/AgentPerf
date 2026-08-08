@@ -1,0 +1,64 @@
+{
+  "schema_version": "0.1",
+  "synthetic": true,
+  "agent_run": {
+    "agent_run_id": "synthetic-large-context-cache-healthy",
+    "name": "large context but healthy cache synthetic agent",
+    "steps": [
+      {
+        "agent_step_id": "step-1",
+        "llm_calls": [
+          {
+            "llm_call_id": "llm-1",
+            "llm_request_id": "req-1",
+            "serving_request_id": "srv-1",
+            "prompt": {
+              "system": "large stable context legal policy catalog evidence glossary table large stable context legal policy catalog evidence glossary table large stable context legal policy catalog evidence glossary table large stable context legal policy catalog evidence glossary table large stable context legal policy catalog evidence glossary table",
+              "user": "Answer question one."
+            },
+            "input_tokens": 900,
+            "output_tokens": 90
+          },
+          {
+            "llm_call_id": "llm-2",
+            "llm_request_id": "req-2",
+            "serving_request_id": "srv-2",
+            "prompt": {
+              "system": "large stable context legal policy catalog evidence glossary table large stable context legal policy catalog evidence glossary table large stable context legal policy catalog evidence glossary table large stable context legal policy catalog evidence glossary table large stable context legal policy catalog evidence glossary table",
+              "user": "Answer question two."
+            },
+            "input_tokens": 910,
+            "output_tokens": 88
+          }
+        ]
+      }
+    ]
+  },
+  "serving_requests": [
+    {
+      "serving_request_id": "srv-1",
+      "llm_request_id": "req-1",
+      "queue_latency_ms": 30,
+      "prefill_latency_ms": 170,
+      "decode_latency_ms": 300,
+      "ttft_ms": 420,
+      "input_tokens": 900,
+      "output_tokens": 90,
+      "prefix_cache_hit_tokens": 790,
+      "prefix_cache_miss_tokens": 110
+    },
+    {
+      "serving_request_id": "srv-2",
+      "llm_request_id": "req-2",
+      "queue_latency_ms": 35,
+      "prefill_latency_ms": 160,
+      "decode_latency_ms": 310,
+      "ttft_ms": 410,
+      "input_tokens": 910,
+      "output_tokens": 88,
+      "prefix_cache_hit_tokens": 805,
+      "prefix_cache_miss_tokens": 105
+    }
+  ]
+}
+

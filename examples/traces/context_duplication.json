@@ -1,0 +1,45 @@
+{
+  "schema_version": "0.1",
+  "synthetic": true,
+  "agent_run": {
+    "agent_run_id": "synthetic-context-duplication",
+    "name": "context duplication synthetic agent",
+    "steps": [
+      {
+        "agent_step_id": "step-1",
+        "llm_calls": [
+          {
+            "llm_call_id": "llm-1",
+            "prompt": {
+              "system": "policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence",
+              "tool_schemas": "search_user search_ticket search_invoice update_ticket notify_team summarize_case classify_intent validate_account retrieve_policy",
+              "user": "Investigate ticket A and decide the next action."
+            },
+            "output_tokens": 80
+          },
+          {
+            "llm_call_id": "llm-2",
+            "prompt": {
+              "system": "policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence",
+              "history": "The previous tool found a matching user and two candidate invoices.",
+              "tool_schemas": "search_user search_ticket search_invoice update_ticket notify_team summarize_case classify_intent validate_account retrieve_policy",
+              "user": "Continue investigating ticket A after invoice lookup."
+            },
+            "output_tokens": 92
+          },
+          {
+            "llm_call_id": "llm-3",
+            "prompt": {
+              "system": "policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence policy retention audit compliance escalation privacy safety workflow rubric scope exceptions formatting evidence",
+              "history": "The previous tools found a matching user, two invoices, and one failed charge.",
+              "tool_schemas": "search_user search_ticket search_invoice update_ticket notify_team summarize_case classify_intent validate_account retrieve_policy",
+              "user": "Write the final customer-safe action plan."
+            },
+            "output_tokens": 120
+          }
+        ]
+      }
+    ]
+  }
+}
+

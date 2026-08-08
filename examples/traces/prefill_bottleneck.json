@@ -1,0 +1,64 @@
+{
+  "schema_version": "0.1",
+  "synthetic": true,
+  "agent_run": {
+    "agent_run_id": "synthetic-prefill-bottleneck",
+    "name": "prefill bottleneck synthetic agent",
+    "steps": [
+      {
+        "agent_step_id": "step-1",
+        "llm_calls": [
+          {
+            "llm_call_id": "llm-1",
+            "llm_request_id": "req-1",
+            "serving_request_id": "srv-1",
+            "prompt": {
+              "system": "long dossier evidence paragraph analysis citation table retrieved context long dossier evidence paragraph analysis citation table retrieved context long dossier evidence paragraph analysis citation table retrieved context long dossier evidence paragraph analysis citation table retrieved context",
+              "user": "Summarize the dossier."
+            },
+            "input_tokens": 520,
+            "output_tokens": 90
+          },
+          {
+            "llm_call_id": "llm-2",
+            "llm_request_id": "req-2",
+            "serving_request_id": "srv-2",
+            "prompt": {
+              "system": "different long dossier appendix witness log transcript facts different long dossier appendix witness log transcript facts different long dossier appendix witness log transcript facts different long dossier appendix witness log transcript facts",
+              "user": "Extract the disputed facts."
+            },
+            "input_tokens": 610,
+            "output_tokens": 95
+          }
+        ]
+      }
+    ]
+  },
+  "serving_requests": [
+    {
+      "serving_request_id": "srv-1",
+      "llm_request_id": "req-1",
+      "queue_latency_ms": 70,
+      "prefill_latency_ms": 720,
+      "decode_latency_ms": 150,
+      "ttft_ms": 900,
+      "input_tokens": 520,
+      "output_tokens": 90,
+      "prefix_cache_hit_tokens": 20,
+      "prefix_cache_miss_tokens": 500
+    },
+    {
+      "serving_request_id": "srv-2",
+      "llm_request_id": "req-2",
+      "queue_latency_ms": 80,
+      "prefill_latency_ms": 760,
+      "decode_latency_ms": 160,
+      "ttft_ms": 940,
+      "input_tokens": 610,
+      "output_tokens": 95,
+      "prefix_cache_hit_tokens": 15,
+      "prefix_cache_miss_tokens": 595
+    }
+  ]
+}
+

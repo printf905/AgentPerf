@@ -1,0 +1,87 @@
+{
+  "schema_version": "0.1",
+  "synthetic": true,
+  "agent_run": {
+    "agent_run_id": "synthetic-prefix-cache-failure",
+    "name": "prefix cache failure synthetic agent",
+    "steps": [
+      {
+        "agent_step_id": "step-1",
+        "llm_calls": [
+          {
+            "llm_call_id": "llm-1",
+            "llm_request_id": "req-1",
+            "serving_request_id": "srv-1",
+            "prompt": {
+              "system": "stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description",
+              "user": "Plan the first code inspection step."
+            },
+            "output_tokens": 110
+          },
+          {
+            "llm_call_id": "llm-2",
+            "llm_request_id": "req-2",
+            "serving_request_id": "srv-2",
+            "prompt": {
+              "system": "stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description",
+              "user": "Plan the second code inspection step after reading files."
+            },
+            "output_tokens": 118
+          },
+          {
+            "llm_call_id": "llm-3",
+            "llm_request_id": "req-3",
+            "serving_request_id": "srv-3",
+            "prompt": {
+              "system": "stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description stable prefix instructions tools schema policy repository map coding rules test protocol environment description",
+              "user": "Plan the patch after tests identify the failure."
+            },
+            "output_tokens": 130
+          }
+        ]
+      }
+    ]
+  },
+  "serving_requests": [
+    {
+      "serving_request_id": "srv-1",
+      "llm_request_id": "req-1",
+      "backend": "synthetic-sglang",
+      "queue_latency_ms": 40,
+      "prefill_latency_ms": 620,
+      "decode_latency_ms": 180,
+      "ttft_ms": 780,
+      "input_tokens": 460,
+      "output_tokens": 110,
+      "prefix_cache_hit_tokens": 40,
+      "prefix_cache_miss_tokens": 420
+    },
+    {
+      "serving_request_id": "srv-2",
+      "llm_request_id": "req-2",
+      "backend": "synthetic-sglang",
+      "queue_latency_ms": 45,
+      "prefill_latency_ms": 640,
+      "decode_latency_ms": 190,
+      "ttft_ms": 800,
+      "input_tokens": 470,
+      "output_tokens": 118,
+      "prefix_cache_hit_tokens": 55,
+      "prefix_cache_miss_tokens": 415
+    },
+    {
+      "serving_request_id": "srv-3",
+      "llm_request_id": "req-3",
+      "backend": "synthetic-sglang",
+      "queue_latency_ms": 50,
+      "prefill_latency_ms": 660,
+      "decode_latency_ms": 210,
+      "ttft_ms": 830,
+      "input_tokens": 480,
+      "output_tokens": 130,
+      "prefix_cache_hit_tokens": 60,
+      "prefix_cache_miss_tokens": 420
+    }
+  ]
+}
+

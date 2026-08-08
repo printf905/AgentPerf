@@ -1,0 +1,95 @@
+{
+  "schema_version": "0.1",
+  "synthetic": true,
+  "agent_run": {
+    "agent_run_id": "synthetic-multi-problem",
+    "name": "multi problem synthetic agent",
+    "started_at": "2026-08-01T00:00:00Z",
+    "ended_at": "2026-08-01T00:00:14Z",
+    "steps": [
+      {
+        "agent_step_id": "step-1",
+        "llm_calls": [
+          {
+            "llm_call_id": "llm-1",
+            "llm_request_id": "req-1",
+            "serving_request_id": "srv-1",
+            "prompt": {
+              "system": "shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph",
+              "user": "Inspect the failing test."
+            },
+            "output_tokens": 140
+          },
+          {
+            "llm_call_id": "llm-2",
+            "llm_request_id": "req-2",
+            "serving_request_id": "srv-2",
+            "prompt": {
+              "system": "shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph",
+              "history": "The test fails because a serving request was not correlated.",
+              "user": "Patch the correlation logic."
+            },
+            "output_tokens": 155
+          },
+          {
+            "llm_call_id": "llm-3",
+            "llm_request_id": "req-3",
+            "serving_request_id": "srv-3",
+            "prompt": {
+              "system": "shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph shared coding agent repository instructions tool schemas shell policy review checklist context map dependency graph",
+              "history": "The test fails because a serving request was not correlated. The patch now requires explicit request identifiers.",
+              "user": "Write the final explanation."
+            },
+            "output_tokens": 160
+          }
+        ],
+        "tool_calls": [
+          {
+            "tool_call_id": "tool-1",
+            "name": "pytest",
+            "latency_ms": 4300
+          }
+        ]
+      }
+    ]
+  },
+  "serving_requests": [
+    {
+      "serving_request_id": "srv-1",
+      "llm_request_id": "req-1",
+      "queue_latency_ms": 100,
+      "prefill_latency_ms": 710,
+      "decode_latency_ms": 240,
+      "ttft_ms": 980,
+      "input_tokens": 520,
+      "output_tokens": 140,
+      "prefix_cache_hit_tokens": 80,
+      "prefix_cache_miss_tokens": 440
+    },
+    {
+      "serving_request_id": "srv-2",
+      "llm_request_id": "req-2",
+      "queue_latency_ms": 120,
+      "prefill_latency_ms": 730,
+      "decode_latency_ms": 260,
+      "ttft_ms": 1010,
+      "input_tokens": 560,
+      "output_tokens": 155,
+      "prefix_cache_hit_tokens": 90,
+      "prefix_cache_miss_tokens": 470
+    },
+    {
+      "serving_request_id": "srv-3",
+      "llm_request_id": "req-3",
+      "queue_latency_ms": 110,
+      "prefill_latency_ms": 760,
+      "decode_latency_ms": 270,
+      "ttft_ms": 1040,
+      "input_tokens": 600,
+      "output_tokens": 160,
+      "prefix_cache_hit_tokens": 100,
+      "prefix_cache_miss_tokens": 500
+    }
+  ]
+}
+
