@@ -252,19 +252,24 @@ def count_prompt_tokens(
     timeout: float,
 ) -> int:
     body = {"model": model, "prompt": prompt}
-    request = urllib.request.Request(
-        f"{base_url.rstrip('/')}/tokenize",
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    if api_key:
-        request.add_header("Authorization", f"Bearer {api_key}")
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        raise RuntimeError(exc.read().decode("utf-8")) from exc
+    errors: list[str] = []
+    for url in tokenize_urls(base_url):
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(body).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        if api_key:
+            request.add_header("Authorization", f"Bearer {api_key}")
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+                break
+        except urllib.error.HTTPError as exc:
+            errors.append(f"{url}: {exc.code} {exc.read().decode('utf-8')}")
+    else:
+        raise RuntimeError("No vLLM tokenize endpoint succeeded: " + "; ".join(errors))
 
     tokens = payload.get("tokens")
     if isinstance(tokens, list):
@@ -273,6 +278,14 @@ def count_prompt_tokens(
     if isinstance(count, int):
         return count
     raise RuntimeError(f"Unexpected tokenize response shape: {payload}")
+
+
+def tokenize_urls(base_url: str) -> list[str]:
+    normalized = base_url.rstrip("/")
+    urls = [f"{normalized}/tokenize"]
+    if normalized.endswith("/v1"):
+        urls.append(f"{normalized[:-3]}/tokenize")
+    return urls
 
 
 def call_vllm(
