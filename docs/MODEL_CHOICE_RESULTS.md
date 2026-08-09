@@ -1,10 +1,143 @@
 # M4 Model-Choice Results
 
-Status: blocked before replay on the first real GPU attempt.
+Status: Phase A completed on a real RTX 3090 using sequential model loading.
 
-No model-choice quality, latency, or cost result should be reported from this
-attempt. The failure happened during multi-model vLLM endpoint startup before
-the baseline or counterfactual agent workload ran.
+M4 Phase A now has real vLLM replay evidence for the all-strong baseline and
+one-role-at-a-time counterfactuals. Phase B has not been run. Do not claim an
+end-to-end mixed-routing result until a reviewed mixed candidate is replayed.
+
+## 2026-08-09 RTX 3090 Sequential Phase A
+
+Environment:
+
+- Pod ID: `31ndf0f6dejut0`
+- GPU: NVIDIA GeForce RTX 3090, 24 GB
+- Price: $0.50/hour
+- Image: `runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404`
+- Data center: `EU-CZ-1`
+- Driver: `580.126.20`
+- `nvidia-smi` CUDA compatibility label: `13.0`
+- Backend: vLLM `0.26.0+cu129`
+- `torch`: `2.11.0+cu129`
+- `torch.version.cuda`: `12.9`
+- Execution strategy: sequential one model at a time
+- Agent harness: framework-free M3 research agent with `dedup_only` evidence
+  carry-forward
+- Tasks: 10 deterministic local-corpus research tasks
+
+Preflight:
+
+- CUDA tensor probe: passed on `NVIDIA GeForce RTX 3090`
+- Bounded `import vllm`: passed, `0.26.0`
+- vLLM version check: passed
+
+Sequential loading behavior:
+
+1. Qwen3-4B ran the all-strong baseline and stopped.
+2. GPU memory returned to 1 MiB before Qwen3-1.7B started.
+3. Qwen3-1.7B ran medium candidate role calls and stopped.
+4. GPU memory returned to 1 MiB before Qwen3-0.6B started.
+5. Qwen3-0.6B ran small candidate role calls and stopped.
+6. Qwen3-4B restarted for downstream strong continuations.
+
+Strong baseline:
+
+- Mean rule score: 0.967
+- Pass rate: 90%
+- LLM calls: 30
+- Tool calls: 20
+- Input tokens: 95,481
+- Output tokens: 4,872
+- TTFT P95: 816.5 ms
+- Client latency P95: 4,660.6 ms
+- Relative model-cost score: 0.401
+
+Quality constraint:
+
+- Mean score must be at least baseline - 0.05: 0.917
+- Pass rate must be at least baseline - 0.10: 80%
+
+Role-sensitivity matrix:
+
+| Role | Candidate | Mean score | Pass rate | Quality delta | Pass delta | Client P95 delta | Relative cost delta | Quality-preserving |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Planner | 1.7B | 0.967 | 90% | +0.000 | +0pp | -256.8 ms | -0.006 | yes |
+| Evidence reviewer | 1.7B | 0.900 | 70% | -0.067 | -20pp | +107.3 ms | -0.104 | no |
+| Final synthesizer | 1.7B | 0.967 | 90% | +0.000 | +0pp | -2,006.5 ms | -0.121 | yes |
+| Planner | 0.6B | 0.933 | 80% | -0.033 | -10pp | +99.1 ms | -0.007 | yes |
+| Evidence reviewer | 0.6B | 0.967 | 90% | +0.000 | +0pp | +226.1 ms | -0.153 | yes |
+| Final synthesizer | 0.6B | 0.967 | 90% | +0.000 | +0pp | -2,006.5 ms | -0.179 | yes |
+
+Pareto result:
+
+- `synthesizer_small` was the only non-dominated one-role configuration in this
+  Phase A matrix.
+- `reviewer_medium` violated both quality constraints.
+- `strong_all`, `planner_medium`, `synthesizer_medium`, `planner_small`, and
+  `reviewer_small` were dominated in the one-role table.
+
+MODEL_CHOICE_HEADROOM findings were emitted for:
+
+- planner -> 1.7B
+- final_synthesizer -> 1.7B
+- planner -> 0.6B
+- evidence_reviewer -> 0.6B
+- final_synthesizer -> 0.6B
+
+Role sensitivity interpretation:
+
+- `final_synthesizer` appears least sensitive in this workload; both smaller
+  candidates preserved quality and materially lowered measured synthesizer
+  latency.
+- `planner` is moderately sensitive; 0.6B remained within the configured
+  tolerance but landed exactly on the pass-rate floor.
+- `evidence_reviewer` is not monotonic in this run: 1.7B violated quality while
+  0.6B preserved it. Treat this as a noisy replay signal that requires Phase B
+  confirmation before turning into a product claim.
+
+Proposed mixed-routing candidate for review:
+
+| Role | Candidate |
+| --- | --- |
+| Planner | Qwen3-1.7B |
+| Evidence reviewer | Qwen3-0.6B |
+| Final synthesizer | Qwen3-0.6B |
+
+Rationale: this avoids the planner 0.6B pass-rate floor and the reviewer 1.7B
+quality violation while using measured quality-preserving candidates for the
+other roles. This is only a proposed Phase B candidate; it is not a measured
+mixed-routing result.
+
+Phase B justification:
+
+- Phase B is justified as a bounded follow-up because Phase A found replay-based
+  role headroom under the configured quality constraints.
+- Phase B must replay the full mixed agent before claiming end-to-end quality,
+  latency, or cost improvement.
+
+Estimated Phase B memory plan:
+
+- The proposed mixed candidate needs Qwen3-1.7B and Qwen3-0.6B only if served
+  concurrently.
+- A 24GB GPU may be sufficient for those two models, but Phase B should still
+  explicitly allocate `gpu_memory_utilization` per instance and verify memory
+  release/usage.
+- Do not run Qwen3-4B concurrently unless the Phase B design explicitly needs a
+  strong-control server; use sequential strong baseline replay if possible.
+
+Artifacts:
+
+- Compact result bundle copied locally to:
+  `artifacts/runpod/agentperf-m4-phase-a-3090-sequential-31ndf0f6dejut0.tgz`
+- The bundle includes the comparison JSON, model-choice report, per-config text
+  reports, setup/preflight diagnostics, and server logs. It intentionally does
+  not include model weights or full raw/normalized traces.
+
+Cleanup:
+
+- The vLLM server was stopped and GPU memory returned to 1 MiB.
+- Pod was deleted after artifacts were copied locally.
+- `runpodctl pod list` returned `[]`.
 
 ## 2026-08-09 RTX 3090 Attempt
 
@@ -164,24 +297,13 @@ Cleanup:
 - Pod was deleted after diagnostics were copied locally.
 - `runpodctl pod list` returned `[]`.
 
-## Next Infrastructure Path
+## Next Step
 
-Do not keep retrying random PyTorch-template Pods for M4 Phase A until the vLLM
-runtime import issue is isolated.
+Do not continue with more runtime-environment experiments for Phase A. The
+sequential RTX 3090 run completed the required role-sensitivity matrix.
 
-The next reproducible path should use the official vLLM OpenAI-compatible image
-instead of installing vLLM into the Runpod PyTorch template at runtime.
-
-Official sources checked:
-
-- vLLM Docker documentation says the official deployment image is
-  `vllm/vllm-openai` and shows running it with NVIDIA GPUs and OpenAI-compatible
-  serving.
-- Docker Hub currently lists pinned vLLM `0.26.0` CUDA 12.9 image tags,
-  including `vllm/vllm-openai:v0.26.0-cu129-ubuntu2404` and
-  `vllm/vllm-openai:v0.26.0-x86_64-cu129-ubuntu2404`.
-
-Before another GPU rental, prepare a Runpod template or direct Pod command based
-on one of those pinned images, mount `/workspace`, and run the existing
-sequential Phase A script inside that container. Do not create a 48GB Phase B Pod
-until Phase A produces a real role-sensitivity matrix.
+The next step is a reviewed Phase B mixed-routing replay using the proposed
+candidate above, or a revised candidate if review rejects the noisy
+`evidence_reviewer` signal. Phase B must produce real end-to-end mixed-agent
+quality and latency measurements before any model-routing improvement is
+claimed.

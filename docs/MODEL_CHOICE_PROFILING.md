@@ -1,9 +1,9 @@
 # M4 Model-Choice Counterfactual Profiling
 
-Status: implementation prepared; first live RTX 3090 attempt was blocked during
-multi-model vLLM startup before replay. The execution plan has been refactored
-so Phase A loads one model at a time on a 24GB GPU. No M4 model-choice
-performance result is claimed yet.
+Status: Phase A completed on a real RTX 3090 using sequential model loading.
+The first concurrent multi-server attempt did not fit on 24GB, but the
+sequential runner produced a real all-strong baseline and one-role
+counterfactual matrix. Phase B mixed-routing replay has not been run.
 
 M4 asks whether each semantic LLM role in the real research agent needs the
 strongest selected model.
@@ -170,21 +170,24 @@ agentperf analyze-model-choice \
   --show-provenance
 ```
 
-The second 24GB attempt proved the sequential code path locally but hit a
-runtime-environment preflight failure on the Runpod PyTorch template:
-`timeout 60 python -c "import vllm; print(vllm.__version__)"` exited with status
-`124` after installing vLLM `0.26.0+cu129`. The setup script correctly stopped
-before model download. The next live attempt should use the official pinned vLLM
-OpenAI-compatible container, for example
-`vllm/vllm-openai:v0.26.0-x86_64-cu129-ubuntu2404`, rather than installing vLLM
-into the PyTorch template at runtime. See `docs/VLLM_RUNPOD_CONTAINER.md`.
+The successful Phase A run used:
 
-Do not report M4 as complete until a live vLLM run has produced replay evidence
-for the baseline, one-role counterfactuals, and a reviewed mixed candidate.
+- RTX 3090, 24GB
+- `runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404`
+- vLLM `0.26.0+cu129`
+- `torch 2.11.0+cu129`
+- sequential one-model-at-a-time residency
+
+See `docs/MODEL_CHOICE_RESULTS.md` for measured quality, latency, cost-proxy,
+and `MODEL_CHOICE_HEADROOM` findings.
+
+Do not report a mixed-routing result until Phase B replays a reviewed mixed
+candidate end to end.
 
 ## Phase B Gate
 
-Do not start Phase B until Phase A identifies an evidence-backed mixed routing
-candidate. If the selected mixed configuration requires simultaneous serving,
-estimate memory explicitly and use one 48GB GPU only after approval when the
-price exceeds the configured cap.
+Do not start Phase B automatically. Phase A proposes a mixed candidate for
+review, but Phase B must explicitly replay it before AgentPerf claims end-to-end
+model-routing improvement. If the selected mixed configuration requires
+simultaneous serving, estimate memory explicitly and request approval before
+using a larger GPU when the price exceeds the configured cap.
