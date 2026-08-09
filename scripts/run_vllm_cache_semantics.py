@@ -68,7 +68,6 @@ def main() -> int:
     run_label = args.run_label or (
         f"run-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}-{uuid4().hex[:8]}"
     )
-    dynamic_sections = build_dynamic_sections()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     environment = collect_environment(args.model, args.base_url, run_label)
@@ -77,7 +76,8 @@ def main() -> int:
 
     for target in targets:
         for case_id, case_name in CASES.items():
-            label = f"{run_label}-{case_id}-{target}"
+            label = f"{uuid4().hex}-{run_label}-{case_id}-{target}"
+            dynamic_sections = build_dynamic_sections(label)
             stable = stable_cache.setdefault(
                 f"S-{label}",
                 build_token_sized_text(
@@ -177,26 +177,26 @@ def build_prompt(case_id: str, stable: str, bridge: str | None, dynamic: str) ->
     raise ValueError(f"unknown case: {case_id}")
 
 
-def build_dynamic_sections() -> list[str]:
+def build_dynamic_sections(label: str) -> list[str]:
     nonces = [uuid4().hex, uuid4().hex, uuid4().hex]
     return [
         (
-            f"AlphaNonce{nonces[0]} incident update: checkout workers are retrying "
+            f"AlphaNonce{nonces[0]}{label} incident update: checkout workers are retrying "
             "payment authorization after a regional routing change. Use this "
             "per-request fact pattern only for request one. The mitigation should "
             "mention rollback readiness and queue drain."
         ),
         (
-            f"BravoNonce{nonces[1]} field note: search indexing lag follows a schema "
-            "migration and the customer impact is delayed discovery. Use this different "
-            "request-specific context only for request two. The mitigation should "
-            "mention read-only fallback."
+            f"BravoNonce{nonces[1]}{label} field note: search indexing lag follows a "
+            "schema migration and the customer impact is delayed discovery. Use this "
+            "different request-specific context only for request two. The mitigation "
+            "should mention read-only fallback."
         ),
         (
-            f"CharlieNonce{nonces[2]} operations brief: notification fanout is saturated "
-            "after a partner webhook spike. Use this separate dynamic section only for "
-            "request three. The mitigation should mention rate limiting and owner "
-            "escalation."
+            f"CharlieNonce{nonces[2]}{label} operations brief: notification fanout is "
+            "saturated after a partner webhook spike. Use this separate dynamic section "
+            "only for request three. The mitigation should mention rate limiting and "
+            "owner escalation."
         ),
     ]
 
