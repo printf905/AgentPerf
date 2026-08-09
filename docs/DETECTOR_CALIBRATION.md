@@ -1,6 +1,6 @@
 # Detector Calibration Review
 
-Status: synthetic validation complete; one real AgentPerf/vLLM execution and
+Status: synthetic validation complete; two real AgentPerf/vLLM executions and
 one focused vLLM prefix-cache semantics probe completed on Runpod NVIDIA RTX
 A5000 hosts. See `docs/REAL_VLLM_RESULTS.md` and
 `docs/VLLM_PREFIX_CACHE_SEMANTICS.md`.
@@ -80,11 +80,14 @@ Real vLLM observations:
 - the smoke test and experiment confirmed that vLLM `0.26.0+cu129` exposes
   `usage.prompt_tokens_details.cached_tokens` when prompt-token details are
   enabled;
-- baseline cached-token ratio was 99.75%;
-- optimized cached-token ratio was 99.40%;
-- `PREFIX_CACHE_OPPORTUNITY` did not fire for either trace, which was correct
-  for the observed telemetry;
-- the baseline workload did not produce the intended low-cache-reuse condition.
+- the first live AgentPerf workload had high cache reuse in both baseline and
+  optimized variants, so `PREFIX_CACHE_OPPORTUNITY` correctly did not fire;
+- the second live AgentPerf workload used the proven `dynamic_request +
+  stable_context` baseline and produced a 0.40% cached-token ratio;
+- after reordering only the prompt layout to `stable_context +
+  dynamic_request`, cached-token ratio rose to 99.57%;
+- `PREFIX_CACHE_OPPORTUNITY` fired only for the baseline and disappeared after
+  replay.
 
 Focused prefix-cache semantics observations:
 
@@ -100,20 +103,20 @@ Focused prefix-cache semantics observations:
 
 Assumptions invalidated or weakened:
 
-- placing dynamic content before later stable content was not sufficient to
-  defeat vLLM cache reuse in this controlled workload;
-- the next experiment should not assume that client-side component ordering maps
-  cleanly to low `cached_tokens`;
-- the earlier workload's baseline did not put sufficiently unique dynamic
-  content at the very beginning of the serialized prompt.
+- AgentPerf's original prefix detector was too narrow because it required a
+  large existing common prefix. Real vLLM semantics showed that the pathology can
+  be large repeated stable content that is not currently a prefix;
+- placing dynamic content before stable content only defeats cache reuse when
+  the serialized prompt actually starts with sufficiently unique dynamic text;
+- client-side component ordering must be preserved in normalized traces. The
+  real demo now writes prompt components as ordered lists.
 
 Remaining real-trace checks:
 
 - whether chat-template or message ordering makes the theoretical common prefix
   differ from the backend-token prefix;
-- whether a revised AgentPerf workload using the proven dynamic-prefix pattern
-  triggers `PREFIX_CACHE_OPPORTUNITY` and then disappears after stable-prefix
-  reorganization.
+- whether exact backend token IDs should replace approximate component-token
+  estimates for the repeated-non-prefix evidence path.
 
 False-positive risks:
 
@@ -130,7 +133,7 @@ False-negative risks:
 - a workload with cache opportunity but low scheduled-to-first-token latency may
   not pass the current prefill-path-strength evidence threshold.
 
-## PREFILL_BOTTLENECK
+## PREFILL_PATH_DOMINANCE And MATERIAL_PREFILL_BOTTLENECK
 
 Synthetic assumptions that held:
 
@@ -149,14 +152,14 @@ Real vLLM assumptions that held:
 
 Real vLLM observations:
 
-- `PREFILL_BOTTLENECK` fired for both baseline and optimized traces;
-- scheduled-to-first-token P95 was low in absolute terms: 16.56 ms baseline and
-  16.23 ms optimized;
-- prefill-path proxy fraction was 100% because vLLM exposes
-  scheduled-to-first-token as the prefill-path proxy and queue time was near
-  zero;
-- the current detector may overstate severity when prefill-path fraction is high
-  but absolute TTFT is small.
+- in the first live AgentPerf run, the old `PREFILL_BOTTLENECK` label fired even
+  though scheduled-to-first-token P95 was only about 16 ms;
+- in the second live run, the dynamic-prefix baseline had scheduled-to-first
+  token P95 of 241.73 ms and P95 uncached input of 7,875 tokens;
+- after stable-prefix replay, scheduled-to-first-token P95 fell to 32.61 ms and
+  P95 uncached input fell to 50 tokens;
+- the detector now distinguishes low-severity `PREFILL_PATH_DOMINANCE` from
+  `MATERIAL_PREFILL_BOTTLENECK`.
 
 Focused prefix-cache semantics observations:
 
@@ -171,8 +174,19 @@ Assumptions invalidated or weakened:
 
 - prefill-path fraction alone is not enough to make a useful real-world
   bottleneck claim;
-- absolute TTFT or TTFT impact should be part of the calibration review before
-  calling this detector high severity on real data.
+- absolute TTFT and uncached prompt volume must be part of the materiality
+  evidence before calling this detector a bottleneck.
+
+Implemented calibration change:
+
+- `MATERIAL_PREFILL_BOTTLENECK` requires relative prefill-path dominance plus
+  P95 scheduled-to-first-token at or above 100 ms and P95 uncached input at or
+  above 1,000 tokens;
+- otherwise, high relative prefill-path fraction is reported as
+  `PREFILL_PATH_DOMINANCE` with lower severity;
+- these thresholds are early empirical defaults based on the 16 ms false
+  positive and the 8K uncached/prefix-cached contrast. They are not production
+  cutoffs.
 
 Remaining real-trace checks:
 
@@ -214,11 +228,19 @@ telemetry. It did not validate the intended prefix-cache-improvement story
 because both baseline and optimized traces already had very high cached-token
 ratios.
 
+The second live run completed the intended story. A dynamic-prefix baseline
+produced low cache reuse, `PREFIX_CACHE_OPPORTUNITY`, and
+`MATERIAL_PREFILL_BOTTLENECK`. Reordering stable context to the front produced
+high cache reuse, much lower scheduled-to-first-token latency, no
+`PREFIX_CACHE_OPPORTUNITY`, and only low-severity `PREFILL_PATH_DOMINANCE`.
+
 ## Threshold Policy
 
-No threshold changes were made from the first real vLLM run. A single small
-workload is not enough to tune detector thresholds, and tuning solely to make
-the expected `PREFIX_CACHE_OPPORTUNITY` finding fire would be wrong.
+The prefill detector thresholds changed after the first real vLLM run and the
+cache-semantics probe because real evidence showed that dominance alone was not
+material. The prefix-cache threshold values were not tuned simply to force the
+finding; the detector's evidence model was broadened to account for repeated
+non-prefix stable content with low actual cache reuse.
 
 The next threshold review should use:
 

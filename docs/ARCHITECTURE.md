@@ -92,12 +92,15 @@ Thresholds are code-level configuration objects today, not CLI flags.
 | `CONTEXT_DUPLICATION` | minimum repeated context ratio | 25% |
 | `PREFIX_CACHE_OPPORTUNITY` | minimum affected requests | 2 |
 | `PREFIX_CACHE_OPPORTUNITY` | minimum shared prefix ratio | 60% |
+| `PREFIX_CACHE_OPPORTUNITY` | minimum repeated non-prefix ratio | 50% |
 | `PREFIX_CACHE_OPPORTUNITY` | minimum shared prefix tokens | 50 approximate tokens |
 | `PREFIX_CACHE_OPPORTUNITY` | maximum actual prefix-cache hit ratio | 35% |
 | `PREFIX_CACHE_OPPORTUNITY` | minimum prefill/prefill-path fraction of TTFT | 50% |
-| `PREFILL_BOTTLENECK` | minimum affected requests | 2 |
-| `PREFILL_BOTTLENECK` | minimum prefill/prefill-path fraction of TTFT | 60% |
-| `PREFILL_BOTTLENECK` | minimum P95 input tokens | 100 tokens |
+| `PREFILL_PATH_DOMINANCE` | minimum affected requests | 2 |
+| `PREFILL_PATH_DOMINANCE` | minimum prefill/prefill-path fraction of TTFT | 60% |
+| `PREFILL_PATH_DOMINANCE` | minimum P95 input tokens | 100 tokens |
+| `MATERIAL_PREFILL_BOTTLENECK` | minimum P95 scheduled-to-first-token | 100 ms |
+| `MATERIAL_PREFILL_BOTTLENECK` | minimum P95 uncached input tokens | 1,000 tokens |
 
 The low token thresholds are intentional for the synthetic MVP fixtures and unit tests. Real trace ingestion should revisit these defaults per workload class and model tokenizer.
 

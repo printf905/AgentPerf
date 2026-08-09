@@ -32,7 +32,8 @@ Implemented MVP findings:
 
 - `CONTEXT_DUPLICATION`
 - `PREFIX_CACHE_OPPORTUNITY`
-- `PREFILL_BOTTLENECK`
+- `PREFILL_PATH_DOMINANCE`
+- `MATERIAL_PREFILL_BOTTLENECK`
 
 ## Recommendation Contract
 
@@ -42,9 +43,10 @@ Example:
 
 > Evaluate whether stable instructions, tool schemas, and shared context can be organized into a consistent cacheable prefix.
 
-This is acceptable only when evidence shows substantial shared prefix content, low actual prefix-cache reuse, and meaningful prefill contribution.
+This is acceptable only when evidence shows substantial shared or repeated
+stable content, low actual prefix-cache reuse, and meaningful prefill-path
+contribution.
 
 ## Synthetic Data Policy
 
 Synthetic traces are development fixtures and demos only. They are never benchmark results.
-

@@ -10,7 +10,11 @@ from agentperf.metrics.latency import (
     prefill_or_path_label,
     prefill_or_path_latency_ms,
 )
-from agentperf.metrics.tokens import approximate_tokens, common_prefix_len
+from agentperf.metrics.tokens import (
+    approximate_tokens,
+    common_prefix_len,
+    compute_duplication_metrics,
+)
 from agentperf.schema.findings import Finding, FindingProvenance
 from agentperf.schema.trace import LLMCall, ServingRequest
 
@@ -19,6 +23,7 @@ from agentperf.schema.trace import LLMCall, ServingRequest
 class PrefixCacheOpportunityConfig:
     min_affected_requests: int = 2
     min_shared_prefix_ratio: float = 0.60
+    min_repeated_non_prefix_ratio: float = 0.50
     max_actual_cache_hit_ratio: float = 0.35
     min_prefill_fraction_of_ttft: float = 0.50
     min_shared_prefix_tokens: int = 50
@@ -30,6 +35,8 @@ class PrefixGroup:
     request_ids: list[str]
     shared_prefix_tokens: int
     shared_prefix_ratio: float
+    repeated_non_prefix_tokens: int
+    repeated_non_prefix_ratio: float
     avg_input_tokens: float
     requests: list[ServingRequest]
 
@@ -62,17 +69,21 @@ class PrefixCacheOpportunityDetector:
             Finding(
                 id="PREFIX_CACHE_OPPORTUNITY",
                 severity="HIGH",
-                title="Large shared prefix with low prefix-cache reuse",
+                title=_title(group),
                 summary=(
-                    "Correlated requests share substantial stable prefix content, but serving "
-                    "telemetry reports low actual prefix-cache reuse while the prefill path "
-                    "contributes materially to TTFT."
+                    "Correlated requests contain substantial repeated stable content, but "
+                    "serving telemetry reports low actual prefix-cache reuse while the "
+                    "prefill path contributes materially to TTFT."
                 ),
                 evidence={
                     "affected_requests": len(group.request_ids),
                     "average_input_tokens": round(group.avg_input_tokens, 1),
                     "shared_prefix_tokens": group.shared_prefix_tokens,
                     "shared_prefix_ratio": round(group.shared_prefix_ratio, 4),
+                    "repeated_non_prefix_tokens": group.repeated_non_prefix_tokens,
+                    "repeated_non_prefix_ratio": round(
+                        group.repeated_non_prefix_ratio, 4
+                    ),
                     "actual_prefix_cache_hit_ratio": round(hit_ratio, 4),
                     prefill_fraction_key: round(prefill_fraction, 4),
                     "latency_semantics": latency_semantics,
@@ -118,13 +129,19 @@ class PrefixCacheOpportunityDetector:
                     derived_metrics={
                         "shared_prefix_tokens": group.shared_prefix_tokens,
                         "shared_prefix_ratio": group.shared_prefix_ratio,
+                        "repeated_non_prefix_tokens": group.repeated_non_prefix_tokens,
+                        "repeated_non_prefix_ratio": group.repeated_non_prefix_ratio,
                         "actual_prefix_cache_hit_ratio": hit_ratio,
                         prefill_fraction_key: prefill_fraction,
                         "latency_semantics": latency_semantics,
                     },
                     notes=[
                         "Correlation is based on explicit request identifiers only.",
-                        "Shared prefix is exact token/text prefix over normalized prompts.",
+                        (
+                            "Shared prefix is exact token/text prefix over normalized prompts; "
+                            "repeated non-prefix content is evidence of theoretical cacheability "
+                            "only when actual prefix-cache reuse is low."
+                        ),
                         (
                             "Latency semantics are labeled as true prefill when available, "
                             "otherwise as a prefill-path proxy."
@@ -175,6 +192,8 @@ class PrefixCacheOpportunityDetector:
                 request_ids=[request.serving_request_id for request in group_requests],
                 shared_prefix_tokens=shared_prefix,
                 shared_prefix_ratio=ratio,
+                repeated_non_prefix_tokens=0,
+                repeated_non_prefix_ratio=0.0,
                 avg_input_tokens=avg_input,
                 requests=group_requests,
             )
@@ -186,4 +205,47 @@ class PrefixCacheOpportunityDetector:
                 best.shared_prefix_tokens,
             ):
                 best = candidate
+
+        non_prefix_candidate = self._non_prefix_group(pairs)
+        if non_prefix_candidate is not None and (
+            best is None
+            or non_prefix_candidate.repeated_non_prefix_tokens
+            > best.shared_prefix_tokens
+        ):
+            return non_prefix_candidate
         return best
+
+    def _non_prefix_group(
+        self,
+        pairs: list[tuple[LLMCall, ServingRequest, list[str]]],
+    ) -> PrefixGroup | None:
+        calls = [call for call, _, _ in pairs]
+        metrics = compute_duplication_metrics(calls)
+        if metrics.repeated_non_prefix_tokens < self.config.min_shared_prefix_tokens:
+            return None
+        repeated_ratio = (
+            metrics.repeated_non_prefix_tokens / metrics.total_input_tokens
+            if metrics.total_input_tokens
+            else 0.0
+        )
+        if repeated_ratio < self.config.min_repeated_non_prefix_ratio:
+            return None
+
+        requests = [request for _, request, _ in pairs]
+        input_lengths = [len(sequence) for _, _, sequence in pairs]
+        return PrefixGroup(
+            call_ids=[call.llm_call_id for call in calls],
+            request_ids=[request.serving_request_id for request in requests],
+            shared_prefix_tokens=metrics.largest_common_prefix_tokens,
+            shared_prefix_ratio=metrics.largest_common_prefix_ratio,
+            repeated_non_prefix_tokens=metrics.repeated_non_prefix_tokens,
+            repeated_non_prefix_ratio=repeated_ratio,
+            avg_input_tokens=mean(input_lengths),
+            requests=requests,
+        )
+
+
+def _title(group: PrefixGroup) -> str:
+    if group.shared_prefix_ratio >= group.repeated_non_prefix_ratio:
+        return "Large shared prefix with low prefix-cache reuse"
+    return "Repeated stable content is not cacheable as a prefix"
