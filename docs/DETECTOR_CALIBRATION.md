@@ -1,7 +1,7 @@
 # Detector Calibration Review
 
-Status: synthetic validation complete; real vLLM execution package prepared;
-live execution pending on a supported NVIDIA GPU host.
+Status: synthetic validation complete; one real vLLM execution completed on a
+Runpod NVIDIA RTX A5000 host. See `docs/REAL_VLLM_RESULTS.md`.
 
 This document records detector assumptions before threshold tuning. Thresholds
 remain configurable in detector constructors and should not be changed just to
@@ -17,7 +17,7 @@ Synthetic assumptions that held:
 - repeated text is not automatically waste, so the recommendation is framed as
   an inspection and restructuring opportunity.
 
-Real vLLM assumptions:
+Real vLLM assumptions that held:
 
 - prompt components remain available only because the client runner records
   them before sending the request;
@@ -25,7 +25,14 @@ Real vLLM assumptions:
   AgentPerf prompt component boundaries in the backend response;
 - component-level duplication analysis remains an agent/client responsibility.
 
-Pending real-trace checks:
+Real vLLM observations:
+
+- `CONTEXT_DUPLICATION` fired for both baseline and optimized real traces;
+- repeated-context ratios were above 92% in both traces;
+- this was expected because both workload variants intentionally reused large
+  stable runbook content.
+
+Remaining real-trace checks:
 
 - whether chat-template serialization changes common-prefix estimates enough to
   require comparing token IDs rather than client-side component text;
@@ -55,7 +62,7 @@ Synthetic assumptions that held:
 - high TTFT/prefill-path proxy strengthens the evidence;
 - healthy large-context traces with high cache reuse should not fire.
 
-Real vLLM assumptions:
+Real vLLM assumptions that held:
 
 - `usage.prompt_tokens_details.cached_tokens` is the per-request cache hit token
   signal when prompt-token details are enabled;
@@ -66,14 +73,28 @@ Real vLLM assumptions:
 - true request-level prefill kernel time remains unavailable in the OpenAI
   response.
 
-Pending real-trace checks:
+Real vLLM observations:
 
-- whether vLLM reports cached tokens consistently for the selected model and
-  server configuration;
-- whether the baseline workload actually produces low cache reuse when measured
-  via `usage.prompt_tokens_details.cached_tokens`;
-- whether the improved workload produces higher cached-token ratio without
-  altering task semantics;
+- the smoke test and experiment confirmed that vLLM `0.26.0+cu129` exposes
+  `usage.prompt_tokens_details.cached_tokens` when prompt-token details are
+  enabled;
+- baseline cached-token ratio was 99.75%;
+- optimized cached-token ratio was 99.40%;
+- `PREFIX_CACHE_OPPORTUNITY` did not fire for either trace, which was correct
+  for the observed telemetry;
+- the baseline workload did not produce the intended low-cache-reuse condition.
+
+Assumptions invalidated or weakened:
+
+- placing dynamic content before later stable content was not sufficient to
+  defeat vLLM cache reuse in this controlled workload;
+- the next experiment should not assume that client-side component ordering maps
+  cleanly to low `cached_tokens`;
+- a minimal vLLM cache-semantics probe is needed before another full
+  baseline/optimized workload run.
+
+Remaining real-trace checks:
+
 - whether chat-template or message ordering makes the theoretical common prefix
   differ from the backend-token prefix.
 
@@ -102,19 +123,33 @@ Synthetic assumptions that held:
 - the detector should cross-link conceptually with duplication and prefix-cache
   evidence.
 
-Real vLLM assumptions:
+Real vLLM assumptions that held:
 
 - vLLM per-request `time_to_first_token_ms` is used only as
   `prefill_path_latency_ms`, a scheduled-to-first-token proxy;
 - queue time is separate when per-request metrics are enabled;
 - generation time or mean inter-token latency provides decode evidence.
 
-Pending real-trace checks:
+Real vLLM observations:
 
-- whether scheduled-to-first-token proxy values are stable enough across
-  repeated runs to support a meaningful demo;
-- whether queue time is low enough that the prefill path remains the dominant
-  component;
+- `PREFILL_BOTTLENECK` fired for both baseline and optimized traces;
+- scheduled-to-first-token P95 was low in absolute terms: 16.56 ms baseline and
+  16.23 ms optimized;
+- prefill-path proxy fraction was 100% because vLLM exposes
+  scheduled-to-first-token as the prefill-path proxy and queue time was near
+  zero;
+- the current detector may overstate severity when prefill-path fraction is high
+  but absolute TTFT is small.
+
+Assumptions invalidated or weakened:
+
+- prefill-path fraction alone is not enough to make a useful real-world
+  bottleneck claim;
+- absolute TTFT or TTFT impact should be part of the calibration review before
+  calling this detector high severity on real data.
+
+Remaining real-trace checks:
+
 - whether output length variation distorts the decode comparison.
 
 False-positive risks:
@@ -133,7 +168,7 @@ False-negative risks:
 - server-level prefill saturation may not appear in one request's normalized
   telemetry.
 
-## M2 Execution Package
+## M2 Execution Package And First Result
 
 The M2 runbook and scripts define the first real validation protocol:
 
@@ -147,19 +182,28 @@ The M2 runbook and scripts define the first real validation protocol:
 The smoke test must pass before running the experiment. If any critical vLLM
 field is absent, AgentPerf should not fabricate it.
 
+The first live run completed on 2026-08-09 UTC. It validated real vLLM
+ingestion, explicit request correlation, and detector execution on real
+telemetry. It did not validate the intended prefix-cache-improvement story
+because both baseline and optimized traces already had very high cached-token
+ratios.
+
 ## Threshold Policy
 
-No threshold changes were made from real data in this pass because a real vLLM
-run has not yet been executed on a supported NVIDIA GPU host.
+No threshold changes were made from the first real vLLM run. A single small
+workload is not enough to tune detector thresholds, and tuning solely to make
+the expected `PREFIX_CACHE_OPPORTUNITY` finding fire would be wrong.
 
-The first threshold review should use:
+The next threshold review should use:
 
 - 3 warmup repetitions;
 - at least 10 measured repetitions per configuration;
 - unchanged tasks between baseline and improved configurations;
+- a minimal vLLM cache-semantics probe that intentionally changes the first
+  cache block;
 - captured raw vLLM responses;
 - AgentPerf reports with provenance enabled;
 - output review sufficient to catch trivial task breakage.
 
-Until then, the current detector thresholds should be considered synthetic-MVP
+Until then, the current detector thresholds should be considered early empirical
 defaults, not validated production cutoffs.

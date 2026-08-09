@@ -3,6 +3,9 @@
 This runbook reproduces AgentPerf M2 on a fresh Linux machine with one supported
 NVIDIA GPU. It does not require H100-scale hardware.
 
+For the first completed live execution result, see
+`docs/REAL_VLLM_RESULTS.md`.
+
 The goal is empirical validation, not a benchmark leaderboard:
 
 1. run a controlled agent-like workload against real vLLM;
