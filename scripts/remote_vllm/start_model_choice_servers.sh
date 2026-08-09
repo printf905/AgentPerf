@@ -36,7 +36,7 @@ declare -A SERVED_NAMES=(
 declare -A GPU_MEMORY_FRACTIONS=(
   [small]="${SMALL_GPU_MEMORY_UTILIZATION:-0.16}"
   [medium]="${MEDIUM_GPU_MEMORY_UTILIZATION:-0.26}"
-  [strong]="${STRONG_GPU_MEMORY_UTILIZATION:-0.48}"
+  [strong]="${STRONG_GPU_MEMORY_UTILIZATION:-0.44}"
 )
 
 for tier in small medium strong; do
