@@ -195,4 +195,156 @@ Artifacts:
 
 Cleanup:
 
+- Pod was deleted after artifacts were preserved.
+
+## 2026-08-09 RTX 3090 Quality-Constrained Attempt
+
+Status: completed with a quality-preserving deterministic compaction strategy.
+
+This run fixed benchmark/agent issues found in the first RTX 3090 attempt and
+then evaluated multiple deterministic context-carry strategies over the same
+local-corpus workload. It is still a small single-run validation, not a
+statistically significant benchmark.
+
+Environment:
+
+- Pod ID: `bkq1j1rhie1x4z`
+- GPU: NVIDIA GeForce RTX 3090, 24 GB
+- Price: $0.50/hour
+- Image: `runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404`
+- Driver: `580.159.03`
+- `nvidia-smi` CUDA compatibility label: `13.0`
+- AgentPerf commit: `1ce0b8e` for the executed workload
+- Branch: `feature/real-agent-context-waste`
+- Model: `Qwen/Qwen3-0.6B`
+- Served model name: `agentperf-vllm-demo`
+- Backend: vLLM `0.26.0+cu129`
+- `torch`: `2.11.0+cu129`
+- `torch.version.cuda`: `12.9`
+
+Preflight result:
+
+- Bounded `timeout 60 python -c "import vllm; print(vllm.__version__)"`:
+  passed, `0.26.0`
+- CUDA tensor probe: passed on `NVIDIA GeForce RTX 3090`
+- Model download path: `/workspace/models/Qwen3-0.6B`
+- Model download size: 1,519,211,936 bytes
+- Model download elapsed time: 4.20 seconds
+- Smoke test: passed with per-request telemetry
+
+Root cause of weak baseline quality:
+
+- The corpus and answer keys were solvable; all required facts were present in
+  `docs/corpus`.
+- The previous runner sent Qwen a raw completion prompt instead of a chat-format
+  prompt, and Qwen often continued prompt sections rather than answering.
+- Planner/review outputs polluted later prompts with hallucinated structure and
+  fake document references.
+- The final-answer output budget and answer format were too weak for the local
+  QA task.
+- The rule scorer was also too brittle for punctuation, hyphenation, and word
+  order.
+
+Fixes before optimizing context:
+
+- Wrapped vLLM prompts in Qwen-style chat turns while preserving normalized
+  AgentPerf prompt components for attribution.
+- Constrained planner/review/final prompts to a smaller structured format.
+- Increased the final answer budget to 320 tokens.
+- Made rule scoring deterministic but less exact-string brittle by normalizing
+  punctuation and matching significant fact terms.
+
+Trustworthy baseline after those fixes:
+
+- Rule-based pass rate: 80.0%
+- Mean rule-based score: 0.933
+- Input tokens processed: 132,756
+- Tool-result processed tokens: 112,287
+- TTFT P95: 312.18 ms
+- Client latency P95: 1,607.11 ms
+
+Strategies tested:
+
+- `RAW_FULL`: carry all tool output.
+- `DEDUP_ONLY`: remove repeated passage carry-forward while preserving unique
+  raw evidence.
+- `TOP_K_2`: carry the top two unique retrieved passages.
+- `BUDGET_1200`: carry ranked unique evidence until a 1,200-token budget.
+- `AGGRESSIVE_COMPACT`: carry only compact `ANSWER_FACT`/`CITATION` lines.
+
+Quality constraint:
+
+- Objective: minimize processed input tokens.
+- Constraint: mean score must be at least baseline minus 0.05 and pass rate
+  must be at least baseline minus 0.10.
+- Minimum acceptable mean score: 0.883.
+- Minimum acceptable pass rate: 70.0%.
+
+Measured results:
+
+| Strategy | Mean score | Pass rate | Input tokens | Tool-result tokens | TTFT P95 | Client P95 | Cache hit ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `RAW_FULL` | 0.933 | 80.0% | 132,756 | 112,287 | 312.18 ms | 1,607.11 ms | 3.13% |
+| `DEDUP_ONLY` | 0.908 | 70.0% | 95,479 | 78,566 | 176.53 ms | 1,247.62 ms | 6.18% |
+| `TOP_K_2` | 0.842 | 60.0% | 17,053 | 6,778 | 20.22 ms | 858.41 ms | 31.62% |
+| `BUDGET_1200` | 0.858 | 50.0% | 21,921 | 10,569 | 26.53 ms | 912.54 ms | 24.82% |
+| `AGGRESSIVE_COMPACT` | 0.708 | 40.0% | 16,370 | 5,989 | 22.82 ms | 864.22 ms | 33.92% |
+
+Quality-constrained selection:
+
+- `DEDUP_ONLY` was the only non-baseline strategy within the quality constraint.
+- Compared with `RAW_FULL`, it reduced input tokens from 132,756 to 95,479
+  (-28.1%).
+- It reduced tool-result processed tokens from 112,287 to 78,566 (-30.0%).
+- TTFT P95 fell from 312.18 ms to 176.53 ms (-43.5%).
+- Client latency P95 fell from 1,607.11 ms to 1,247.62 ms (-22.4%).
+- Mean score fell by 0.025 and pass rate fell by 10 percentage points, which is
+  inside the explicit tolerance but should still be treated as a product tradeoff
+  to show to users.
+
+AgentPerf findings by strategy:
+
+| Strategy | Findings |
+| --- | --- |
+| `RAW_FULL` | `CONTEXT_DUPLICATION`, `TOOL_OUTPUT_BLOAT`, `MATERIAL_PREFIX_CACHE_OPPORTUNITY`, `MATERIAL_PREFILL_BOTTLENECK` |
+| `DEDUP_ONLY` | `CONTEXT_DUPLICATION`, `TOOL_OUTPUT_BLOAT`, `MATERIAL_PREFIX_CACHE_OPPORTUNITY`, `MATERIAL_PREFILL_BOTTLENECK` |
+| `TOP_K_2` | `CONTEXT_DUPLICATION`, `CACHEABILITY_HEADROOM`, `PREFILL_PATH_DOMINANCE` |
+| `BUDGET_1200` | `CACHEABILITY_HEADROOM`, `PREFILL_PATH_DOMINANCE` |
+| `AGGRESSIVE_COMPACT` | `CONTEXT_DUPLICATION`, `CACHEABILITY_HEADROOM`, `PREFILL_PATH_DOMINANCE` |
+
+Interpretation:
+
+- `TOOL_OUTPUT_BLOAT` is empirically useful: raw tool-result carry-forward
+  accounted for 84.6% of baseline processed input tokens.
+- Aggressive compaction was too lossy in the previous attempt and remains below
+  the quality constraint here.
+- The acceptable intervention is much narrower: deterministic deduplication of
+  repeated retrieved passages, while preserving unique raw evidence.
+- The strongest result is quality-constrained token reduction: 28.1% fewer
+  processed input tokens and 30.0% fewer processed tool-result tokens with
+  quality inside the declared tolerance.
+- More aggressive strategies produce much lower latency but fail the quality
+  constraint on this model/task.
+
+Calibration notes:
+
+- Prefix-cache findings now distinguish `CACHEABILITY_HEADROOM` from
+  `MATERIAL_PREFIX_CACHE_OPPORTUNITY`. A material finding requires low cache
+  reuse plus meaningful scheduled-to-first-token and uncached-token evidence.
+- The compact strategies with TTFT P95 around 20-27 ms now produce only
+  `CACHEABILITY_HEADROOM`, not a high actionable prefix-cache warning.
+- `MATERIAL_PREFILL_BOTTLENECK` remains appropriate for `RAW_FULL` and
+  `DEDUP_ONLY`, whose TTFT P95 remained above 100 ms with high uncached input
+  volume.
+
+Artifacts:
+
+- Full result bundle copied locally to:
+  `artifacts/runpod/agentperf-m3-quality-3090-results-bkq1j1rhie1x4z.tgz`
+- The bundle includes raw vLLM recordings, normalized AgentPerf traces,
+  terminal reports, setup logs, vLLM logs, smoke-test artifacts, and
+  `comparison.json`.
+
+Cleanup:
+
 - Pod deletion is required after this documentation is committed and pushed.

@@ -55,6 +55,12 @@ def test_real_agent_runner_mock_context_strategies(tmp_path) -> None:  # type: i
     assert "TOOL_OUTPUT_BLOAT" not in aggressive["detectors_fired"]
     assert baseline["correctness"]["mean_score"] == aggressive["correctness"]["mean_score"]
     assert comparison["pareto"]
+    quality_constraint = comparison["quality_constraint"]
+    assert quality_constraint["baseline_strategy"] == "raw_full"
+    assert quality_constraint["mean_score_tolerance"] == 0.05
+    assert quality_constraint["pass_rate_tolerance"] == 0.10
+    assert quality_constraint["selected_strategy"] is not None
+    assert quality_constraint["eligible_strategies"]
 
     raw_recording = json.loads(
         (output_dir / "top_k_2" / "raw" / "recording.json").read_text(

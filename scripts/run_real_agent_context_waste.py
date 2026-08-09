@@ -47,6 +47,9 @@ DEFAULT_STRATEGIES = [
     "budget_1200",
     "aggressive_compact",
 ]
+QUALITY_MEAN_SCORE_TOLERANCE = 0.05
+QUALITY_PASS_RATE_TOLERANCE = 0.10
+QUALITY_COMPARISON_EPSILON = 1e-9
 FINAL_MAX_TOKENS = 320
 REVIEW_MAX_TOKENS = 160
 PLANNER_MAX_TOKENS = 64
@@ -435,6 +438,7 @@ def main(argv: list[str] | None = None) -> int:
     if "aggressive_compact" in recordings:
         comparison["optimized"] = strategies_summary["aggressive_compact"]
     comparison["pareto"] = pareto_summary(strategies_summary)
+    comparison["quality_constraint"] = quality_constraint_summary(strategies_summary)
     (args.output_dir / "comparison.json").write_text(
         json.dumps(comparison, indent=2),
         encoding="utf-8",
@@ -912,6 +916,58 @@ def pareto_summary(strategies: dict[str, dict[str, Any]]) -> list[dict[str, Any]
                 row["dominated"] = True
                 break
     return rows
+
+
+def quality_constraint_summary(strategies: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    baseline = strategies.get("raw_full")
+    if baseline is None:
+        return {
+            "baseline_strategy": None,
+            "mean_score_tolerance": QUALITY_MEAN_SCORE_TOLERANCE,
+            "pass_rate_tolerance": QUALITY_PASS_RATE_TOLERANCE,
+            "eligible_strategies": [],
+            "selected_strategy": None,
+        }
+    baseline_correctness = baseline["correctness"]
+    min_mean_score = baseline_correctness["mean_score"] - QUALITY_MEAN_SCORE_TOLERANCE
+    min_pass_rate = baseline_correctness["pass_rate"] - QUALITY_PASS_RATE_TOLERANCE
+    eligible = []
+    for name, summary in strategies.items():
+        correctness_summary = summary["correctness"]
+        if (
+            correctness_summary["mean_score"] + QUALITY_COMPARISON_EPSILON
+            >= min_mean_score
+            and correctness_summary["pass_rate"] + QUALITY_COMPARISON_EPSILON
+            >= min_pass_rate
+        ):
+            eligible.append(
+                {
+                    "strategy": name,
+                    "mean_score": correctness_summary["mean_score"],
+                    "pass_rate": correctness_summary["pass_rate"],
+                    "input_tokens": summary["input_tokens"],
+                    "tool_result_tokens": summary["processed_tokens_by_component"].get(
+                        "tool_result",
+                        0,
+                    ),
+                    "ttft_p95_ms": summary["ttft_p95_ms"],
+                    "client_latency_p95_ms": summary["client_latency_p95_ms"],
+                }
+            )
+    selected = min(eligible, key=lambda row: row["input_tokens"])["strategy"] if eligible else None
+    return {
+        "baseline_strategy": "raw_full",
+        "mean_score_tolerance": QUALITY_MEAN_SCORE_TOLERANCE,
+        "pass_rate_tolerance": QUALITY_PASS_RATE_TOLERANCE,
+        "minimum_mean_score": min_mean_score,
+        "minimum_pass_rate": min_pass_rate,
+        "eligible_strategies": eligible,
+        "selected_strategy": selected,
+        "objective": (
+            "minimize processed input tokens subject to mean_score >= "
+            "baseline - tolerance and pass_rate >= baseline - tolerance"
+        ),
+    }
 
 
 def score_answer(question: Question, answer: str) -> dict[str, Any]:
