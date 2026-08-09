@@ -176,9 +176,8 @@ runtime-environment preflight failure on the Runpod PyTorch template:
 `124` after installing vLLM `0.26.0+cu129`. The setup script correctly stopped
 before model download. The next live attempt should use the official pinned vLLM
 OpenAI-compatible container, for example
-`vllm/vllm-openai:v0.26.0-cu129-ubuntu2404` or the x86_64-specific
 `vllm/vllm-openai:v0.26.0-x86_64-cu129-ubuntu2404`, rather than installing vLLM
-into the PyTorch template at runtime.
+into the PyTorch template at runtime. See `docs/VLLM_RUNPOD_CONTAINER.md`.
 
 Do not report M4 as complete until a live vLLM run has produced replay evidence
 for the baseline, one-role counterfactuals, and a reviewed mixed candidate.

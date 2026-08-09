@@ -11,8 +11,11 @@ BASE_URL="http://localhost:${PORT}/v1"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-8192}"
 TIMEOUT="${TIMEOUT:-180}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.90}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 
-source .venv/bin/activate
+if [[ -f .venv/bin/activate ]]; then
+  source .venv/bin/activate
+fi
 mkdir -p "${MODEL_ROOT}" "${OUTPUT_DIR}/downloads"
 
 download_model() {
@@ -23,7 +26,7 @@ download_model() {
     return
   fi
   echo "Downloading ${repo_id} to ${local_dir}"
-  REPO_ID="${repo_id}" LOCAL_DIR="${local_dir}" python - <<'PY'
+  REPO_ID="${repo_id}" LOCAL_DIR="${local_dir}" "${PYTHON_BIN}" - <<'PY'
 import os
 from huggingface_hub import snapshot_download
 
@@ -56,7 +59,7 @@ run_stage() {
 }
 
 run_stage strong \
-  python scripts/run_model_choice_phase_a.py \
+  "${PYTHON_BIN}" scripts/run_model_choice_phase_a.py \
     --stage strong-baseline \
     --tier strong \
     --base-url "${BASE_URL}" \
@@ -65,7 +68,7 @@ run_stage strong \
     --timeout "${TIMEOUT}"
 
 run_stage medium \
-  python scripts/run_model_choice_phase_a.py \
+  "${PYTHON_BIN}" scripts/run_model_choice_phase_a.py \
     --stage candidate-tier \
     --tier medium \
     --base-url "${BASE_URL}" \
@@ -74,7 +77,7 @@ run_stage medium \
     --timeout "${TIMEOUT}"
 
 run_stage small \
-  python scripts/run_model_choice_phase_a.py \
+  "${PYTHON_BIN}" scripts/run_model_choice_phase_a.py \
     --stage candidate-tier \
     --tier small \
     --base-url "${BASE_URL}" \
@@ -83,7 +86,7 @@ run_stage small \
     --timeout "${TIMEOUT}"
 
 run_stage strong \
-  python scripts/run_model_choice_phase_a.py \
+  "${PYTHON_BIN}" scripts/run_model_choice_phase_a.py \
     --stage strong-continuations \
     --tier strong \
     --base-url "${BASE_URL}" \
@@ -91,7 +94,7 @@ run_stage strong \
     --output-dir "${OUTPUT_DIR}" \
     --timeout "${TIMEOUT}"
 
-python scripts/run_model_choice_phase_a.py \
+"${PYTHON_BIN}" scripts/run_model_choice_phase_a.py \
   --stage assemble \
   --output-dir "${OUTPUT_DIR}"
 
