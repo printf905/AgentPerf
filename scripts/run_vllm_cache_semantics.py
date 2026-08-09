@@ -48,25 +48,6 @@ CASES = {
     "D": "STABLE_PREFIX_DYNAMIC_SUFFIX",
 }
 
-DYNAMIC_SECTIONS = [
-    (
-        "ALPHA-17 incident update: checkout workers are retrying payment authorization "
-        "after a regional routing change. Use this per-request fact pattern only for "
-        "request one. The mitigation should mention rollback readiness and queue drain."
-    ),
-    (
-        "BRAVO-29 field note: search indexing lag follows a schema migration and the "
-        "customer impact is delayed discovery. Use this different request-specific "
-        "context only for request two. The mitigation should mention read-only fallback."
-    ),
-    (
-        "CHARLIE-43 operations brief: notification fanout is saturated after a partner "
-        "webhook spike. Use this separate dynamic section only for request three. The "
-        "mitigation should mention rate limiting and owner escalation."
-    ),
-]
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Probe vLLM prefix-cache token semantics")
     parser.add_argument("--base-url", default="http://localhost:8000/v1")
@@ -87,6 +68,7 @@ def main() -> int:
     run_label = args.run_label or (
         f"run-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}-{uuid4().hex[:8]}"
     )
+    dynamic_sections = build_dynamic_sections()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     environment = collect_environment(args.model, args.base_url, run_label)
@@ -128,7 +110,7 @@ def main() -> int:
                 else None
             )
             for request_index in range(3):
-                dynamic = DYNAMIC_SECTIONS[0] if case_id == "A" else DYNAMIC_SECTIONS[request_index]
+                dynamic = dynamic_sections[0] if case_id == "A" else dynamic_sections[request_index]
                 prompt = build_prompt(case_id, stable, bridge, dynamic)
                 results.append(
                     run_request(
@@ -193,6 +175,30 @@ def build_prompt(case_id: str, stable: str, bridge: str | None, dynamic: str) ->
             raise ValueError("case D requires bridge text")
         return stable + "\n\n" + bridge + "\n\n" + dynamic
     raise ValueError(f"unknown case: {case_id}")
+
+
+def build_dynamic_sections() -> list[str]:
+    nonces = [uuid4().hex, uuid4().hex, uuid4().hex]
+    return [
+        (
+            f"AlphaNonce{nonces[0]} incident update: checkout workers are retrying "
+            "payment authorization after a regional routing change. Use this "
+            "per-request fact pattern only for request one. The mitigation should "
+            "mention rollback readiness and queue drain."
+        ),
+        (
+            f"BravoNonce{nonces[1]} field note: search indexing lag follows a schema "
+            "migration and the customer impact is delayed discovery. Use this different "
+            "request-specific context only for request two. The mitigation should "
+            "mention read-only fallback."
+        ),
+        (
+            f"CharlieNonce{nonces[2]} operations brief: notification fanout is saturated "
+            "after a partner webhook spike. Use this separate dynamic section only for "
+            "request three. The mitigation should mention rate limiting and owner "
+            "escalation."
+        ),
+    ]
 
 
 def build_token_sized_text(
