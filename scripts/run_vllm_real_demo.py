@@ -226,16 +226,21 @@ def build_stable_context(
         prompt=stable_context,
         timeout=timeout,
     )
-    while token_count < target_tokens:
-        repeats *= 2
-        stable_context = "\n\n".join([section] * repeats)
-        token_count = count_prompt_tokens(
+    while True:
+        candidate_repeats = repeats + 1
+        candidate_context = "\n\n".join([section] * candidate_repeats)
+        candidate_tokens = count_prompt_tokens(
             base_url=base_url,
             model=model,
             api_key=api_key,
-            prompt=stable_context,
+            prompt=candidate_context,
             timeout=timeout,
         )
+        if candidate_tokens > target_tokens:
+            break
+        repeats = candidate_repeats
+        stable_context = candidate_context
+        token_count = candidate_tokens
     print(
         f"Built stable context with {token_count} prompt tokens "
         f"(target {target_tokens}, repeats {repeats})"
