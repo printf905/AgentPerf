@@ -9,8 +9,8 @@ evidence-backed findings.
 
 This repository is an honest **v0.1 MVP**. It includes a normalized trace model,
 explicit request correlation, deterministic detectors, a terminal CLI, synthetic
-fixtures, and a narrow vLLM recording adapter. It does **not** claim benchmark
-results or live-backend speedups yet.
+fixtures, a narrow vLLM recording adapter, and one small real vLLM validation
+story. It does **not** claim general benchmark results or production readiness.
 
 ## Current Status
 
@@ -25,7 +25,8 @@ results or live-backend speedups yet.
 - Deterministic detectors:
   - `CONTEXT_DUPLICATION`
   - `PREFIX_CACHE_OPPORTUNITY`
-  - `PREFILL_BOTTLENECK`
+  - `PREFILL_PATH_DOMINANCE`
+  - `MATERIAL_PREFILL_BOTTLENECK`
 - Finding provenance for LLM calls, request IDs, serving request IDs, raw
   metrics, derived metrics, and approximation notes.
 - Exact/approximate tokenization mode labels.
@@ -44,18 +45,24 @@ results or live-backend speedups yet.
 
 The fixture data is for development and tests. It is not benchmark evidence.
 
-### Implemented But Not Yet Live-Validated
+### Live vLLM Validation
 
-- vLLM request ingestion against a live server.
-- Baseline/improved vLLM replay artifacts.
-- Empirical detector calibration on real vLLM telemetry.
+Completed on one Runpod NVIDIA RTX A5000 using vLLM `0.26.0+cu129` and
+`Qwen/Qwen3-0.6B`:
 
-The next milestone is live backend validation against one real vLLM server with
-per-request metrics and prompt-token details enabled.
+- explicit request correlation from AgentPerf client request ID to vLLM
+  response/serving telemetry;
+- real per-request `cached_tokens`, queue timing, scheduled-to-first-token,
+  generation timing, and ITL ingestion;
+- controlled baseline `dynamic_request + stable_context` with low cache reuse;
+- replayed optimization `stable_context + dynamic_request` with high cache
+  reuse and lower scheduled-to-first-token latency.
+
+These are small-sample validation results, not benchmark claims. See
+[docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md).
 
 ### Planned
 
-- Real vLLM execution and replay validation.
 - Tokenizer and detector-threshold calibration from real traces.
 - Harness/context waste analysis.
 - Additional backend ingestion only after the vLLM path is proven.
@@ -167,9 +174,9 @@ Findings
 
 [HIGH] PREFIX_CACHE_OPPORTUNITY
 
-Correlated requests share substantial stable prefix content, but serving
-telemetry reports low actual prefix-cache reuse while prefill contributes
-materially to TTFT.
+Correlated requests contain substantial repeated stable content, but serving
+telemetry reports low actual prefix-cache reuse while the prefill path
+contributes materially to TTFT.
 ```
 
 This is a synthetic fixture, not a production benchmark.
@@ -190,7 +197,9 @@ The server must expose the telemetry needed by AgentPerf. In particular, the
 v0.1 mapping expects per-request metrics and prompt-token details where
 available. See [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md).
 
-No live vLLM benchmark artifacts are included in this repository.
+The runner has been validated against one live vLLM/A5000 setup. The raw
+artifact bundle is gitignored because it contains repeated prompt text; summary
+results are documented in `docs/REAL_VLLM_RESULTS.md`.
 
 ## Documentation
 
@@ -207,7 +216,8 @@ No live vLLM benchmark artifacts are included in this repository.
 ## Roadmap
 
 - M1: synthetic vertical slice. Done.
-- M2: real vLLM execution and replay validation.
+- M2: real vLLM execution and replay validation. Done for one controlled A5000
+  workload.
 - M3: tokenizer and threshold calibration from real traces.
 - M4: harness/context waste analysis.
 - M5: model-choice counterfactual profiling.

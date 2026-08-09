@@ -140,11 +140,11 @@ running AgentPerf detectors:
 - optimized stable-prefix target: high cached-token ratio on requests 2+;
 - same model, server flags, prompt content, output limit, and request count.
 
-## PREFILL_BOTTLENECK Calibration Note
+## Prefill-Path Calibration Note
 
-The earlier real AgentPerf run emitted `PREFILL_BOTTLENECK` even though
+The earlier real AgentPerf run emitted the old `PREFILL_BOTTLENECK` label even though
 scheduled-to-first-token P95 was only about 16 ms. This happened because the
-detector currently measures dominance: queue time was near zero, and vLLM's
+detector measured dominance: queue time was near zero, and vLLM's
 scheduled-to-first-token proxy accounted for effectively all TTFT-side serving
 latency. That is not the same as a meaningful user-facing bottleneck.
 
@@ -154,12 +154,12 @@ reuse, it dropped to about 24-32 ms. That is a materially useful prefill-path
 signal. A 16 ms prefill-path-dominant request may be technically dominated by
 prefill but not operationally important.
 
-Proposed calibration changes, not yet implemented:
+This calibration has since been implemented as two findings:
 
-- include an absolute scheduled-to-first-token or prefill-path threshold before
-  reporting high severity;
-- distinguish "dominant component" from "material bottleneck";
-- lower severity when prefill-path fraction is high but absolute TTFT is small;
+- `PREFILL_PATH_DOMINANCE` for relative attribution when absolute latency or
+  uncached-token volume is not yet material;
+- `MATERIAL_PREFILL_BOTTLENECK` when dominance is backed by absolute
+  scheduled-to-first-token and uncached-token evidence;
 - keep `time_to_first_token_ms` labeled as `prefill_path_proxy`, not pure GPU
   prefill kernel time.
 
