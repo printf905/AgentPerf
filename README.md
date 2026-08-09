@@ -7,10 +7,11 @@ Inference telemetry tells developers what the model server did.
 AgentPerf correlates the two to diagnose agent performance inefficiencies with
 evidence-backed findings.
 
-This repository is an honest **v0.1 MVP**. It includes a normalized trace model,
+This repository is an honest early MVP. It includes a normalized trace model,
 explicit request correlation, deterministic detectors, a terminal CLI, synthetic
-fixtures, a narrow vLLM recording adapter, and one small real vLLM validation
-story. It does **not** claim general benchmark results or production readiness.
+fixtures, a narrow vLLM recording adapter, one small real vLLM cacheability
+validation story, and one small real agent context-waste validation story. It
+does **not** claim general benchmark results or production readiness.
 
 ## Current Status
 
@@ -24,9 +25,11 @@ story. It does **not** claim general benchmark results or production readiness.
   - `agentperf analyze-vllm-recording <recording.json>`
 - Deterministic detectors:
   - `CONTEXT_DUPLICATION`
-  - `PREFIX_CACHE_OPPORTUNITY`
+  - `CACHEABILITY_HEADROOM`
+  - `MATERIAL_PREFIX_CACHE_OPPORTUNITY`
   - `PREFILL_PATH_DOMINANCE`
   - `MATERIAL_PREFILL_BOTTLENECK`
+  - `TOOL_OUTPUT_BLOAT`
 - Finding provenance for LLM calls, request IDs, serving request IDs, raw
   metrics, derived metrics, and approximation notes.
 - Exact/approximate tokenization mode labels.
@@ -60,6 +63,24 @@ Completed on one Runpod NVIDIA RTX A5000 using vLLM `0.26.0+cu129` and
 
 These are small-sample validation results, not benchmark claims. See
 [docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md).
+
+### Live Agent Context-Waste Validation
+
+Completed on one Runpod NVIDIA RTX 3090 using vLLM `0.26.0+cu129` and
+`Qwen/Qwen3-0.6B`:
+
+- a real multi-step research agent with planner, local search tool, evidence
+  review, second search, and final synthesis;
+- component-level token attribution for system, user, history, tool schema, and
+  tool-result prompt content;
+- `TOOL_OUTPUT_BLOAT` diagnosis on raw tool-result carry-forward;
+- deterministic quality-constrained replay across multiple context-carry
+  strategies.
+
+The accepted strategy was deterministic duplicate passage removal, not lossy
+summarization. On this single run it preserved quality within the documented
+tolerance while reducing processed input tokens and latency. See
+[docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md](docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md).
 
 ### Planned
 
@@ -212,14 +233,16 @@ results are documented in `docs/REAL_VLLM_RESULTS.md`.
 - [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md)
 - [docs/REAL_VLLM_RUNBOOK.md](docs/REAL_VLLM_RUNBOOK.md)
 - [docs/DETECTOR_CALIBRATION.md](docs/DETECTOR_CALIBRATION.md)
+- [docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md](docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md)
 
 ## Roadmap
 
 - M1: synthetic vertical slice. Done.
 - M2: real vLLM execution and replay validation. Done for one controlled A5000
   workload.
-- M3: tokenizer and threshold calibration from real traces.
-- M4: harness/context waste analysis.
+- M3: real agent harness/context waste analysis. Done for one controlled RTX
+  3090 workload with an explicit quality constraint.
+- M4: broader tokenizer and threshold calibration from more real traces.
 - M5: model-choice counterfactual profiling.
 
 No fake dates are assigned.

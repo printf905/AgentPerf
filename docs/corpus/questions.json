@@ -1,0 +1,72 @@
+[
+  {
+    "id": "q01-cache",
+    "question": "What caused the Atlas checkout 503 increase, what should be done first, and who owns it?",
+    "queries": ["Atlas checkout 503 cache rollout", "platform-cache rollback cache admission"],
+    "required_facts": ["cache rollout", "disable the new cache admission policy", "platform-cache"],
+    "required_doc_ids": ["atlas-cache"]
+  },
+  {
+    "id": "q02-jobs",
+    "question": "For Borealis delayed jobs, identify the root cause, first mitigation, and owning team.",
+    "queries": ["Borealis delayed jobs database CPU", "pause enrichment jobs data-platform"],
+    "required_facts": ["database CPU saturation", "pause low-priority enrichment jobs", "data-platform"],
+    "required_doc_ids": ["borealis-jobs"]
+  },
+  {
+    "id": "q03-region",
+    "question": "For the Cygnus single-region latency issue, what is the region pattern, first mitigation, and owner?",
+    "queries": ["Cygnus eu-west latency edge routing", "shift read traffic edge-routing"],
+    "required_facts": ["eu-west", "shift read traffic", "edge-routing"],
+    "required_doc_ids": ["cygnus-region"]
+  },
+  {
+    "id": "q04-auth",
+    "question": "For Draco login failures after key rotation, name the cause, first mitigation, and owner.",
+    "queries": ["Draco authentication stale JWKS cache", "flush JWKS cache identity-platform"],
+    "required_facts": ["stale JWKS cache", "flush the JWKS cache", "identity-platform"],
+    "required_doc_ids": ["draco-auth"]
+  },
+  {
+    "id": "q05-webhooks",
+    "question": "For Equinox payment webhook backlog, explain the cause, mitigation, and owning team.",
+    "queries": ["Equinox webhook backlog provider throttling", "exponential backoff payments-integrations"],
+    "required_facts": ["provider throttling", "exponential backoff", "payments-integrations"],
+    "required_doc_ids": ["equinox-payments"]
+  },
+  {
+    "id": "q06-cache-owner",
+    "question": "Which Atlas team owns the checkout cache incident and what rollback should they evaluate?",
+    "queries": ["Atlas platform-cache prior stable cache configuration", "checkout cache admission policy owner"],
+    "required_facts": ["platform-cache", "prior stable cache configuration"],
+    "required_doc_ids": ["atlas-cache"]
+  },
+  {
+    "id": "q07-jobs-no-scale",
+    "question": "Why should Borealis not first scale workers, and what should happen instead?",
+    "queries": ["Borealis scaling workers database pressure", "Borealis pause enrichment poll interval"],
+    "required_facts": ["increase pressure on the database", "pause non-critical enrichment"],
+    "required_doc_ids": ["borealis-jobs"]
+  },
+  {
+    "id": "q08-region-writes",
+    "question": "For Cygnus, why should writes not be moved immediately, and what traffic can be shifted first?",
+    "queries": ["Cygnus writes replication lag read traffic", "eu-west read traffic shift"],
+    "required_facts": ["replication lag", "read traffic"],
+    "required_doc_ids": ["cygnus-region"]
+  },
+  {
+    "id": "q09-auth-risk",
+    "question": "For Draco, why is restarting every gateway not the preferred first action?",
+    "queries": ["Draco restart gateways targeted cache flush", "JWKS cache lower risk"],
+    "required_facts": ["targeted cache flush", "lower risk"],
+    "required_doc_ids": ["draco-auth"]
+  },
+  {
+    "id": "q10-webhook-drain",
+    "question": "For Equinox, why should the retry queue be drained gradually?",
+    "queries": ["Equinox retry queue throttling drain gradually", "payment webhooks 429 backoff"],
+    "required_facts": ["intensify throttling", "gradually draining the retry queue"],
+    "required_doc_ids": ["equinox-payments"]
+  }
+]

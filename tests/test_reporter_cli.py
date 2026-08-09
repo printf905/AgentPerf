@@ -14,7 +14,7 @@ def test_terminal_report_includes_synthetic_label_and_findings() -> None:
     output = render_report(report)
 
     assert "Data: synthetic trace fixture, not benchmark results" in output
-    assert "[HIGH] PREFIX_CACHE_OPPORTUNITY" in output
+    assert "[LOW] CACHEABILITY_HEADROOM" in output
     assert "Validation:" in output
 
 
@@ -36,4 +36,3 @@ def test_cli_reports_malformed_trace(tmp_path, capsys) -> None:  # type: ignore[
     captured = capsys.readouterr()
     assert code == 2
     assert "missing required field" in captured.err
-

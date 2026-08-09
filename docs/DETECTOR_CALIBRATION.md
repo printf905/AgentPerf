@@ -1,9 +1,10 @@
 # Detector Calibration Review
 
-Status: synthetic validation complete; two real AgentPerf/vLLM executions and
-one focused vLLM prefix-cache semantics probe completed on Runpod NVIDIA RTX
-A5000 hosts. See `docs/REAL_VLLM_RESULTS.md` and
-`docs/VLLM_PREFIX_CACHE_SEMANTICS.md`.
+Status: synthetic validation complete; real AgentPerf/vLLM executions,
+a focused vLLM prefix-cache semantics probe, and one real agent
+context-waste validation have completed on Runpod NVIDIA A5000/RTX 3090 hosts.
+See `docs/REAL_VLLM_RESULTS.md`, `docs/VLLM_PREFIX_CACHE_SEMANTICS.md`, and
+`docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md`.
 
 This document records detector assumptions before threshold tuning. Thresholds
 remain configurable in detector constructors and should not be changed just to
@@ -55,7 +56,7 @@ False-negative risks:
   prefix at the component-text level;
 - exact backend token IDs are unavailable if `return_token_ids` is disabled.
 
-## PREFIX_CACHE_OPPORTUNITY
+## CACHEABILITY_HEADROOM And MATERIAL_PREFIX_CACHE_OPPORTUNITY
 
 Synthetic assumptions that held:
 
@@ -88,6 +89,13 @@ Real vLLM observations:
   dynamic_request`, cached-token ratio rose to 99.57%;
 - `PREFIX_CACHE_OPPORTUNITY` fired only for the baseline and disappeared after
   replay.
+- the first M3 real-agent attempt showed a calibration problem: the compact
+  harness still emitted an actionable prefix-cache warning even though TTFT P95
+  was only 18.8 ms;
+- the quality-constrained M3 run now reports compact low-latency strategies as
+  `CACHEABILITY_HEADROOM` rather than `MATERIAL_PREFIX_CACHE_OPPORTUNITY`;
+- `MATERIAL_PREFIX_CACHE_OPPORTUNITY` still fires for `RAW_FULL` and
+  `DEDUP_ONLY`, where cache reuse is poor and TTFT P95 remains 176-312 ms.
 
 Focused prefix-cache semantics observations:
 
@@ -132,6 +140,19 @@ False-negative risks:
 - per-request cached token counts may hide server-wide KV pressure;
 - a workload with cache opportunity but low scheduled-to-first-token latency may
   not pass the current prefill-path-strength evidence threshold.
+
+Implemented calibration change:
+
+- `MATERIAL_PREFIX_CACHE_OPPORTUNITY` requires poor actual cache reuse plus
+  materiality evidence: P95 scheduled-to-first-token at or above 100 ms and P95
+  uncached input at or above 1,000 tokens;
+- when repeated stable content or theoretical cacheability exists but the
+  serving impact is small, AgentPerf reports `CACHEABILITY_HEADROOM` with low
+  severity;
+- this is based on the M2 dynamic-prefix result, where TTFT P95 fell from
+  241.73 ms to 32.61 ms after stable-prefix reordering, and the M3 compact
+  traces, where TTFT P95 around 20-27 ms should not produce a high/actionable
+  cache warning.
 
 ## PREFILL_PATH_DOMINANCE And MATERIAL_PREFILL_BOTTLENECK
 
@@ -234,13 +255,21 @@ produced low cache reuse, `PREFIX_CACHE_OPPORTUNITY`, and
 high cache reuse, much lower scheduled-to-first-token latency, no
 `PREFIX_CACHE_OPPORTUNITY`, and only low-severity `PREFILL_PATH_DOMINANCE`.
 
+M3 real-agent validation completed a separate tool-output waste story. The
+first aggressive compaction run reduced tokens and latency but harmed
+correctness. A follow-up quality-constrained run found that deterministic
+deduplication preserved quality within an explicit tolerance while reducing
+processed input tokens by 28.1%, tool-result processed tokens by 30.0%, TTFT P95
+by 43.5%, and client latency P95 by 22.4%.
+
 ## Threshold Policy
 
 The prefill detector thresholds changed after the first real vLLM run and the
 cache-semantics probe because real evidence showed that dominance alone was not
-material. The prefix-cache threshold values were not tuned simply to force the
-finding; the detector's evidence model was broadened to account for repeated
-non-prefix stable content with low actual cache reuse.
+material. Prefix-cache reporting now also has a materiality split: high
+actionable findings require evidence that cache miss behavior is contributing
+meaningful scheduled-to-first-token or uncached-token cost, while low-latency
+residual cacheability is reported as headroom.
 
 The next threshold review should use:
 

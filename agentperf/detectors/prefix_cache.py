@@ -7,6 +7,7 @@ from agentperf.detectors.base import DetectorContext
 from agentperf.metrics.cache import prefix_cache_hit_ratio
 from agentperf.metrics.latency import (
     mean_prefill_fraction,
+    percentile,
     prefill_or_path_label,
     prefill_or_path_latency_ms,
 )
@@ -15,7 +16,7 @@ from agentperf.metrics.tokens import (
     common_prefix_len,
     compute_duplication_metrics,
 )
-from agentperf.schema.findings import Finding, FindingProvenance
+from agentperf.schema.findings import Finding, FindingProvenance, Severity
 from agentperf.schema.trace import LLMCall, ServingRequest
 
 
@@ -27,6 +28,8 @@ class PrefixCacheOpportunityConfig:
     max_actual_cache_hit_ratio: float = 0.35
     min_prefill_fraction_of_ttft: float = 0.50
     min_shared_prefix_tokens: int = 50
+    material_ttft_p95_ms: float = 100.0
+    material_uncached_input_p95_tokens: int = 1000
 
 
 @dataclass(frozen=True)
@@ -64,17 +67,62 @@ class PrefixCacheOpportunityDetector:
             if latency_semantics == "prefill_path_proxy"
             else "prefill_fraction_of_ttft"
         )
+        ttft_values = [
+            float(request.ttft_ms)
+            for request in group.requests
+            if request.ttft_ms is not None
+        ]
+        uncached_input_tokens = [
+            request.prefix_cache_miss_tokens
+            if request.prefix_cache_miss_tokens is not None
+            else request.input_tokens
+            for request in group.requests
+            if request.input_tokens is not None or request.prefix_cache_miss_tokens is not None
+        ]
+        ttft_p95 = percentile(ttft_values, 0.95)
+        uncached_p95 = percentile(
+            [float(value or 0) for value in uncached_input_tokens],
+            0.95,
+        )
+        is_material = (
+            ttft_p95 is not None
+            and uncached_p95 is not None
+            and ttft_p95 >= self.config.material_ttft_p95_ms
+            and uncached_p95 >= self.config.material_uncached_input_p95_tokens
+        )
+        finding_id = (
+            "MATERIAL_PREFIX_CACHE_OPPORTUNITY"
+            if is_material
+            else "CACHEABILITY_HEADROOM"
+        )
+        severity: Severity = "HIGH" if is_material else "LOW"
+        recommendation = (
+            "Evaluate whether stable instructions, tool schemas, and other shared "
+            "context can be organized into a consistent cacheable prefix."
+            if is_material
+            else (
+                "Treat this as cacheability headroom, not an urgent optimization. "
+                "Prioritize it only if TTFT, uncached input volume, or serving cost "
+                "becomes material."
+            )
+        )
+        summary = (
+            "Correlated requests contain substantial repeated stable content, but "
+            "serving telemetry reports low actual prefix-cache reuse while the "
+            "prefill path contributes materially to TTFT."
+            if is_material
+            else (
+                "Correlated requests contain cacheable structure and low cache reuse, "
+                "but the observed TTFT and uncached-token volume are not yet material."
+            )
+        )
 
         return [
             Finding(
-                id="PREFIX_CACHE_OPPORTUNITY",
-                severity="HIGH",
+                id=finding_id,
+                severity=severity,
                 title=_title(group),
-                summary=(
-                    "Correlated requests contain substantial repeated stable content, but "
-                    "serving telemetry reports low actual prefix-cache reuse while the "
-                    "prefill path contributes materially to TTFT."
-                ),
+                summary=summary,
                 evidence={
                     "affected_requests": len(group.request_ids),
                     "average_input_tokens": round(group.avg_input_tokens, 1),
@@ -87,12 +135,19 @@ class PrefixCacheOpportunityDetector:
                     "actual_prefix_cache_hit_ratio": round(hit_ratio, 4),
                     prefill_fraction_key: round(prefill_fraction, 4),
                     "latency_semantics": latency_semantics,
+                    "ttft_p95_ms": round(ttft_p95, 1) if ttft_p95 is not None else None,
+                    "uncached_input_p95_tokens": (
+                        round(uncached_p95) if uncached_p95 is not None else None
+                    ),
+                    "materiality_threshold_ttft_p95_ms": (
+                        self.config.material_ttft_p95_ms
+                    ),
+                    "materiality_threshold_uncached_input_p95_tokens": (
+                        self.config.material_uncached_input_p95_tokens
+                    ),
                 },
                 affected_spans=group.call_ids + group.request_ids,
-                recommendation=(
-                    "Evaluate whether stable instructions, tool schemas, and other shared "
-                    "context can be organized into a consistent cacheable prefix."
-                ),
+                recommendation=recommendation,
                 confidence="HIGH",
                 validation_plan=[
                     "Replay the same workload after the prompt-structure change.",
@@ -134,6 +189,8 @@ class PrefixCacheOpportunityDetector:
                         "actual_prefix_cache_hit_ratio": hit_ratio,
                         prefill_fraction_key: prefill_fraction,
                         "latency_semantics": latency_semantics,
+                        "ttft_p95_ms": ttft_p95,
+                        "uncached_input_p95_tokens": uncached_p95,
                     },
                     notes=[
                         "Correlation is based on explicit request identifiers only.",
@@ -145,6 +202,11 @@ class PrefixCacheOpportunityDetector:
                         (
                             "Latency semantics are labeled as true prefill when available, "
                             "otherwise as a prefill-path proxy."
+                        ),
+                        (
+                            "Material prefix-cache opportunity requires low cache reuse plus "
+                            "material TTFT and uncached-token evidence; otherwise AgentPerf "
+                            "reports cacheability headroom."
                         ),
                     ],
                 ),

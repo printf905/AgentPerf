@@ -25,7 +25,7 @@ def test_context_duplication_detector() -> None:
 def test_prefix_cache_opportunity_detector() -> None:
     findings = ids("examples/traces/prefix_cache_failure.json")
 
-    assert "PREFIX_CACHE_OPPORTUNITY" in findings
+    assert "CACHEABILITY_HEADROOM" in findings
     assert "PREFILL_PATH_DOMINANCE" in findings
 
 
@@ -40,11 +40,13 @@ def test_cross_detector_interaction_on_multi_problem_trace() -> None:
 
     assert [finding.id for finding in report.findings] == [
         "CONTEXT_DUPLICATION",
-        "PREFIX_CACHE_OPPORTUNITY",
+        "CACHEABILITY_HEADROOM",
         "PREFILL_PATH_DOMINANCE",
     ]
     prefix = next(
-        finding for finding in report.findings if finding.id == "PREFIX_CACHE_OPPORTUNITY"
+        finding
+        for finding in report.findings
+        if finding.id == "CACHEABILITY_HEADROOM"
     )
     assert prefix.evidence["affected_requests"] == 3
 
@@ -101,13 +103,17 @@ def test_uncorrelated_serving_spans_do_not_create_prefix_cache_finding() -> None
 def test_prefix_boundary_59_percent_does_not_fire() -> None:
     run = _boundary_run(shared_tokens=59, total_tokens=100)
 
-    assert "PREFIX_CACHE_OPPORTUNITY" not in [finding.id for finding in analyze_run(run).findings]
+    assert "MATERIAL_PREFIX_CACHE_OPPORTUNITY" not in [
+        finding.id for finding in analyze_run(run).findings
+    ]
 
 
 def test_prefix_boundary_61_percent_fires() -> None:
     run = _boundary_run(shared_tokens=61, total_tokens=100)
 
-    assert "PREFIX_CACHE_OPPORTUNITY" in [finding.id for finding in analyze_run(run).findings]
+    assert "CACHEABILITY_HEADROOM" in [
+        finding.id for finding in analyze_run(run).findings
+    ]
 
 
 def test_repeated_non_prefix_content_can_create_prefix_cache_opportunity() -> None:
@@ -117,7 +123,7 @@ def test_repeated_non_prefix_content_can_create_prefix_cache_opportunity() -> No
     prefix = next(
         finding
         for finding in report.findings
-        if finding.id == "PREFIX_CACHE_OPPORTUNITY"
+        if finding.id == "MATERIAL_PREFIX_CACHE_OPPORTUNITY"
     )
     assert prefix.evidence["shared_prefix_tokens"] < 5
     assert prefix.evidence["repeated_non_prefix_tokens"] > 8000
@@ -130,7 +136,7 @@ def test_repeated_non_prefix_content_is_not_treated_as_cached_tokens() -> None:
     prefix = next(
         finding
         for finding in report.findings
-        if finding.id == "PREFIX_CACHE_OPPORTUNITY"
+        if finding.id == "MATERIAL_PREFIX_CACHE_OPPORTUNITY"
     )
 
     assert prefix.provenance.raw_metrics["prefix_cache_hit_tokens"] == 0
@@ -146,6 +152,20 @@ def test_low_absolute_prefill_path_dominance_is_not_material_bottleneck() -> Non
     )
     assert dominance.severity == "LOW"
     assert dominance.evidence["ttft_p95_ms"] == 16.0
+
+
+def test_low_absolute_prefix_cache_signal_is_headroom_not_material() -> None:
+    run = _dynamic_prefix_run(hit=0, miss=8200, ttft=18, queue=0)
+    findings = analyze_run(run).findings
+
+    assert "MATERIAL_PREFIX_CACHE_OPPORTUNITY" not in [
+        finding.id for finding in findings
+    ]
+    headroom = next(
+        finding for finding in findings if finding.id == "CACHEABILITY_HEADROOM"
+    )
+    assert headroom.severity == "LOW"
+    assert headroom.evidence["ttft_p95_ms"] == 18.0
 
 
 def test_context_duplication_boundary_is_intentional() -> None:

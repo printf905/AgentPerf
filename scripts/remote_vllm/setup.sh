@@ -4,6 +4,7 @@ set -euo pipefail
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 VLLM_VERSION="${VLLM_VERSION:-0.26.0}"
 VLLM_CUDA_VERSION="${VLLM_CUDA_VERSION:-129}"
+VLLM_IMPORT_TIMEOUT_SECONDS="${VLLM_IMPORT_TIMEOUT_SECONDS:-60}"
 CPU_ARCH="${CPU_ARCH:-$(uname -m)}"
 SETUP_ARTIFACT_DIR="${SETUP_ARTIFACT_DIR:-artifacts/real_vllm/setup}"
 VLLM_WHEEL_URL="${VLLM_WHEEL_URL:-https://github.com/vllm-project/vllm/releases/download/v${VLLM_VERSION}/vllm-${VLLM_VERSION}+cu${VLLM_CUDA_VERSION}-cp38-abi3-manylinux_2_28_${CPU_ARCH}.whl}"
@@ -119,25 +120,51 @@ uv pip install "${VLLM_WHEEL_URL}" \
   --torch-backend="cu${VLLM_CUDA_VERSION}"
 
 python -c "import torch; print(torch.__version__, torch.version.cuda)" | tee "${SETUP_ARTIFACT_DIR}/torch-version.txt"
-python -c "import vllm; print(vllm.__version__)" | tee "${SETUP_ARTIFACT_DIR}/vllm-version.txt"
+
+VLLM_IMPORT_STDOUT="${SETUP_ARTIFACT_DIR}/vllm-import-stdout.txt"
+VLLM_IMPORT_STDERR="${SETUP_ARTIFACT_DIR}/vllm-import-stderr.txt"
+set +e
+timeout "${VLLM_IMPORT_TIMEOUT_SECONDS}" python -c "import vllm; print(vllm.__version__)" \
+  >"${VLLM_IMPORT_STDOUT}" 2>"${VLLM_IMPORT_STDERR}"
+VLLM_IMPORT_STATUS="$?"
+set -e
+if [[ "${VLLM_IMPORT_STATUS}" -ne 0 ]]; then
+  {
+    echo "vllm_import_status=${VLLM_IMPORT_STATUS}"
+    echo "vllm_import_timeout_seconds=${VLLM_IMPORT_TIMEOUT_SECONDS}"
+    echo "vllm_import_command=python -c \"import vllm; print(vllm.__version__)\""
+  } | tee "${SETUP_ARTIFACT_DIR}/vllm-import-diagnostics.txt"
+  ps -ef --forest >"${SETUP_ARTIFACT_DIR}/vllm-import-ps.txt" 2>&1 || true
+  nvidia-smi >"${SETUP_ARTIFACT_DIR}/vllm-import-nvidia-smi.txt" 2>&1 || true
+  cat "${VLLM_IMPORT_STDOUT}"
+  cat "${VLLM_IMPORT_STDERR}" >&2
+  echo "vLLM import probe failed or timed out before model download. Stop this Pod and preserve ${SETUP_ARTIFACT_DIR}." >&2
+  exit 43
+fi
+cat "${VLLM_IMPORT_STDOUT}" | tee "${SETUP_ARTIFACT_DIR}/vllm-version.txt"
+cat "${VLLM_IMPORT_STDERR}" >&2
 nvidia-smi | tee "${SETUP_ARTIFACT_DIR}/nvidia-smi-postinstall.txt"
 
-EXPECTED_VLLM_VERSION="${VLLM_VERSION}" EXPECTED_TORCH_CUDA="${TARGET_CUDA_VERSION}" python - <<'PY' 2>&1 | tee "${SETUP_ARTIFACT_DIR}/cuda-probe.txt"
+SETUP_ARTIFACT_DIR="${SETUP_ARTIFACT_DIR}" EXPECTED_VLLM_VERSION="${VLLM_VERSION}" EXPECTED_TORCH_CUDA="${TARGET_CUDA_VERSION}" python - <<'PY' 2>&1 | tee "${SETUP_ARTIFACT_DIR}/cuda-probe.txt"
 import os
 import sys
+from pathlib import Path
 
 import torch
-import vllm
 
+setup_artifact_dir = Path(os.environ["SETUP_ARTIFACT_DIR"])
 expected_vllm = os.environ["EXPECTED_VLLM_VERSION"]
 expected_cuda = os.environ["EXPECTED_TORCH_CUDA"]
 
-if vllm.__version__ != expected_vllm:
-    raise SystemExit(f"Unexpected vLLM version: {vllm.__version__} != {expected_vllm}")
 if torch.version.cuda != expected_cuda:
     raise SystemExit(f"Unexpected torch CUDA runtime: {torch.version.cuda} != {expected_cuda}")
 if not torch.cuda.is_available():
     raise SystemExit("torch.cuda.is_available() is false")
+
+with (setup_artifact_dir / "vllm-version.txt").open(encoding="utf-8") as version_file:
+    actual_vllm = version_file.read().strip()
+if actual_vllm != expected_vllm:
+    raise SystemExit(f"Unexpected vLLM version: {actual_vllm} != {expected_vllm}")
 
 print(torch.cuda.get_device_name(0))
 x = torch.ones(1, device="cuda")

@@ -46,6 +46,7 @@ class ContextDuplicationDetector:
                     "largest_common_prefix_tokens": metrics.largest_common_prefix_tokens,
                     "largest_common_prefix_ratio": round(metrics.largest_common_prefix_ratio, 4),
                     "repeated_non_prefix_tokens": metrics.repeated_non_prefix_tokens,
+                    "repeated_tokens_by_component": metrics.repeated_tokens_by_component,
                     "tokenization": (
                         "approximate" if metrics.approximate else "trace-provided totals"
                     ),
@@ -67,6 +68,7 @@ class ContextDuplicationDetector:
                         "repeated_context_tokens": metrics.repeated_context_tokens,
                         "repeated_context_ratio": metrics.repeated_context_ratio,
                         "largest_common_prefix_tokens": metrics.largest_common_prefix_tokens,
+                        "repeated_tokens_by_component": metrics.repeated_tokens_by_component,
                     },
                     notes=[
                         "Repeated content is measured from normalized prompt components.",

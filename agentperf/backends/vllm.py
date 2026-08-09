@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Any
 
-from agentperf.schema.trace import AgentRun, AgentStep, LLMCall, ServingRequest
+from agentperf.schema.trace import AgentRun, AgentStep, LLMCall, ServingRequest, ToolCall
 
 
 @dataclass(frozen=True)
@@ -190,16 +190,11 @@ class VLLMTelemetryProvider:
                 )
             )
 
+        steps = _build_steps(llm_calls, data.get("tool_calls"))
         return AgentRun(
             agent_run_id=run_id,
             name=str(data.get("name", "vLLM recorded run")),
-            steps=[
-                AgentStep(
-                    agent_step_id="vllm-recorded-step",
-                    llm_calls=llm_calls,
-                    tool_calls=[],
-                )
-            ],
+            steps=steps,
             serving_requests=serving_requests,
             synthetic=False,
             schema_version="0.1",
@@ -216,6 +211,20 @@ def _with_prompt_components(call: LLMCall, prompt_components: Any) -> LLMCall:
     from agentperf.schema.trace import PromptComponent
 
     if not isinstance(prompt_components, dict):
+        if isinstance(prompt_components, list):
+            return replace(
+                call,
+                prompt_components=[
+                    PromptComponent(
+                        name=str(item.get("name", f"component_{index}")),
+                        text=str(item.get("text", "")),
+                        metadata=_as_dict(item.get("metadata")),
+                    )
+                    if isinstance(item, dict)
+                    else PromptComponent(name=f"component_{index}", text=str(item))
+                    for index, item in enumerate(prompt_components)
+                ],
+            )
         prompt_components = {"other_context": str(prompt_components or "")}
     return replace(
         call,
@@ -225,6 +234,48 @@ def _with_prompt_components(call: LLMCall, prompt_components: Any) -> LLMCall:
             if text is not None
         ],
     )
+
+
+def _build_steps(llm_calls: list[LLMCall], tool_call_data: Any) -> list[AgentStep]:
+    llm_by_step: dict[str, list[LLMCall]] = {}
+    for call in llm_calls:
+        step_id = call.agent_step_id or "vllm-recorded-step"
+        llm_by_step.setdefault(step_id, []).append(call)
+
+    tools_by_step: dict[str, list[ToolCall]] = {}
+    for item in _as_list(tool_call_data):
+        if not isinstance(item, dict):
+            continue
+        step_id = str(item.get("agent_step_id") or "vllm-recorded-step")
+        tools_by_step.setdefault(step_id, []).append(
+            ToolCall(
+                tool_call_id=str(item.get("tool_call_id") or item.get("id") or "tool"),
+                name=str(item.get("name") or "tool"),
+                trace_id=_optional_str(item.get("trace_id")),
+                span_id=_optional_str(item.get("span_id")),
+                parent_span_id=_optional_str(item.get("parent_span_id")),
+                started_at=_optional_str(item.get("started_at")),
+                ended_at=_optional_str(item.get("ended_at")),
+                latency_ms=_optional_float_value(item.get("latency_ms")),
+                input=item.get("input"),
+                output=item.get("output"),
+                metadata=_as_dict(item.get("metadata")),
+            )
+        )
+
+    ordered_step_ids = sorted(
+        set(llm_by_step) | set(tools_by_step),
+        key=_step_sort_key,
+    )
+
+    return [
+        AgentStep(
+            agent_step_id=step_id,
+            llm_calls=llm_by_step.get(step_id, []),
+            tool_calls=tools_by_step.get(step_id, []),
+        )
+        for step_id in ordered_step_ids
+    ]
 
 
 def _collect_output_token_ids(response: dict[str, Any]) -> list[int] | None:
@@ -276,6 +327,19 @@ def _optional_int(value: Any) -> int | None:
     if value is None:
         return None
     return int(value)
+
+
+def _optional_float_value(value: Any) -> float | None:
+    if value is None:
+        return None
+    return float(value)
+
+
+def _step_sort_key(step_id: str) -> tuple[str, int, str]:
+    prefix, _, suffix = step_id.rpartition("-")
+    if suffix.isdigit():
+        return (prefix, int(suffix), step_id)
+    return (step_id, 0, step_id)
 
 
 def _optional_str(value: Any) -> str | None:

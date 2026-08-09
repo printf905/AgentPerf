@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 
+from agentperf.metrics.components import component_kind
 from agentperf.schema.trace import LLMCall
 
 TOKEN_PATTERN = re.compile(r"\w+|[^\w\s]", re.UNICODE)
@@ -47,30 +48,42 @@ class DuplicationMetrics:
     largest_common_prefix_tokens: int
     largest_common_prefix_ratio: float
     repeated_non_prefix_tokens: int
+    repeated_tokens_by_component: dict[str, int]
     approximate: bool
 
 
 def compute_duplication_metrics(calls: list[LLMCall]) -> DuplicationMetrics:
     if not calls:
-        return DuplicationMetrics([], 0, 0, 0.0, 0, 0.0, 0, True)
+        return DuplicationMetrics([], 0, 0, 0.0, 0, 0.0, 0, {}, True)
 
     total_input = sum(call_input_tokens(call) for call in calls)
     approximate = any(call.tokenization_mode != "EXACT" for call in calls)
 
     component_counts: Counter[str] = Counter()
     component_tokens: dict[str, int] = {}
+    component_kinds: dict[str, str] = {}
     for call in calls:
-        for text in set(call.prompt_component_texts()):
-            if not text:
+        seen_texts: set[str] = set()
+        for component in call.prompt_components:
+            text = component.text
+            if not text or text in seen_texts:
                 continue
+            seen_texts.add(text)
             component_counts[text] += 1
             component_tokens[text] = token_count(text)
+            component_kinds[text] = component_kind(component.name)
 
     repeated_context_tokens = sum(
         component_tokens[text] * (count - 1)
         for text, count in component_counts.items()
         if count > 1
     )
+    repeated_by_component: defaultdict[str, int] = defaultdict(int)
+    for text, count in component_counts.items():
+        if count > 1:
+            repeated_by_component[component_kinds[text]] += component_tokens[text] * (
+                count - 1
+            )
 
     sequences = [approximate_tokens(call.prompt_text()) for call in calls]
     largest_common_prefix = 0
@@ -99,5 +112,6 @@ def compute_duplication_metrics(calls: list[LLMCall]) -> DuplicationMetrics:
         largest_common_prefix_tokens=largest_common_prefix,
         largest_common_prefix_ratio=largest_ratio,
         repeated_non_prefix_tokens=repeated_non_prefix,
+        repeated_tokens_by_component=dict(sorted(repeated_by_component.items())),
         approximate=approximate,
     )
