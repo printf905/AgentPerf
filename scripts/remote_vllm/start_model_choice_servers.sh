@@ -22,9 +22,9 @@ declare -A LOCAL_PATHS=(
 )
 
 declare -A PORTS=(
-  [small]="8001"
-  [medium]="8002"
-  [strong]="8003"
+  [small]="${SMALL_PORT:-18001}"
+  [medium]="${MEDIUM_PORT:-18002}"
+  [strong]="${STRONG_PORT:-18003}"
 )
 
 declare -A SERVED_NAMES=(
@@ -84,7 +84,7 @@ done
 
 cat <<EOF
 Endpoints:
-  small=http://localhost:8001/v1,agentperf-qwen3-0.6b
-  medium=http://localhost:8002/v1,agentperf-qwen3-1.7b
-  strong=http://localhost:8003/v1,agentperf-qwen3-4b
+  small=http://localhost:${PORTS[small]}/v1,agentperf-qwen3-0.6b
+  medium=http://localhost:${PORTS[medium]}/v1,agentperf-qwen3-1.7b
+  strong=http://localhost:${PORTS[strong]}/v1,agentperf-qwen3-4b
 EOF
