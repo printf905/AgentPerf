@@ -9,6 +9,15 @@ from agentperf.detectors.base import Detector, DetectorContext
 from agentperf.detectors.context_duplication import ContextDuplicationDetector
 from agentperf.detectors.prefill import PrefillBottleneckDetector
 from agentperf.detectors.prefix_cache import PrefixCacheOpportunityDetector
+from agentperf.detectors.tool_output_bloat import ToolOutputBloatDetector
+from agentperf.metrics.attribution import (
+    ComponentTokenAttribution,
+    ContextGrowthRow,
+    ToolReinjection,
+    component_token_attribution,
+    context_growth_rows,
+    tool_reinjections,
+)
 from agentperf.schema.findings import Finding
 from agentperf.schema.trace import AgentRun, TraceParseError, parse_agentperf_trace
 
@@ -18,6 +27,9 @@ class AnalysisReport:
     run: AgentRun
     correlation: CorrelationResult
     findings: list[Finding] = field(default_factory=list)
+    token_attribution: ComponentTokenAttribution | None = None
+    context_growth: list[ContextGrowthRow] = field(default_factory=list)
+    tool_reinjections: list[ToolReinjection] = field(default_factory=list)
 
 
 def analyze_path(path: Path) -> AnalysisReport:
@@ -34,10 +46,18 @@ def analyze_run(run: AgentRun) -> AnalysisReport:
     context = DetectorContext(run=run, correlation=correlation)
     detectors: list[Detector] = [
         ContextDuplicationDetector(),
+        ToolOutputBloatDetector(),
         PrefixCacheOpportunityDetector(),
         PrefillBottleneckDetector(),
     ]
     findings: list[Finding] = []
     for detector in detectors:
         findings.extend(detector.detect(context))
-    return AnalysisReport(run=run, correlation=correlation, findings=findings)
+    return AnalysisReport(
+        run=run,
+        correlation=correlation,
+        findings=findings,
+        token_attribution=component_token_attribution(run),
+        context_growth=context_growth_rows(run),
+        tool_reinjections=tool_reinjections(run),
+    )

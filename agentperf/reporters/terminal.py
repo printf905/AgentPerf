@@ -68,10 +68,59 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
             _row("TTFT P95", _format_ms(percentile([float(value) for value in ttfts], 0.95))),
             _row("Prefix cache hit", _format_ratio(cache_hit)),
             "",
-            "Findings",
-            "-" * 60,
         ]
     )
+
+    if report.token_attribution is not None:
+        attribution = report.token_attribution
+        lines.extend(
+            [
+                "Token Attribution",
+                "-" * 60,
+                _row("Trace input tokens", attribution.trace_input_tokens),
+                _row("Component processed tokens", attribution.total_processed_tokens),
+                _row("Component unique tokens", attribution.total_unique_tokens),
+                _row(
+                    "Attribution tokenization",
+                    "approximate" if attribution.approximate else "exact/trace totals",
+                ),
+                "",
+            ]
+        )
+        if attribution.processed_tokens_by_component:
+            lines.append(_row("Component", "Processed  Unique  Share"))
+            for component, processed in attribution.processed_tokens_by_component.items():
+                unique = attribution.unique_tokens_by_component.get(component, 0)
+                share = (
+                    processed / attribution.total_processed_tokens
+                    if attribution.total_processed_tokens
+                    else 0.0
+                )
+                lines.append(
+                    _row(
+                        component.replace("_", " ").title(),
+                        f"{processed:>9}  {unique:>6}  {share * 100:>5.1f}%",
+                    )
+                )
+            lines.append("")
+
+    if report.context_growth:
+        lines.extend(["Context Growth", "-" * 60])
+        lines.append(_row("Step", "Input  History  Tool Results  Retrieved"))
+        for row in report.context_growth:
+            lines.append(
+                _row(
+                    f"{row.step_index} {row.llm_call_id}",
+                    (
+                        f"{row.input_tokens:>5}  {row.history_tokens:>7}  "
+                        f"{row.tool_result_tokens:>12}  "
+                        f"{row.retrieved_context_tokens:>9}"
+                    ),
+                )
+            )
+        lines.append("")
+
+    lines.extend(["Findings", "-" * 60])
 
     if not report.findings:
         lines.append("No high-confidence MVP findings.")

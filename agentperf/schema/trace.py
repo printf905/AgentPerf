@@ -25,6 +25,7 @@ TokenizationMode = Literal["EXACT", "APPROXIMATE", "UNKNOWN"]
 class PromptComponent:
     name: str
     text: str
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -272,10 +273,12 @@ def _parse_prompt(prompt: Any) -> list[PromptComponent]:
             if isinstance(item, dict):
                 name = str(item.get("name", f"component_{index}"))
                 text = str(item.get("text", ""))
+                metadata = _dict(item.get("metadata"))
             else:
                 name = f"component_{index}"
                 text = str(item)
-            components.append(PromptComponent(name=name, text=text))
+                metadata = {}
+            components.append(PromptComponent(name=name, text=text, metadata=metadata))
         return components
     return [PromptComponent(name="other_context", text=str(prompt))]
 
