@@ -1,7 +1,8 @@
 # M4 Model-Choice Counterfactual Profiling
 
-Status: implementation prepared; live GPU validation must be run before any
-measured result is claimed.
+Status: implementation prepared; first live RTX 3090 attempt was blocked during
+multi-model vLLM startup before replay. No M4 model-choice performance result is
+claimed yet.
 
 M4 asks whether each semantic LLM role in the real research agent needs the
 strongest selected model.
@@ -33,10 +34,19 @@ Sources checked before implementation:
 - Qwen's Hugging Face collection lists the selected Qwen3 model sizes:
   <https://huggingface.co/collections/Qwen/qwen3>
 
-The 24GB GPU plan is to run the three small vLLM servers concurrently on
-separate local ports with constrained GPU memory fractions. If that fails in
-preflight, the experiment should stop and report the infrastructure blocker
-rather than changing the scientific design.
+The initial 24GB GPU plan attempted to run the three small vLLM servers
+concurrently on separate local ports with constrained GPU memory fractions.
+That did not fit on the first RTX 3090 validation attempt at `max_model_len=8192`;
+see `docs/MODEL_CHOICE_RESULTS.md`.
+
+The next execution design should avoid pretending one 24GB GPU can necessarily
+hold all three active servers. Options to evaluate before renting another GPU:
+
+- sequential model loading per configuration, accepting slower experiment
+  runtime;
+- a smaller context length only if the M3 agent prompts still fit without
+  changing task semantics;
+- a larger single GPU, with explicit approval before any spend.
 
 ## Configurations
 
