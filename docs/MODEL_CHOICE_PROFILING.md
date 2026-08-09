@@ -170,6 +170,16 @@ agentperf analyze-model-choice \
   --show-provenance
 ```
 
+The second 24GB attempt proved the sequential code path locally but hit a
+runtime-environment preflight failure on the Runpod PyTorch template:
+`timeout 60 python -c "import vllm; print(vllm.__version__)"` exited with status
+`124` after installing vLLM `0.26.0+cu129`. The setup script correctly stopped
+before model download. The next live attempt should use the official pinned vLLM
+OpenAI-compatible container, for example
+`vllm/vllm-openai:v0.26.0-cu129-ubuntu2404` or the x86_64-specific
+`vllm/vllm-openai:v0.26.0-x86_64-cu129-ubuntu2404`, rather than installing vLLM
+into the PyTorch template at runtime.
+
 Do not report M4 as complete until a live vLLM run has produced replay evidence
 for the baseline, one-role counterfactuals, and a reviewed mixed candidate.
 

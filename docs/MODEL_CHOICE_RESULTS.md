@@ -115,3 +115,73 @@ Cleanup:
 
 - Pod was deleted after diagnostics were preserved and pushed.
 - `runpodctl pod list` returned `[]`.
+
+## 2026-08-09 A5000 Sequential Phase A Attempt
+
+Status: blocked by the bounded vLLM import preflight before model download.
+
+Environment:
+
+- Pod ID: `5u2mgbnrsyt23n`
+- GPU: NVIDIA RTX A5000, 24 GB
+- Price: $0.27/hour
+- Image: `runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404`
+- Data center: `CA-MTL-1`
+- Driver: `580.159.04`
+- `nvidia-smi` CUDA compatibility label: `13.0`
+- AgentPerf commit: `ff1ccd0`
+- Intended backend: vLLM `0.26.0+cu129`
+- Installed `torch`: `2.11.0+cu129`
+- `torch.version.cuda`: `12.9`
+
+Preflight:
+
+- CUDA driver compatibility check: passed.
+- vLLM wheel installation: completed.
+- Torch version probe: passed, `2.11.0+cu129 12.9`.
+- Bounded `import vllm`: failed by timeout.
+
+Exact hard-gate failure:
+
+```text
+vllm_import_status=124
+vllm_import_timeout_seconds=60
+vllm_import_command=python -c "import vllm; print(vllm.__version__)"
+vLLM import probe failed or timed out before model download.
+```
+
+The setup script stopped before model download and before vLLM server startup,
+as intended. The GPU showed no running processes during the import timeout
+diagnostic snapshot.
+
+Artifacts:
+
+- Diagnostic bundle copied locally to:
+  `artifacts/runpod/agentperf-m4-phase-a-a5000-vllm-import-timeout-5u2mgbnrsyt23n.tgz`
+
+Cleanup:
+
+- Pod was deleted after diagnostics were copied locally.
+- `runpodctl pod list` returned `[]`.
+
+## Next Infrastructure Path
+
+Do not keep retrying random PyTorch-template Pods for M4 Phase A until the vLLM
+runtime import issue is isolated.
+
+The next reproducible path should use the official vLLM OpenAI-compatible image
+instead of installing vLLM into the Runpod PyTorch template at runtime.
+
+Official sources checked:
+
+- vLLM Docker documentation says the official deployment image is
+  `vllm/vllm-openai` and shows running it with NVIDIA GPUs and OpenAI-compatible
+  serving.
+- Docker Hub currently lists pinned vLLM `0.26.0` CUDA 12.9 image tags,
+  including `vllm/vllm-openai:v0.26.0-cu129-ubuntu2404` and
+  `vllm/vllm-openai:v0.26.0-x86_64-cu129-ubuntu2404`.
+
+Before another GPU rental, prepare a Runpod template or direct Pod command based
+on one of those pinned images, mount `/workspace`, and run the existing
+sequential Phase A script inside that container. Do not create a 48GB Phase B Pod
+until Phase A produces a real role-sensitivity matrix.
