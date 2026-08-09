@@ -6,7 +6,6 @@ cd "${ROOT_DIR}"
 
 MODEL_ROOT="${MODEL_ROOT:-/workspace/models}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-8192}"
-GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.25}"
 LOG_DIR="${LOG_DIR:-artifacts/model_choice_m4/server}"
 mkdir -p "${LOG_DIR}"
 
@@ -34,6 +33,12 @@ declare -A SERVED_NAMES=(
   [strong]="agentperf-qwen3-4b"
 )
 
+declare -A GPU_MEMORY_FRACTIONS=(
+  [small]="${SMALL_GPU_MEMORY_UTILIZATION:-0.16}"
+  [medium]="${MEDIUM_GPU_MEMORY_UTILIZATION:-0.26}"
+  [strong]="${STRONG_GPU_MEMORY_UTILIZATION:-0.48}"
+)
+
 for tier in small medium strong; do
   model_path="${LOCAL_PATHS[$tier]}"
   if [[ ! -f "${model_path}/config.json" ]]; then
@@ -46,24 +51,23 @@ for tier in small medium strong; do
   port="${PORTS[$tier]}"
   served="${SERVED_NAMES[$tier]}"
   model_path="${LOCAL_PATHS[$tier]}"
+  gpu_memory_utilization="${GPU_MEMORY_FRACTIONS[$tier]}"
   log_path="${LOG_DIR}/${tier}.log"
   echo "Starting ${tier}: ${model_path} on port ${port} as ${served}"
+  echo "GPU memory utilization: ${gpu_memory_utilization}"
   nohup vllm serve "${model_path}" \
     --served-model-name "${served}" \
     --host 0.0.0.0 \
     --port "${port}" \
     --max-model-len "${MAX_MODEL_LEN}" \
-    --gpu-memory-utilization "${GPU_MEMORY_UTILIZATION}" \
+    --gpu-memory-utilization "${gpu_memory_utilization}" \
     --enable-prefix-caching \
     --prefix-caching-hash-algo sha256_cbor \
     --enable-prompt-tokens-details \
     --enable-per-request-metrics \
     >"${log_path}" 2>&1 &
   echo "$!" >"${LOG_DIR}/${tier}.pid"
-done
 
-for tier in small medium strong; do
-  port="${PORTS[$tier]}"
   for attempt in $(seq 1 60); do
     if curl -sf "http://localhost:${port}/v1/models" >/dev/null; then
       echo "${tier} ready on port ${port}"
