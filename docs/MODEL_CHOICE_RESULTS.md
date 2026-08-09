@@ -79,4 +79,5 @@ Artifacts:
 
 Cleanup:
 
-- Pod deletion is required after this documentation is committed and pushed.
+- Pod was deleted after diagnostics were preserved and pushed.
+- `runpodctl pod list` returned `[]`.
