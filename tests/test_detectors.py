@@ -26,13 +26,13 @@ def test_prefix_cache_opportunity_detector() -> None:
     findings = ids("examples/traces/prefix_cache_failure.json")
 
     assert "PREFIX_CACHE_OPPORTUNITY" in findings
-    assert "PREFILL_BOTTLENECK" in findings
+    assert "PREFILL_PATH_DOMINANCE" in findings
 
 
 def test_prefill_bottleneck_detector() -> None:
     findings = ids("examples/traces/prefill_bottleneck.json")
 
-    assert findings == ["PREFILL_BOTTLENECK"]
+    assert findings == ["MATERIAL_PREFILL_BOTTLENECK"]
 
 
 def test_cross_detector_interaction_on_multi_problem_trace() -> None:
@@ -41,7 +41,7 @@ def test_cross_detector_interaction_on_multi_problem_trace() -> None:
     assert [finding.id for finding in report.findings] == [
         "CONTEXT_DUPLICATION",
         "PREFIX_CACHE_OPPORTUNITY",
-        "PREFILL_BOTTLENECK",
+        "PREFILL_PATH_DOMINANCE",
     ]
     prefix = next(
         finding for finding in report.findings if finding.id == "PREFIX_CACHE_OPPORTUNITY"
@@ -108,6 +108,44 @@ def test_prefix_boundary_61_percent_fires() -> None:
     run = _boundary_run(shared_tokens=61, total_tokens=100)
 
     assert "PREFIX_CACHE_OPPORTUNITY" in [finding.id for finding in analyze_run(run).findings]
+
+
+def test_repeated_non_prefix_content_can_create_prefix_cache_opportunity() -> None:
+    run = _dynamic_prefix_run(hit=0, miss=8200, ttft=260)
+    report = analyze_run(run)
+
+    prefix = next(
+        finding
+        for finding in report.findings
+        if finding.id == "PREFIX_CACHE_OPPORTUNITY"
+    )
+    assert prefix.evidence["shared_prefix_tokens"] < 5
+    assert prefix.evidence["repeated_non_prefix_tokens"] > 8000
+    assert prefix.evidence["actual_prefix_cache_hit_ratio"] == 0.0
+
+
+def test_repeated_non_prefix_content_is_not_treated_as_cached_tokens() -> None:
+    run = _dynamic_prefix_run(hit=0, miss=8200, ttft=260)
+    report = analyze_run(run)
+    prefix = next(
+        finding
+        for finding in report.findings
+        if finding.id == "PREFIX_CACHE_OPPORTUNITY"
+    )
+
+    assert prefix.provenance.raw_metrics["prefix_cache_hit_tokens"] == 0
+
+
+def test_low_absolute_prefill_path_dominance_is_not_material_bottleneck() -> None:
+    run = _dynamic_prefix_run(hit=8000, miss=120, ttft=16, queue=0)
+    findings = analyze_run(run).findings
+
+    assert "MATERIAL_PREFILL_BOTTLENECK" not in [finding.id for finding in findings]
+    dominance = next(
+        finding for finding in findings if finding.id == "PREFILL_PATH_DOMINANCE"
+    )
+    assert dominance.severity == "LOW"
+    assert dominance.evidence["ttft_p95_ms"] == 16.0
 
 
 def test_context_duplication_boundary_is_intentional() -> None:
@@ -183,14 +221,77 @@ def _boundary_run(shared_tokens: int, total_tokens: int) -> AgentRun:
     )
 
 
-def _serving(serving_id: str, request_id: str, hit: int, miss: int) -> dict[str, object]:
+def _dynamic_prefix_run(
+    *,
+    hit: int,
+    miss: int,
+    ttft: float,
+    queue: float = 20,
+) -> AgentRun:
+    stable = _prompt(8200, prefix="stable")
+    return parse_agentperf_trace(
+        {
+            "agent_run": {
+                "agent_run_id": "dynamic-prefix-real-semantics",
+                "steps": [
+                    {
+                        "agent_step_id": "step-1",
+                        "llm_calls": [
+                            {
+                                "llm_call_id": "llm-1",
+                                "llm_request_id": "req-1",
+                                "serving_request_id": "srv-1",
+                                "prompt": [
+                                    {"name": "dynamic_request", "text": "case alpha"},
+                                    {"name": "stable_context", "text": stable},
+                                ],
+                            },
+                            {
+                                "llm_call_id": "llm-2",
+                                "llm_request_id": "req-2",
+                                "serving_request_id": "srv-2",
+                                "prompt": [
+                                    {"name": "dynamic_request", "text": "case beta"},
+                                    {"name": "stable_context", "text": stable},
+                                ],
+                            },
+                            {
+                                "llm_call_id": "llm-3",
+                                "llm_request_id": "req-3",
+                                "serving_request_id": "srv-3",
+                                "prompt": [
+                                    {"name": "dynamic_request", "text": "case gamma"},
+                                    {"name": "stable_context", "text": stable},
+                                ],
+                            },
+                        ],
+                    }
+                ],
+            },
+            "serving_requests": [
+                _serving("srv-1", "req-1", hit=hit, miss=miss, ttft=ttft, queue=queue),
+                _serving("srv-2", "req-2", hit=hit, miss=miss, ttft=ttft, queue=queue),
+                _serving("srv-3", "req-3", hit=hit, miss=miss, ttft=ttft, queue=queue),
+            ],
+        }
+    )
+
+
+def _serving(
+    serving_id: str,
+    request_id: str,
+    hit: int,
+    miss: int,
+    ttft: float = 900,
+    queue: float = 20,
+) -> dict[str, object]:
     return {
         "serving_request_id": serving_id,
         "llm_request_id": request_id,
-        "queue_latency_ms": 20,
-        "prefill_latency_ms": 700,
+        "queue_latency_ms": queue,
+        "prefill_latency_ms": ttft,
         "decode_latency_ms": 120,
-        "ttft_ms": 900,
+        "ttft_ms": ttft,
         "input_tokens": hit + miss,
         "output_tokens": 80,
         "prefix_cache_hit_tokens": hit,

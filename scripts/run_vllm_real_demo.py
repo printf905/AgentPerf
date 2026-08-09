@@ -47,6 +47,8 @@ TASKS = [
     "Incident C has one-region latency and clean deploy history. Choose the first mitigation.",
 ]
 
+STABLE_TARGET_TOKENS = 8192
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run AgentPerf's vLLM real telemetry demo")
@@ -61,6 +63,15 @@ def main() -> int:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     environment = collect_environment(args.model, args.base_url, args.warmups, args.repetitions)
+    stable_context, stable_tokens = build_stable_context(
+        base_url=args.base_url,
+        model=args.model,
+        api_key=args.api_key,
+        target_tokens=STABLE_TARGET_TOKENS,
+        timeout=args.timeout,
+    )
+    environment["stable_context_target_tokens"] = STABLE_TARGET_TOKENS
+    environment["stable_context_observed_tokens"] = stable_tokens
 
     baseline_records = run_config(
         config_name="baseline_inefficient",
@@ -71,6 +82,7 @@ def main() -> int:
         warmups=args.warmups,
         timeout=args.timeout,
         improved=False,
+        stable_context=stable_context,
     )
     improved_records = run_config(
         config_name="improved_stable_prefix",
@@ -81,6 +93,7 @@ def main() -> int:
         warmups=args.warmups,
         timeout=args.timeout,
         improved=True,
+        stable_context=stable_context,
     )
 
     baseline = build_recording("real-vllm-baseline", args.model, environment, baseline_records)
@@ -123,6 +136,7 @@ def run_config(
     warmups: int,
     timeout: float,
     improved: bool,
+    stable_context: str,
 ) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     for rep in range(repetitions):
@@ -130,7 +144,11 @@ def run_config(
             measured = rep >= warmups
             request_id = f"agentperf-{config_name}-{rep}-{task_index}-{uuid4().hex[:8]}"
             trace_id = uuid4().hex
-            prompt_components = build_prompt_components(task, improved=improved)
+            prompt_components = build_prompt_components(
+                build_dynamic_task(task, request_id),
+                stable_context=stable_context,
+                improved=improved,
+            )
             started = time.perf_counter()
             response = call_vllm(
                 base_url=base_url,
@@ -162,19 +180,99 @@ def run_config(
     return [record for record in records if record["measured"]]
 
 
-def build_prompt_components(task: str, *, improved: bool) -> dict[str, str]:
+def build_prompt_components(
+    task: str,
+    *,
+    stable_context: str,
+    improved: bool,
+) -> dict[str, str]:
     if improved:
         return {
-            "system": f"{STABLE_POLICY}\n{RUNBOOK}",
-            "user": task,
+            "stable_context": stable_context,
+            "dynamic_request": task,
         }
-    # Same logical content, but the stable material is split by per-request text.
-    # This intentionally weakens exact prefix reuse while keeping the task equivalent.
     return {
-        "system": STABLE_POLICY,
-        "user": task,
-        "other_context": RUNBOOK,
+        "dynamic_request": task,
+        "stable_context": stable_context,
     }
+
+
+def build_dynamic_task(task: str, request_id: str) -> str:
+    return "\n".join(
+        [
+            "Analyze the incident and return compact JSON with keys:",
+            "impact, mitigation, owner, next_action.",
+            f"Request nonce: {request_id}",
+            f"Task: {task}",
+        ]
+    )
+
+
+def build_stable_context(
+    *,
+    base_url: str,
+    model: str,
+    api_key: str,
+    target_tokens: int,
+    timeout: float,
+) -> tuple[str, int]:
+    section = "\n".join([STABLE_POLICY, RUNBOOK])
+    repeats = 1
+    stable_context = section
+    token_count = count_prompt_tokens(
+        base_url=base_url,
+        model=model,
+        api_key=api_key,
+        prompt=stable_context,
+        timeout=timeout,
+    )
+    while token_count < target_tokens:
+        repeats *= 2
+        stable_context = "\n\n".join([section] * repeats)
+        token_count = count_prompt_tokens(
+            base_url=base_url,
+            model=model,
+            api_key=api_key,
+            prompt=stable_context,
+            timeout=timeout,
+        )
+    print(
+        f"Built stable context with {token_count} prompt tokens "
+        f"(target {target_tokens}, repeats {repeats})"
+    )
+    return stable_context, token_count
+
+
+def count_prompt_tokens(
+    *,
+    base_url: str,
+    model: str,
+    api_key: str,
+    prompt: str,
+    timeout: float,
+) -> int:
+    body = {"model": model, "prompt": prompt}
+    request = urllib.request.Request(
+        f"{base_url.rstrip('/')}/tokenize",
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    if api_key:
+        request.add_header("Authorization", f"Bearer {api_key}")
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(exc.read().decode("utf-8")) from exc
+
+    tokens = payload.get("tokens")
+    if isinstance(tokens, list):
+        return len(tokens)
+    count = payload.get("count")
+    if isinstance(count, int):
+        return count
+    raise RuntimeError(f"Unexpected tokenize response shape: {payload}")
 
 
 def call_vllm(
@@ -187,16 +285,11 @@ def call_vllm(
     prompt_components: dict[str, str],
     timeout: float,
 ) -> dict[str, Any]:
-    messages = [
-        {"role": "system", "content": prompt_components["system"]},
-        {"role": "user", "content": prompt_components["user"]},
-    ]
-    if prompt_components.get("other_context"):
-        messages.append({"role": "user", "content": prompt_components["other_context"]})
+    prompt = "\n\n".join(prompt_components.values())
     body = {
         "model": model,
-        "messages": messages,
-        "max_tokens": 64,
+        "prompt": prompt,
+        "max_tokens": 8,
         "temperature": 0,
         "stream": False,
         "request_id": request_id,
@@ -204,7 +297,7 @@ def call_vllm(
         "return_prompt_text": True,
     }
     request = urllib.request.Request(
-        f"{base_url.rstrip('/')}/chat/completions",
+        f"{base_url.rstrip('/')}/completions",
         data=json.dumps(body).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
@@ -368,6 +461,8 @@ def extract_output_text(response: dict[str, Any]) -> str:
     first = choices[0]
     if not isinstance(first, dict):
         return ""
+    if first.get("text") is not None:
+        return str(first.get("text") or "")
     message = first.get("message")
     if not isinstance(message, dict):
         return ""
@@ -393,10 +488,10 @@ def _agent_run_to_json(run: AgentRun) -> dict[str, Any]:
                             "model": call.model,
                             "provider": call.provider,
                             "backend": call.backend,
-                            "prompt": {
-                                component.name: component.text
+                            "prompt": [
+                                {"name": component.name, "text": component.text}
                                 for component in call.prompt_components
-                            },
+                            ],
                             "input_tokens": call.input_tokens,
                             "output_tokens": call.output_tokens,
                             "prompt_token_ids": call.prompt_token_ids,

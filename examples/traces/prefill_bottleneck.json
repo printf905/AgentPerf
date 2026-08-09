@@ -16,7 +16,7 @@
               "system": "long dossier evidence paragraph analysis citation table retrieved context long dossier evidence paragraph analysis citation table retrieved context long dossier evidence paragraph analysis citation table retrieved context long dossier evidence paragraph analysis citation table retrieved context",
               "user": "Summarize the dossier."
             },
-            "input_tokens": 520,
+            "input_tokens": 5200,
             "output_tokens": 90
           },
           {
@@ -27,7 +27,7 @@
               "system": "different long dossier appendix witness log transcript facts different long dossier appendix witness log transcript facts different long dossier appendix witness log transcript facts different long dossier appendix witness log transcript facts",
               "user": "Extract the disputed facts."
             },
-            "input_tokens": 610,
+            "input_tokens": 6100,
             "output_tokens": 95
           }
         ]
@@ -42,10 +42,10 @@
       "prefill_latency_ms": 720,
       "decode_latency_ms": 150,
       "ttft_ms": 900,
-      "input_tokens": 520,
+      "input_tokens": 5200,
       "output_tokens": 90,
       "prefix_cache_hit_tokens": 20,
-      "prefix_cache_miss_tokens": 500
+      "prefix_cache_miss_tokens": 5180
     },
     {
       "serving_request_id": "srv-2",
@@ -54,11 +54,10 @@
       "prefill_latency_ms": 760,
       "decode_latency_ms": 160,
       "ttft_ms": 940,
-      "input_tokens": 610,
+      "input_tokens": 6100,
       "output_tokens": 95,
       "prefix_cache_hit_tokens": 15,
-      "prefix_cache_miss_tokens": 595
+      "prefix_cache_miss_tokens": 6085
     }
   ]
 }
-
