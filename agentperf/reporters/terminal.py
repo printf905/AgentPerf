@@ -9,6 +9,7 @@ from agentperf.metrics.latency import (
     total_tool_latency_ms,
 )
 from agentperf.metrics.tokens import call_input_tokens, call_output_tokens
+from agentperf.model_choice import ModelChoiceReport
 
 
 def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> str:
@@ -162,6 +163,99 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
                     _row("derived metrics", _compact_dict(provenance.derived_metrics))
                 )
             for note in provenance.notes:
+                lines.append(f"  - {note}")
+    return "\n".join(lines)
+
+
+def render_model_choice_report(
+    report: ModelChoiceReport,
+    *,
+    show_provenance: bool = False,
+) -> str:
+    lines = [
+        "=" * 60,
+        "AgentPerf Model-Choice Report",
+        "=" * 60,
+        "Quality Constraint",
+        "-" * 60,
+        _row("Baseline config", report.quality_constraint["baseline_config"]),
+        _row("Minimum mean score", f"{report.quality_constraint['minimum_mean_score']:.3f}"),
+        _row("Minimum pass rate", _format_ratio(report.quality_constraint["minimum_pass_rate"])),
+        "",
+        "Configurations",
+        "-" * 60,
+        _row("Config", "Quality  Pass  Cost  Client P95"),
+    ]
+    for config in report.configurations:
+        lines.append(
+            _row(
+                config.name,
+                (
+                    f"{config.mean_score:.3f}  "
+                    f"{config.pass_rate * 100:>5.1f}%  "
+                    f"{config.relative_cost:>5.2f}  "
+                    f"{_format_ms(config.client_latency_p95_ms)}"
+                ),
+            )
+        )
+    lines.extend(["", "Role Sensitivity", "-" * 60])
+    if not report.role_sensitivity:
+        lines.append("No one-role counterfactuals found.")
+    else:
+        lines.append(_row("Role", "Candidate  Quality d  Pass d  Cost d"))
+        for row in report.role_sensitivity:
+            lines.append(
+                _row(
+                    row.role,
+                    (
+                        f"{row.candidate_model}  "
+                        f"{row.mean_quality_delta:+.3f}  "
+                        f"{row.pass_rate_delta * 100:+.1f}pp  "
+                        f"{row.relative_cost_delta:+.2f}"
+                    ),
+                )
+            )
+    lines.extend(["", "Pareto", "-" * 60])
+    lines.append(_row("Config", "Quality  Cost  Status"))
+    for pareto_row in report.pareto:
+        if not pareto_row["quality_preserving"]:
+            status = "quality-violating"
+        elif pareto_row["dominated"]:
+            status = "dominated"
+        else:
+            status = "pareto"
+        lines.append(
+            _row(
+                str(pareto_row["config"]),
+                (
+                    f"{float(pareto_row['mean_score']):.3f}  "
+                    f"{float(pareto_row['relative_cost']):.2f}  {status}"
+                ),
+            )
+        )
+    lines.extend(["", "Findings", "-" * 60])
+    if not report.findings:
+        lines.append("No model-choice headroom found within the quality constraint.")
+        return "\n".join(lines)
+    for finding in report.findings:
+        lines.extend(
+            [
+                "",
+                f"[{finding.severity}] {finding.id}",
+                "",
+                finding.summary,
+                "",
+                "Evidence:",
+            ]
+        )
+        for key, value in finding.evidence.items():
+            lines.append(_row(key.replace("_", " "), _format_value(value)))
+        lines.extend(["", "Recommendation:", f"  {finding.recommendation}"])
+        if show_provenance:
+            lines.extend(["", "Provenance:"])
+            for key, value in finding.provenance.derived_metrics.items():
+                lines.append(_row(key.replace("_", " "), _format_value(value)))
+            for note in finding.provenance.notes:
                 lines.append(f"  - {note}")
     return "\n".join(lines)
 

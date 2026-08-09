@@ -19,6 +19,7 @@ from agentperf.backends.vllm import VLLMTelemetryProvider
 from agentperf.metrics.attribution import component_token_attribution
 from agentperf.metrics.cache import prefix_cache_hit_ratio
 from agentperf.metrics.latency import percentile, prefill_or_path_latency_ms
+from agentperf.metrics.roles import role_profiles
 from agentperf.metrics.tokens import token_count
 from agentperf.reporters.terminal import render_report
 from agentperf.schema.trace import AgentRun
@@ -532,6 +533,21 @@ def summarize_recording(recording: dict[str, Any]) -> dict[str, Any]:
         "client_latency_p95_ms": percentile(client_latencies, 0.95),
         "detectors_fired": [finding.id for finding in report.findings],
         "compaction": summarize_compaction(recording),
+        "role_profiles": {
+            profile.role: {
+                "calls": profile.calls,
+                "input_tokens": profile.input_tokens,
+                "output_tokens": profile.output_tokens,
+                "client_latency_p50_ms": profile.client_latency_p50_ms,
+                "client_latency_p95_ms": profile.client_latency_p95_ms,
+                "ttft_p50_ms": profile.ttft_p50_ms,
+                "ttft_p95_ms": profile.ttft_p95_ms,
+                "generation_latency_p50_ms": profile.generation_latency_p50_ms,
+                "generation_latency_p95_ms": profile.generation_latency_p95_ms,
+                "models": profile.models,
+            }
+            for profile in role_profiles(run)
+        },
     }
 
 
@@ -1127,8 +1143,10 @@ def agent_run_to_json(run: AgentRun) -> dict[str, Any]:
                             "llm_request_id": call.llm_request_id,
                             "serving_request_id": call.serving_request_id,
                             "model": call.model,
+                            "semantic_role": call.semantic_role,
                             "provider": call.provider,
                             "backend": call.backend,
+                            "metadata": call.metadata,
                             "prompt": [
                                 {
                                     "name": component.name,

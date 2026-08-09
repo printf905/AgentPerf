@@ -114,6 +114,24 @@ class VLLMTelemetryProvider:
             if decode_ms is None and tpot_ms is not None and output_tokens is not None:
                 decode_ms = tpot_ms * max(output_tokens - 1, 0)
 
+            record_metadata = _as_dict(record.get("metadata"))
+            semantic_role = (
+                _optional_str(record.get("semantic_role"))
+                or _optional_str(record_metadata.get("semantic_role"))
+                or _optional_str(record_metadata.get("role"))
+            )
+            llm_metadata = {
+                **record_metadata,
+                "prompt_components": prompt_components,
+                "raw_response_id": response.get("id"),
+                "client_request_id": client_request_id,
+            }
+            if record.get("client_elapsed_ms") is not None:
+                llm_metadata["client_elapsed_ms"] = record.get("client_elapsed_ms")
+            if decode_ms is not None:
+                llm_metadata["generation_latency_ms"] = decode_ms
+
+            record_model = str(record.get("model") or model)
             llm_calls.append(
                 LLMCall(
                     llm_call_id=str(record.get("llm_call_id") or f"llm-{index}"),
@@ -123,7 +141,8 @@ class VLLMTelemetryProvider:
                     agent_step_id=str(record.get("agent_step_id") or f"step-{index}"),
                     llm_request_id=client_request_id,
                     serving_request_id=serving_request_id,
-                    model=model,
+                    model=record_model,
+                    semantic_role=semantic_role,
                     provider="local",
                     backend=self.backend_name,
                     prompt_components=[],
@@ -134,11 +153,7 @@ class VLLMTelemetryProvider:
                     tokenization_mode="EXACT" if prompt_token_ids is not None else "APPROXIMATE",
                     ttft_ms=ttft_ms,
                     tpot_ms=tpot_ms,
-                    metadata={
-                        "prompt_components": prompt_components,
-                        "raw_response_id": response.get("id"),
-                        "client_request_id": client_request_id,
-                    },
+                    metadata=llm_metadata,
                 )
             )
             llm_calls[-1] = _with_prompt_components(llm_calls[-1], prompt_components)
@@ -148,7 +163,7 @@ class VLLMTelemetryProvider:
                     trace_id=_optional_str(record.get("trace_id")),
                     span_id=_optional_str(record.get("serving_span_id")),
                     llm_request_id=client_request_id,
-                    model=model,
+                    model=record_model,
                     backend=self.backend_name,
                     queue_latency_ms=queue_ms,
                     prefill_latency_ms=None,
