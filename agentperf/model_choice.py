@@ -67,7 +67,7 @@ def analyze_model_choice_data(data: dict[str, Any]) -> ModelChoiceReport:
         raise ValueError(f"missing model-choice baseline config: {baseline_name}")
     quality_constraint = _quality_constraint(data, baseline)
     sensitivities = _role_sensitivity(configs, baseline, quality_constraint)
-    findings = _findings(sensitivities, baseline, quality_constraint)
+    findings = _findings(sensitivities, baseline, configs, quality_constraint)
     pareto = _pareto(configs, quality_constraint)
     selected = _selected_mixed_config(data, configs, quality_constraint)
     return ModelChoiceReport(
@@ -156,6 +156,7 @@ def _role_sensitivity(
 def _findings(
     sensitivities: list[RoleSensitivity],
     baseline: ModelChoiceConfig,
+    configs: list[ModelChoiceConfig],
     quality_constraint: dict[str, Any],
 ) -> list[Finding]:
     findings: list[Finding] = []
@@ -177,6 +178,7 @@ def _findings(
                     f"{row.candidate_model} within the configured quality tolerance."
                 ),
                 evidence={
+                    "evidence_source": "COUNTERFACTUAL_ROLE_REPLAY",
                     "role": row.role,
                     "baseline_model": row.baseline_model,
                     "candidate_model": row.candidate_model,
@@ -215,6 +217,97 @@ def _findings(
                         (
                             "Finding is based on counterfactual replay evidence, "
                             "not model-size heuristics."
+                        ),
+                    ],
+                ),
+            )
+        )
+    findings.extend(_mixed_findings(configs, baseline, quality_constraint))
+    return findings
+
+
+def _mixed_findings(
+    configs: list[ModelChoiceConfig],
+    baseline: ModelChoiceConfig,
+    quality_constraint: dict[str, Any],
+) -> list[Finding]:
+    findings: list[Finding] = []
+    for config in configs:
+        if not config.name.startswith("mixed"):
+            continue
+        if not _quality_preserving(config, quality_constraint):
+            continue
+        latency_delta = _delta(config.client_latency_p95_ms, baseline.client_latency_p95_ms)
+        ttft_delta = _delta(config.ttft_p95_ms, baseline.ttft_p95_ms)
+        cost_delta = config.relative_cost - baseline.relative_cost
+        if cost_delta >= 0 and (latency_delta is None or latency_delta >= 0):
+            continue
+        changed_roles = [
+            {
+                "role": role,
+                "baseline_model": baseline.routing[role],
+                "selected_model": selected_model,
+            }
+            for role, selected_model in config.routing.items()
+            if baseline.routing.get(role) != selected_model
+        ]
+        findings.append(
+            Finding(
+                id="MODEL_CHOICE_HEADROOM",
+                severity="HIGH",
+                title="End-to-end validated model-choice headroom",
+                summary=(
+                    f"End-to-end replay shows {config.name} stays within the "
+                    "configured quality tolerance while reducing model-capacity cost "
+                    "or latency."
+                ),
+                evidence={
+                    "evidence_source": "END_TO_END_VALIDATED",
+                    "role": "mixed_routing",
+                    "config_name": config.name,
+                    "changed_roles": changed_roles,
+                    "replay_task_count": config.role_profiles.get(
+                        "final_synthesizer", {}
+                    ).get("calls", 0),
+                    "baseline_mean_score": baseline.mean_score,
+                    "candidate_mean_score": config.mean_score,
+                    "mean_quality_delta": config.mean_score - baseline.mean_score,
+                    "baseline_pass_rate": baseline.pass_rate,
+                    "candidate_pass_rate": config.pass_rate,
+                    "pass_rate_delta": config.pass_rate - baseline.pass_rate,
+                    "quality_minimum_mean_score": quality_constraint[
+                        "minimum_mean_score"
+                    ],
+                    "quality_minimum_pass_rate": quality_constraint[
+                        "minimum_pass_rate"
+                    ],
+                    "client_latency_p95_delta_ms": latency_delta,
+                    "ttft_p95_delta_ms": ttft_delta,
+                    "relative_cost_delta": cost_delta,
+                },
+                affected_spans=[
+                    str(item["role"]) for item in changed_roles if "role" in item
+                ],
+                recommendation=(
+                    f"Evaluate {config.name} as a mixed model-routing configuration "
+                    "and monitor task quality on a broader workload."
+                ),
+                confidence="MEDIUM",
+                validation_plan=[
+                    "Replay more tasks with the same routing policy.",
+                    "Inspect per-task regressions and role outputs.",
+                    "Compare provider-specific cost only after supplying price inputs.",
+                ],
+                provenance=FindingProvenance(
+                    derived_metrics={
+                        "config_name": config.name,
+                        "quality_preserving": True,
+                        "validation_status": "END_TO_END_VALIDATED",
+                    },
+                    notes=[
+                        (
+                            "Finding is based on a full mixed-agent replay where "
+                            "role outputs feed downstream roles."
                         ),
                     ],
                 ),

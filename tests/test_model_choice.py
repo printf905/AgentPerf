@@ -29,6 +29,21 @@ def _load_phase_a_main() -> Callable[[list[str]], int]:
     return module.main  # type: ignore[no-any-return]
 
 
+def _load_phase_b_main() -> Callable[[list[str]], int]:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    spec = importlib.util.spec_from_file_location(
+        "run_model_choice_phase_b",
+        ROOT / "scripts" / "run_model_choice_phase_b.py",
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["run_model_choice_phase_b"] = module
+    spec.loader.exec_module(module)
+    return module.main  # type: ignore[no-any-return]
+
+
 def test_role_attribution_normalizes_legacy_roles() -> None:
     run = parse_agentperf_trace(
         {
@@ -90,6 +105,18 @@ def test_pareto_marks_quality_violating_candidate() -> None:
 
     assert pareto["synthesizer_small"]["quality_preserving"] is False
     assert pareto["mixed_evidence_backed"]["quality_preserving"] is True
+
+
+def test_end_to_end_mixed_finding_uses_validated_evidence() -> None:
+    report = analyze_model_choice_data(_comparison_fixture())
+    mixed = next(
+        finding
+        for finding in report.findings
+        if finding.evidence.get("evidence_source") == "END_TO_END_VALIDATED"
+    )
+
+    assert mixed.evidence["config_name"] == "mixed_evidence_backed"
+    assert mixed.provenance.derived_metrics["validation_status"] == "END_TO_END_VALIDATED"
 
 
 def test_model_choice_cli_renders_report(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
@@ -172,6 +199,77 @@ def test_phase_a_sequential_replay_regenerates_downstream_strong_calls(
         "planner_small",
         "reviewer_small",
         "synthesizer_small",
+    }
+
+
+def test_phase_b_mock_replay_writes_mixed_and_repeatability(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "phase_b"
+    phase_b_main = _load_phase_b_main()
+
+    assert phase_b_main(
+        [
+            "--stage",
+            "strong-control",
+            "--tier",
+            "strong",
+            "--mock-llm",
+            "--output-dir",
+            str(output_dir),
+        ]
+    ) == 0
+    for tier in ("medium", "small"):
+        assert phase_b_main(
+            [
+                "--stage",
+                "reviewer-candidates",
+                "--tier",
+                tier,
+                "--mock-llm",
+                "--output-dir",
+                str(output_dir),
+                "--repeat-count",
+                "1",
+            ]
+        ) == 0
+    assert phase_b_main(
+        [
+            "--stage",
+            "reviewer-continuations",
+            "--tier",
+            "strong",
+            "--mock-llm",
+            "--output-dir",
+            str(output_dir),
+            "--repeat-count",
+            "1",
+        ]
+    ) == 0
+    assert phase_b_main(
+        [
+            "--stage",
+            "mixed-end-to-end",
+            "--mock-llm",
+            "--output-dir",
+            str(output_dir),
+        ]
+    ) == 0
+
+    comparison = json.loads(
+        (output_dir / "model_choice_phase_b_comparison.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert set(comparison["configurations"]) == {
+        "strong_control",
+        "mixed_evidence_backed",
+    }
+    assert comparison["reviewer_repeatability"]["small"]["runs"]
+    assert comparison["configurations"]["mixed_evidence_backed"]["routing"] == {
+        "planner": "medium",
+        "evidence_reviewer": "small",
+        "final_synthesizer": "small",
     }
 
 
