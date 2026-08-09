@@ -1,12 +1,32 @@
 from __future__ import annotations
 
+import importlib.util
 import json
+import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from agentperf.cli import main as cli_main
 from agentperf.metrics.roles import role_profiles
 from agentperf.model_choice import analyze_model_choice_data
 from agentperf.schema.trace import parse_agentperf_trace
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_phase_a_main() -> Callable[[list[str]], int]:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    spec = importlib.util.spec_from_file_location(
+        "run_model_choice_phase_a",
+        ROOT / "scripts" / "run_model_choice_phase_a.py",
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["run_model_choice_phase_a"] = module
+    spec.loader.exec_module(module)
+    return module.main  # type: ignore[no-any-return]
 
 
 def test_role_attribution_normalizes_legacy_roles() -> None:
@@ -82,6 +102,77 @@ def test_model_choice_cli_renders_report(tmp_path: Path, capsys) -> None:  # typ
     assert code == 0
     assert "AgentPerf Model-Choice Report" in output
     assert "MODEL_CHOICE_HEADROOM" in output
+
+
+def test_phase_a_sequential_replay_regenerates_downstream_strong_calls(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "phase_a"
+    phase_a_main = _load_phase_a_main()
+
+    assert phase_a_main(
+        [
+            "--stage",
+            "strong-baseline",
+            "--tier",
+            "strong",
+            "--mock-llm",
+            "--output-dir",
+            str(output_dir),
+        ]
+    ) == 0
+    assert phase_a_main(
+        [
+            "--stage",
+            "candidate-tier",
+            "--tier",
+            "small",
+            "--mock-llm",
+            "--output-dir",
+            str(output_dir),
+        ]
+    ) == 0
+    assert phase_a_main(
+        [
+            "--stage",
+            "strong-continuations",
+            "--tier",
+            "strong",
+            "--mock-llm",
+            "--output-dir",
+            str(output_dir),
+        ]
+    ) == 0
+
+    planner_small = json.loads(
+        (output_dir / "planner_small" / "raw" / "recording.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    first_task_records = planner_small["records"][:3]
+
+    assert [record["semantic_role"] for record in first_task_records] == [
+        "planner",
+        "evidence_reviewer",
+        "final_synthesizer",
+    ]
+    assert first_task_records[0]["metadata"]["model_tier"] == "small"
+    assert first_task_records[1]["metadata"]["model_tier"] == "strong"
+    assert first_task_records[2]["metadata"]["model_tier"] == "strong"
+    assert (
+        first_task_records[1]["metadata"]["replay_stage"]
+        == "small_planner_strong_review_continuation"
+    )
+
+    comparison = json.loads(
+        (output_dir / "model_choice_comparison.json").read_text(encoding="utf-8")
+    )
+    assert set(comparison["configurations"]) >= {
+        "strong_all",
+        "planner_small",
+        "reviewer_small",
+        "synthesizer_small",
+    }
 
 
 def _summary(

@@ -67,10 +67,44 @@ Conclusion:
 Recommended next execution design:
 
 - keep the same model ladder and agent semantics;
-- avoid concurrent three-server residency on a 24GB GPU unless a smaller context
-  length is validated against actual prompt lengths;
-- implement or run a sequential model-loading protocol per configuration, or ask
-  for approval for a larger single GPU.
+- avoid concurrent three-server residency on a 24GB GPU;
+- use the sequential Phase A runner, which loads only one model at a time and
+  regenerates downstream strong continuations from checkpointed role state;
+- ask for approval for a larger single GPU only after Phase A identifies a mixed
+  routing candidate that requires simultaneous serving.
+
+## Sequential Phase A Plan
+
+Status: implemented locally; not yet executed on a live GPU after the blocked
+concurrent-server attempt.
+
+Scripts:
+
+- `scripts/run_model_choice_phase_a.py`
+- `scripts/remote_vllm/start_model_choice_server.sh`
+- `scripts/remote_vllm/stop_model_choice_server.sh`
+- `scripts/remote_vllm/run_model_choice_phase_a.sh`
+
+Execution order:
+
+1. Load Qwen3-4B only and run `strong_all`.
+2. Stop Qwen3-4B and release GPU memory.
+3. Load Qwen3-1.7B only and run medium candidate role calls.
+4. Stop Qwen3-1.7B.
+5. Load Qwen3-0.6B only and run small candidate role calls.
+6. Stop Qwen3-0.6B.
+7. Reload Qwen3-4B only and regenerate downstream strong continuations for
+   planner/reviewer counterfactuals.
+8. Assemble the Phase A role-sensitivity matrix.
+
+Counterfactual semantics:
+
+- Unchanged strong-role records are reused from the all-strong baseline.
+- Candidate-role calls are regenerated with the candidate model.
+- Downstream strong calls are regenerated when upstream planner or reviewer
+  output changes.
+- Deterministic local retrieval/tool results are held fixed.
+- Mixed routing is not run until Phase A evidence justifies a candidate.
 
 Artifacts:
 
