@@ -22,7 +22,7 @@ def _load_main() -> Callable[[list[str]], int]:
     return module.main  # type: ignore[no-any-return]
 
 
-def test_real_agent_runner_mock_baseline_and_optimized(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_real_agent_runner_mock_context_strategies(tmp_path) -> None:  # type: ignore[no-untyped-def]
     output_dir = tmp_path / "agent"
     main = _load_main()
 
@@ -37,15 +37,38 @@ def test_real_agent_runner_mock_baseline_and_optimized(tmp_path) -> None:  # typ
     )
 
     comparison = json.loads((output_dir / "comparison.json").read_text(encoding="utf-8"))
-    baseline = comparison["baseline"]
-    optimized = comparison["optimized"]
+    strategies = comparison["strategies"]
+    baseline = strategies["raw_full"]
+    aggressive = strategies["aggressive_compact"]
+    top_k = strategies["top_k_2"]
 
     assert code == 0
     assert baseline["llm_calls"] == 30
     assert baseline["tool_calls"] == 20
-    assert baseline["processed_tokens_by_component"]["tool_result"] > optimized[
+    assert baseline["processed_tokens_by_component"]["tool_result"] > aggressive[
+        "processed_tokens_by_component"
+    ]["tool_result"]
+    assert baseline["processed_tokens_by_component"]["tool_result"] > top_k[
         "processed_tokens_by_component"
     ]["tool_result"]
     assert "TOOL_OUTPUT_BLOAT" in baseline["detectors_fired"]
-    assert "TOOL_OUTPUT_BLOAT" not in optimized["detectors_fired"]
-    assert baseline["correctness"]["mean_score"] == optimized["correctness"]["mean_score"]
+    assert "TOOL_OUTPUT_BLOAT" not in aggressive["detectors_fired"]
+    assert baseline["correctness"]["mean_score"] == aggressive["correctness"]["mean_score"]
+    assert comparison["pareto"]
+
+    raw_recording = json.loads(
+        (output_dir / "top_k_2" / "raw" / "recording.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    metadata = next(
+        component["metadata"]
+        for record in raw_recording["records"]
+        for component in record["prompt_components"]
+        if component["name"] == "tool_results"
+    )
+    assert metadata["carry_strategy"] == "top_k_2"
+    assert metadata["evidence_items"][0]["source_document_id"]
+    assert metadata["evidence_items"][0]["passage_id"]
+    assert metadata["evidence_items"][0]["retrieval_score"] >= 0
+    assert metadata["original_token_count"] >= metadata["carried_forward_token_count"]

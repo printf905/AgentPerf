@@ -40,6 +40,17 @@ owner escalation path. Prefer reversible mitigation before root-cause certainty.
 Record the evidence source and avoid broad infrastructure changes when a narrow
 rollback or cache flush is available."""
 
+DEFAULT_STRATEGIES = [
+    "raw_full",
+    "dedup_only",
+    "top_k_2",
+    "budget_1200",
+    "aggressive_compact",
+]
+FINAL_MAX_TOKENS = 320
+REVIEW_MAX_TOKENS = 160
+PLANNER_MAX_TOKENS = 64
+
 
 @dataclass(frozen=True)
 class Question:
@@ -57,6 +68,35 @@ class Document:
     text: str
 
 
+@dataclass(frozen=True)
+class SearchHit:
+    tool_call_id: str
+    doc_id: str
+    passage_id: str
+    rank: int
+    score: int
+    text: str
+
+    @property
+    def original_tokens(self) -> int:
+        return token_count(self.text)
+
+
+@dataclass(frozen=True)
+class ToolResultRecord:
+    tool_call_id: str
+    query: str
+    raw_text: str
+    hits: list[SearchHit]
+
+
+@dataclass(frozen=True)
+class CarriedComponent:
+    tool_call_id: str
+    text: str
+    metadata: dict[str, Any]
+
+
 @dataclass
 class AgentExecution:
     records: list[dict[str, Any]]
@@ -68,40 +108,45 @@ class LocalSearchTool:
     def __init__(self, corpus_dir: Path) -> None:
         self.documents = load_documents(corpus_dir)
 
-    def search(self, query: str, *, compact: bool) -> tuple[str, list[str]]:
+    def search(self, query: str, *, tool_call_id: str) -> ToolResultRecord:
         terms = {term.lower() for term in query.replace("-", " ").split() if len(term) > 2}
-        ranked = sorted(
+        ranked_documents = sorted(
             self.documents,
             key=lambda doc: sum(term in doc.text.lower() for term in terms),
             reverse=True,
         )
-        selected = ranked[:3]
-        if compact:
-            return self._compact_result(query, selected), [doc.doc_id for doc in selected]
-        return self._raw_result(query, selected), [doc.doc_id for doc in selected]
+        selected = ranked_documents[:3]
+        hits = [
+            SearchHit(
+                tool_call_id=tool_call_id,
+                doc_id=document.doc_id,
+                passage_id=f"{document.doc_id}:full",
+                rank=rank,
+                score=sum(term in document.text.lower() for term in terms),
+                text=document.text,
+            )
+            for rank, document in enumerate(selected, start=1)
+        ]
+        return ToolResultRecord(
+            tool_call_id=tool_call_id,
+            query=query,
+            raw_text=self._raw_result(query, hits),
+            hits=hits,
+        )
 
-    def _raw_result(self, query: str, documents: list[Document]) -> str:
+    def _raw_result(self, query: str, hits: list[SearchHit]) -> str:
         sections = [f"QUERY: {query}", "MODE: full raw result"]
-        for rank, document in enumerate(documents, start=1):
+        for hit in hits:
             sections.extend(
                 [
-                    f"RESULT_RANK: {rank}",
-                    f"DOC_ID: {document.doc_id}",
-                    document.text,
+                    f"RESULT_RANK: {hit.rank}",
+                    f"RETRIEVAL_SCORE: {hit.score}",
+                    f"PASSAGE_ID: {hit.passage_id}",
+                    f"DOC_ID: {hit.doc_id}",
+                    hit.text,
                     "\n".join([RAW_RESULT_APPENDIX] * 18),
                 ]
             )
-        return "\n\n".join(sections)
-
-    def _compact_result(self, query: str, documents: list[Document]) -> str:
-        sections = [f"QUERY: {query}", "MODE: compact result"]
-        for rank, document in enumerate(documents, start=1):
-            fact_lines = [
-                line
-                for line in document.text.splitlines()
-                if line.startswith(("DOC_ID:", "ANSWER_FACT:", "CITATION:"))
-            ]
-            sections.extend([f"RESULT_RANK: {rank}", "\n".join(fact_lines)])
         return "\n\n".join(sections)
 
 
@@ -112,23 +157,23 @@ class ResearchAgent:
         base_url: str,
         model: str,
         search_tool: LocalSearchTool,
-        optimized: bool,
+        carry_strategy: str,
         mock_llm: bool,
         timeout: float,
     ) -> None:
         self.base_url = base_url
         self.model = model
         self.search_tool = search_tool
-        self.optimized = optimized
+        self.carry_strategy = carry_strategy
         self.mock_llm = mock_llm
         self.timeout = timeout
         self.records: list[dict[str, Any]] = []
         self.tool_calls: list[dict[str, Any]] = []
+        self.tool_result_records: dict[str, ToolResultRecord] = {}
 
     def answer(self, question: Question, question_index: int) -> str:
         history: list[str] = []
-        raw_tool_results: list[tuple[str, str]] = []
-        compact_tool_results: list[tuple[str, str]] = []
+        tool_result_ids: list[str] = []
 
         planner = self._llm_step(
             step_id=f"q{question_index:02d}-step-1",
@@ -137,21 +182,28 @@ class ResearchAgent:
             components=[
                 component("system", SYSTEM_INSTRUCTIONS),
                 component("tool_schemas", TOOL_SCHEMA),
-                component("user", question.question),
+                component(
+                    "user",
+                    (
+                        "Plan only. Do not answer the question. Return exactly two "
+                        "search query lines for the local search tool.\n"
+                        f"Question: {question.question}"
+                    ),
+                ),
             ],
+            max_tokens=PLANNER_MAX_TOKENS,
         )
         history.append(f"Planner output:\n{planner}")
 
         first_tool_id = f"{question.id}-search-1"
-        first_result, _ = self._tool_step(
+        self._tool_step(
             step_id=f"q{question_index:02d}-step-2",
             tool_call_id=first_tool_id,
             query=question.queries[0],
         )
-        raw_tool_results.append((first_tool_id, first_result))
-        compact_tool_results.append((first_tool_id, compact_tool_result(first_result)))
+        tool_result_ids.append(first_tool_id)
 
-        review_result_text = self._carried_tool_text(raw_tool_results, compact_tool_results)
+        review_components = self._carried_tool_components([first_tool_id])
         review = self._llm_step(
             step_id=f"q{question_index:02d}-step-3",
             llm_call_id=f"{question.id}-review",
@@ -160,44 +212,61 @@ class ResearchAgent:
                 component("system", SYSTEM_INSTRUCTIONS),
                 component("tool_schemas", TOOL_SCHEMA),
                 component("history", "\n\n".join(history)),
+                *[
+                    component(
+                        "tool_results",
+                        carried.text,
+                        source_tool_call_ids=[carried.tool_call_id],
+                        metadata=carried.metadata,
+                    )
+                    for carried in review_components
+                ],
                 component(
-                    "tool_results",
-                    review_result_text,
-                    source_tool_call_ids=[first_tool_id],
+                    "user",
+                    (
+                        "Copy only relevant DOC_ID, ANSWER_FACT, and CITATION lines "
+                        "from the tool results. Do not add facts not present in those lines."
+                    ),
                 ),
-                component("user", "Extract the most relevant answer facts."),
             ],
+            max_tokens=REVIEW_MAX_TOKENS,
         )
         history.append(f"Evidence review output:\n{review}")
 
         second_tool_id = f"{question.id}-search-2"
-        second_result, _ = self._tool_step(
+        self._tool_step(
             step_id=f"q{question_index:02d}-step-4",
             tool_call_id=second_tool_id,
             query=question.queries[1],
         )
-        raw_tool_results.append((second_tool_id, second_result))
-        compact_tool_results.append((second_tool_id, compact_tool_result(second_result)))
+        tool_result_ids.append(second_tool_id)
 
-        final_pairs = compact_tool_results if self.optimized else raw_tool_results
         final_components = [
             component("system", SYSTEM_INSTRUCTIONS),
             component("tool_schemas", TOOL_SCHEMA),
             component("history", "\n\n".join(history)),
         ]
-        for tool_call_id, text in final_pairs:
+        for carried in self._carried_tool_components(tool_result_ids):
             final_components.append(
                 component(
                     "tool_results",
-                    text,
-                    source_tool_call_ids=[tool_call_id],
+                    carried.text,
+                    source_tool_call_ids=[carried.tool_call_id],
+                    metadata=carried.metadata,
                 )
             )
         final_components.append(
             component(
                 "user",
                 (
-                    "Answer the original question. Include required facts and cite DOC_IDs. "
+                    "Answer the original question using only supplied evidence. "
+                    "Do not continue the prompt. Do not invent document IDs. "
+                    "Use this exact format:\n"
+                    "DOC_ID: <source doc id>\n"
+                    "CAUSE: <cause or reason>\n"
+                    "MITIGATION: <first mitigation or action>\n"
+                    "OWNER: <owning team if available>\n"
+                    "WHY_NOT: <why the rejected action is not first, if asked>\n"
                     f"Original question: {question.question}"
                 ),
             )
@@ -207,16 +276,8 @@ class ResearchAgent:
             llm_call_id=f"{question.id}-final",
             role="final",
             components=final_components,
-            max_tokens=192,
+            max_tokens=FINAL_MAX_TOKENS,
         )
-
-    def _carried_tool_text(
-        self,
-        raw_results: list[tuple[str, str]],
-        compact_results: list[tuple[str, str]],
-    ) -> str:
-        pairs = compact_results if self.optimized else raw_results
-        return "\n\n".join(text for _, text in pairs)
 
     def _tool_step(
         self,
@@ -224,25 +285,56 @@ class ResearchAgent:
         step_id: str,
         tool_call_id: str,
         query: str,
-    ) -> tuple[str, list[str]]:
+    ) -> ToolResultRecord:
         started = time.perf_counter()
-        result, doc_ids = self.search_tool.search(query, compact=False)
+        result = self.search_tool.search(query, tool_call_id=tool_call_id)
         elapsed_ms = (time.perf_counter() - started) * 1000
+        self.tool_result_records[tool_call_id] = result
         self.tool_calls.append(
             {
                 "agent_step_id": step_id,
                 "tool_call_id": tool_call_id,
                 "name": "search",
                 "input": {"query": query},
-                "output": result,
+                "output": result.raw_text,
                 "latency_ms": elapsed_ms,
                 "metadata": {
-                    "retrieved_doc_ids": doc_ids,
-                    "raw_output_tokens_approx": token_count(result),
+                    "retrieved_doc_ids": [hit.doc_id for hit in result.hits],
+                    "raw_output_tokens_approx": token_count(result.raw_text),
+                    "evidence_items": [evidence_metadata(hit) for hit in result.hits],
                 },
             }
         )
-        return result, doc_ids
+        return result
+
+    def _carried_tool_components(self, tool_call_ids: list[str]) -> list[CarriedComponent]:
+        records = [self.tool_result_records[tool_id] for tool_id in tool_call_ids]
+        if self.carry_strategy == "raw_full":
+            return [raw_carried_component(record, self.carry_strategy) for record in records]
+        if self.carry_strategy == "aggressive_compact":
+            return [
+                compact_carried_component(record, self.carry_strategy)
+                for record in records
+            ]
+        if self.carry_strategy == "dedup_only":
+            return dedup_carried_components(records, self.carry_strategy)
+        if self.carry_strategy.startswith("top_k_"):
+            top_k = int(self.carry_strategy.rsplit("_", 1)[1])
+            return ranked_carried_components(
+                records,
+                self.carry_strategy,
+                top_k=top_k,
+                token_budget=None,
+            )
+        if self.carry_strategy.startswith("budget_"):
+            budget = int(self.carry_strategy.rsplit("_", 1)[1])
+            return ranked_carried_components(
+                records,
+                self.carry_strategy,
+                top_k=None,
+                token_budget=budget,
+            )
+        raise ValueError(f"unknown carry strategy: {self.carry_strategy}")
 
     def _llm_step(
         self,
@@ -300,44 +392,49 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-dir", type=Path, default=Path("artifacts/real_agent_m3"))
     parser.add_argument("--timeout", type=float, default=180.0)
     parser.add_argument("--mock-llm", action="store_true")
+    parser.add_argument(
+        "--strategies",
+        default=",".join(DEFAULT_STRATEGIES),
+        help="Comma-separated context carry strategies to run.",
+    )
     args = parser.parse_args(argv)
 
     questions = load_questions(args.questions_path)
     search_tool = LocalSearchTool(args.corpus_dir)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     environment = collect_environment(args.model, args.base_url, args.mock_llm)
+    strategies = [strategy.strip() for strategy in args.strategies.split(",") if strategy.strip()]
 
-    baseline = run_config(
-        config_name="baseline_raw_tool_results",
-        questions=questions,
-        search_tool=search_tool,
-        base_url=args.base_url,
-        model=args.model,
-        optimized=False,
-        mock_llm=args.mock_llm,
-        timeout=args.timeout,
-        environment=environment,
-    )
-    optimized = run_config(
-        config_name="optimized_compact_tool_results",
-        questions=questions,
-        search_tool=search_tool,
-        base_url=args.base_url,
-        model=args.model,
-        optimized=True,
-        mock_llm=args.mock_llm,
-        timeout=args.timeout,
-        environment=environment,
-    )
+    recordings = {}
+    for strategy in strategies:
+        recording = run_config(
+            config_name=strategy,
+            questions=questions,
+            search_tool=search_tool,
+            base_url=args.base_url,
+            model=args.model,
+            carry_strategy=strategy,
+            mock_llm=args.mock_llm,
+            timeout=args.timeout,
+            environment=environment,
+        )
+        recordings[strategy] = recording
+        write_artifacts(args.output_dir, strategy, recording)
 
-    write_artifacts(args.output_dir, "baseline", baseline)
-    write_artifacts(args.output_dir, "optimized", optimized)
-    comparison = {
+    strategies_summary = {
+        strategy: summarize_recording(recording)
+        for strategy, recording in recordings.items()
+    }
+    comparison: dict[str, Any] = {
         "created_at": datetime.now(UTC).isoformat(),
         "environment": environment,
-        "baseline": summarize_recording(baseline),
-        "optimized": summarize_recording(optimized),
+        "strategies": strategies_summary,
     }
+    if "raw_full" in recordings:
+        comparison["baseline"] = strategies_summary["raw_full"]
+    if "aggressive_compact" in recordings:
+        comparison["optimized"] = strategies_summary["aggressive_compact"]
+    comparison["pareto"] = pareto_summary(strategies_summary)
     (args.output_dir / "comparison.json").write_text(
         json.dumps(comparison, indent=2),
         encoding="utf-8",
@@ -353,7 +450,7 @@ def run_config(
     search_tool: LocalSearchTool,
     base_url: str,
     model: str,
-    optimized: bool,
+    carry_strategy: str,
     mock_llm: bool,
     timeout: float,
     environment: dict[str, Any],
@@ -362,7 +459,7 @@ def run_config(
         base_url=base_url,
         model=model,
         search_tool=search_tool,
-        optimized=optimized,
+        carry_strategy=carry_strategy,
         mock_llm=mock_llm,
         timeout=timeout,
     )
@@ -430,6 +527,7 @@ def summarize_recording(recording: dict[str, Any]) -> dict[str, Any]:
         "client_latency_p50_ms": percentile(client_latencies, 0.50),
         "client_latency_p95_ms": percentile(client_latencies, 0.95),
         "detectors_fired": [finding.id for finding in report.findings],
+        "compaction": summarize_compaction(recording),
     }
 
 
@@ -443,9 +541,7 @@ def call_vllm(
     max_tokens: int,
     timeout: float,
 ) -> dict[str, Any]:
-    prompt = "\n\n".join(
-        f"## {component['name']}\n{component['text']}" for component in components
-    )
+    prompt = chat_prompt_from_components(components)
     body = {
         "model": model,
         "prompt": prompt,
@@ -455,6 +551,7 @@ def call_vllm(
         "request_id": request_id,
         "return_token_ids": True,
         "return_prompt_text": True,
+        "stop": ["<|im_end|>"],
     }
     request = urllib.request.Request(
         f"{base_url.rstrip('/')}/completions",
@@ -499,16 +596,246 @@ def mock_response(
     }
 
 
+def chat_prompt_from_components(components: list[dict[str, Any]]) -> str:
+    system_text = "\n\n".join(
+        str(component["text"])
+        for component in components
+        if component.get("name") == "system"
+    )
+    user_blocks = [
+        f"### {component['name']}\n{component['text']}"
+        for component in components
+        if component.get("name") != "system"
+    ]
+    user_text = "\n\n".join(user_blocks)
+    return (
+        "<|im_start|>system\n"
+        f"{system_text}\n"
+        "<|im_end|>\n"
+        "<|im_start|>user\n"
+        f"{user_text}\n"
+        "<|im_end|>\n"
+        "<|im_start|>assistant\n"
+    )
+
+
 def component(
     name: str,
     text: str,
     *,
     source_tool_call_ids: list[str] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    metadata: dict[str, Any] = {}
+    component_metadata: dict[str, Any] = dict(metadata or {})
     if source_tool_call_ids is not None:
-        metadata["source_tool_call_ids"] = source_tool_call_ids
-    return {"name": name, "text": text, "metadata": metadata}
+        component_metadata["source_tool_call_ids"] = source_tool_call_ids
+    return {"name": name, "text": text, "metadata": component_metadata}
+
+
+def raw_carried_component(record: ToolResultRecord, strategy: str) -> CarriedComponent:
+    return CarriedComponent(
+        tool_call_id=record.tool_call_id,
+        text=record.raw_text,
+        metadata=carry_metadata(
+            strategy=strategy,
+            record=record,
+            carried_hits=record.hits,
+            carried_text=record.raw_text,
+            dropped_duplicate_tokens=0,
+            dropped_low_rank_tokens=0,
+        ),
+    )
+
+
+def compact_carried_component(record: ToolResultRecord, strategy: str) -> CarriedComponent:
+    text = compact_tool_result(record.raw_text)
+    return CarriedComponent(
+        tool_call_id=record.tool_call_id,
+        text=text,
+        metadata=carry_metadata(
+            strategy=strategy,
+            record=record,
+            carried_hits=record.hits,
+            carried_text=text,
+            dropped_duplicate_tokens=0,
+            dropped_low_rank_tokens=max(
+                0,
+                token_count(record.raw_text) - token_count(text),
+            ),
+        ),
+    )
+
+
+def dedup_carried_components(
+    records: list[ToolResultRecord],
+    strategy: str,
+) -> list[CarriedComponent]:
+    seen_passages: set[str] = set()
+    components: list[CarriedComponent] = []
+    for record in records:
+        carried_hits = []
+        duplicate_tokens = 0
+        for hit in record.hits:
+            if hit.passage_id in seen_passages:
+                duplicate_tokens += hit.original_tokens
+                continue
+            seen_passages.add(hit.passage_id)
+            carried_hits.append(hit)
+        if not carried_hits:
+            continue
+        text = format_evidence_result(
+            record.query,
+            strategy,
+            carried_hits,
+            include_appendix=True,
+        )
+        components.append(
+            CarriedComponent(
+                tool_call_id=record.tool_call_id,
+                text=text,
+                metadata=carry_metadata(
+                    strategy=strategy,
+                    record=record,
+                    carried_hits=carried_hits,
+                    carried_text=text,
+                    dropped_duplicate_tokens=duplicate_tokens,
+                    dropped_low_rank_tokens=0,
+                ),
+            )
+        )
+    return components
+
+
+def ranked_carried_components(
+    records: list[ToolResultRecord],
+    strategy: str,
+    *,
+    top_k: int | None,
+    token_budget: int | None,
+) -> list[CarriedComponent]:
+    ranked_hits = sorted(
+        (hit for record in records for hit in record.hits),
+        key=lambda hit: (hit.score, -hit.rank),
+        reverse=True,
+    )
+    seen_passages: set[str] = set()
+    selected: list[SearchHit] = []
+    duplicate_tokens = 0
+    low_rank_tokens = 0
+    used_tokens = 0
+    for hit in ranked_hits:
+        if hit.passage_id in seen_passages:
+            duplicate_tokens += hit.original_tokens
+            continue
+        seen_passages.add(hit.passage_id)
+        if top_k is not None and len(selected) >= top_k:
+            low_rank_tokens += hit.original_tokens
+            continue
+        if (
+            token_budget is not None
+            and selected
+            and used_tokens + hit.original_tokens > token_budget
+        ):
+            low_rank_tokens += hit.original_tokens
+            continue
+        selected.append(hit)
+        used_tokens += hit.original_tokens
+
+    by_tool_call: dict[str, list[SearchHit]] = {}
+    for hit in selected:
+        by_tool_call.setdefault(hit.tool_call_id, []).append(hit)
+
+    components = []
+    for record in records:
+        carried_hits = by_tool_call.get(record.tool_call_id, [])
+        if not carried_hits:
+            continue
+        text = format_evidence_result(
+            record.query,
+            strategy,
+            sorted(carried_hits, key=lambda hit: hit.rank),
+            include_appendix=False,
+        )
+        components.append(
+            CarriedComponent(
+                tool_call_id=record.tool_call_id,
+                text=text,
+                metadata=carry_metadata(
+                    strategy=strategy,
+                    record=record,
+                    carried_hits=carried_hits,
+                    carried_text=text,
+                    dropped_duplicate_tokens=duplicate_tokens,
+                    dropped_low_rank_tokens=low_rank_tokens,
+                ),
+            )
+        )
+        duplicate_tokens = 0
+        low_rank_tokens = 0
+    return components
+
+
+def format_evidence_result(
+    query: str,
+    mode: str,
+    hits: list[SearchHit],
+    *,
+    include_appendix: bool,
+) -> str:
+    sections = [f"QUERY: {query}", f"MODE: {mode}"]
+    for hit in hits:
+        body = hit.text
+        if include_appendix:
+            body = "\n\n".join([body, "\n".join([RAW_RESULT_APPENDIX] * 18)])
+        sections.extend(
+            [
+                f"RESULT_RANK: {hit.rank}",
+                f"RETRIEVAL_SCORE: {hit.score}",
+                f"PASSAGE_ID: {hit.passage_id}",
+                f"DOC_ID: {hit.doc_id}",
+                body,
+            ]
+        )
+    return "\n\n".join(sections)
+
+
+def carry_metadata(
+    *,
+    strategy: str,
+    record: ToolResultRecord,
+    carried_hits: list[SearchHit],
+    carried_text: str,
+    dropped_duplicate_tokens: int,
+    dropped_low_rank_tokens: int,
+) -> dict[str, Any]:
+    original_tokens = token_count(record.raw_text)
+    carried_tokens = token_count(carried_text)
+    return {
+        "carry_strategy": strategy,
+        "tool_call_id": record.tool_call_id,
+        "original_token_count": original_tokens,
+        "carried_forward_token_count": carried_tokens,
+        "dropped_duplicate_tokens": dropped_duplicate_tokens,
+        "dropped_low_rank_tokens": dropped_low_rank_tokens,
+        "evidence_items": [
+            {
+                **evidence_metadata(hit),
+                "carried_forward_token_count": hit.original_tokens,
+            }
+            for hit in carried_hits
+        ],
+    }
+
+
+def evidence_metadata(hit: SearchHit) -> dict[str, Any]:
+    return {
+        "source_document_id": hit.doc_id,
+        "tool_call_id": hit.tool_call_id,
+        "passage_id": hit.passage_id,
+        "retrieval_rank": hit.rank,
+        "retrieval_score": hit.score,
+        "original_token_count": hit.original_tokens,
+    }
 
 
 def compact_tool_result(raw_result: str) -> str:
@@ -518,13 +845,84 @@ def compact_tool_result(raw_result: str) -> str:
     )
 
 
+def summarize_compaction(recording: dict[str, Any]) -> dict[str, Any]:
+    totals = {
+        "carried_forward_tokens": 0,
+        "original_tokens": 0,
+        "dropped_duplicate_tokens": 0,
+        "dropped_low_rank_tokens": 0,
+    }
+    for record in recording.get("records", []):
+        if not isinstance(record, dict):
+            continue
+        for component_data in record.get("prompt_components", []):
+            if not isinstance(component_data, dict):
+                continue
+            metadata = component_data.get("metadata", {})
+            if not isinstance(metadata, dict) or "carry_strategy" not in metadata:
+                continue
+            totals["carried_forward_tokens"] += int(
+                metadata.get("carried_forward_token_count", 0)
+            )
+            totals["original_tokens"] += int(metadata.get("original_token_count", 0))
+            totals["dropped_duplicate_tokens"] += int(
+                metadata.get("dropped_duplicate_tokens", 0)
+            )
+            totals["dropped_low_rank_tokens"] += int(
+                metadata.get("dropped_low_rank_tokens", 0)
+            )
+    return totals
+
+
+def pareto_summary(strategies: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for name, summary in strategies.items():
+        correctness_summary = summary["correctness"]
+        rows.append(
+            {
+                "strategy": name,
+                "mean_score": correctness_summary["mean_score"],
+                "pass_rate": correctness_summary["pass_rate"],
+                "input_tokens": summary["input_tokens"],
+                "tool_result_tokens": summary["processed_tokens_by_component"].get(
+                    "tool_result",
+                    0,
+                ),
+                "ttft_p95_ms": summary["ttft_p95_ms"],
+                "client_latency_p95_ms": summary["client_latency_p95_ms"],
+                "dominated": False,
+            }
+        )
+    for row in rows:
+        for other in rows:
+            if other is row:
+                continue
+            other_ttft = other["ttft_p95_ms"] or float("inf")
+            row_ttft = row["ttft_p95_ms"] or float("inf")
+            if (
+                other["mean_score"] >= row["mean_score"]
+                and other["input_tokens"] <= row["input_tokens"]
+                and other_ttft <= row_ttft
+                and (
+                    other["mean_score"] > row["mean_score"]
+                    or other["input_tokens"] < row["input_tokens"]
+                    or other_ttft < row_ttft
+                )
+            ):
+                row["dominated"] = True
+                break
+    return rows
+
+
 def score_answer(question: Question, answer: str) -> dict[str, Any]:
-    lower = answer.lower()
+    normalized = normalize_for_score(answer)
     fact_hits = [
-        fact for fact in question.required_facts if fact.lower() in lower
+        fact for fact in question.required_facts if fact_matches(fact, normalized)
     ]
     doc_hits = [
-        doc_id for doc_id in question.required_doc_ids if doc_id.lower() in lower
+        doc_id
+        for doc_id in question.required_doc_ids
+        if normalize_for_score(doc_id) in normalized
     ]
     required = len(question.required_facts) + len(question.required_doc_ids)
     hits = len(fact_hits) + len(doc_hits)
@@ -536,6 +934,31 @@ def score_answer(question: Question, answer: str) -> dict[str, Any]:
         "doc_id_hits": doc_hits,
         "answer": answer,
     }
+
+
+def normalize_for_score(text: str) -> str:
+    return " ".join(
+        text.lower()
+        .replace("-", " ")
+        .replace("_", " ")
+        .replace(":", " ")
+        .replace(".", " ")
+        .replace(",", " ")
+        .replace(";", " ")
+        .replace("(", " ")
+        .replace(")", " ")
+        .split()
+    )
+
+
+def fact_matches(required_fact: str, normalized_answer: str) -> bool:
+    normalized_fact = normalize_for_score(required_fact)
+    if normalized_fact in normalized_answer:
+        return True
+    fact_terms = [term for term in normalized_fact.split() if len(term) > 2]
+    if not fact_terms:
+        return False
+    return all(term in normalized_answer for term in fact_terms)
 
 
 def correctness(answers: list[dict[str, Any]]) -> dict[str, float]:

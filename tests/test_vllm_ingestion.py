@@ -164,7 +164,7 @@ def test_finding_provenance_reaches_terminal_debug_output() -> None:
     report = analyze_run(VLLMTelemetryProvider().build_run(data))
     output = render_report(report, show_provenance=True)
 
-    assert "PREFIX_CACHE_OPPORTUNITY" in output
+    assert "CACHEABILITY_HEADROOM" in output
     assert "Provenance:" in output
     assert "llm request ids" in output
     assert "req-1" in output
