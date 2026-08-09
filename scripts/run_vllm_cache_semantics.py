@@ -74,6 +74,8 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=Path("artifacts/vllm_cache_semantics"))
     parser.add_argument("--api-key", default="")
     parser.add_argument("--timeout", type=float, default=120.0)
+    parser.add_argument("--max-tokens", type=int, default=8)
+    parser.add_argument("--run-label", default="")
     parser.add_argument(
         "--stable-targets",
         default=",".join(str(value) for value in STABLE_TARGETS),
@@ -82,15 +84,18 @@ def main() -> int:
     args = parser.parse_args()
 
     targets = [int(value.strip()) for value in args.stable_targets.split(",") if value.strip()]
+    run_label = args.run_label or (
+        f"run-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}-{uuid4().hex[:8]}"
+    )
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    environment = collect_environment(args.model, args.base_url)
+    environment = collect_environment(args.model, args.base_url, run_label)
     results: list[RequestResult] = []
     stable_cache: dict[str, str] = {}
 
     for target in targets:
         for case_id, case_name in CASES.items():
-            label = f"{case_id}-{target}"
+            label = f"{run_label}-{case_id}-{target}"
             stable = stable_cache.setdefault(
                 f"S-{label}",
                 build_token_sized_text(
@@ -138,6 +143,7 @@ def main() -> int:
                         actual_b_tokens=actual_b_tokens,
                         request_index=request_index + 1,
                         prompt=prompt,
+                        max_tokens=args.max_tokens,
                     )
                 )
 
@@ -149,8 +155,9 @@ def main() -> int:
             "cases": CASES,
             "stable_targets": targets,
             "b_target_tokens": B_TARGET_TOKENS,
-            "max_tokens": 1,
+            "max_tokens": args.max_tokens,
             "temperature": 0,
+            "run_label": run_label,
             "notes": [
                 "No warmups are used; first request behavior is preserved.",
                 "Stable text is unique per case and size to avoid cross-case cache reuse.",
@@ -235,6 +242,7 @@ def run_request(
     actual_b_tokens: int | None,
     request_index: int,
     prompt: str,
+    max_tokens: int,
 ) -> RequestResult:
     request_id = (
         f"cache-semantics-{case_id}-{target_stable_tokens}-{request_index}-{uuid4().hex[:8]}"
@@ -242,7 +250,7 @@ def run_request(
     body = {
         "model": model,
         "prompt": prompt,
-        "max_tokens": 1,
+        "max_tokens": max_tokens,
         "temperature": 0,
         "stream": False,
         "request_id": request_id,
@@ -489,12 +497,13 @@ def format_optional(value: float | None) -> str:
     return f"{value:.3f}"
 
 
-def collect_environment(model: str, base_url: str) -> dict[str, Any]:
+def collect_environment(model: str, base_url: str, run_label: str) -> dict[str, Any]:
     return {
         "date": datetime.now(UTC).isoformat(),
         "backend": "vllm",
         "base_url": base_url,
         "model": model,
+        "run_label": run_label,
         "platform": platform.platform(),
         "python": platform.python_version(),
         "machine": platform.machine(),
