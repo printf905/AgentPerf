@@ -1,7 +1,9 @@
 # Detector Calibration Review
 
-Status: synthetic validation complete; one real vLLM execution completed on a
-Runpod NVIDIA RTX A5000 host. See `docs/REAL_VLLM_RESULTS.md`.
+Status: synthetic validation complete; one real AgentPerf/vLLM execution and
+one focused vLLM prefix-cache semantics probe completed on Runpod NVIDIA RTX
+A5000 hosts. See `docs/REAL_VLLM_RESULTS.md` and
+`docs/VLLM_PREFIX_CACHE_SEMANTICS.md`.
 
 This document records detector assumptions before threshold tuning. Thresholds
 remain configurable in detector constructors and should not be changed just to
@@ -84,19 +86,34 @@ Real vLLM observations:
   for the observed telemetry;
 - the baseline workload did not produce the intended low-cache-reuse condition.
 
+Focused prefix-cache semantics observations:
+
+- identical repeated prompts cached nearly all prompt tokens on requests 2+;
+- prompts with genuinely dynamic content before a large stable suffix reported
+  `0` cached tokens on requests 2+;
+- prompts with a large stable prefix before dynamic suffixes reported high
+  cached-token ratios on requests 2+;
+- Prometheus reported `block_size="16"`, and all nonzero cached-token counts
+  were multiples of 16;
+- vLLM `cached_tokens` behaves like reusable prefix-block hits, not repeated
+  content anywhere in the prompt.
+
 Assumptions invalidated or weakened:
 
 - placing dynamic content before later stable content was not sufficient to
   defeat vLLM cache reuse in this controlled workload;
 - the next experiment should not assume that client-side component ordering maps
   cleanly to low `cached_tokens`;
-- a minimal vLLM cache-semantics probe is needed before another full
-  baseline/optimized workload run.
+- the earlier workload's baseline did not put sufficiently unique dynamic
+  content at the very beginning of the serialized prompt.
 
 Remaining real-trace checks:
 
 - whether chat-template or message ordering makes the theoretical common prefix
-  differ from the backend-token prefix.
+  differ from the backend-token prefix;
+- whether a revised AgentPerf workload using the proven dynamic-prefix pattern
+  triggers `PREFIX_CACHE_OPPORTUNITY` and then disappears after stable-prefix
+  reorganization.
 
 False-positive risks:
 
@@ -140,6 +157,15 @@ Real vLLM observations:
   zero;
 - the current detector may overstate severity when prefill-path fraction is high
   but absolute TTFT is small.
+
+Focused prefix-cache semantics observations:
+
+- 8K uncached prompts had scheduled-to-first-token around 255-286 ms;
+- 8K stable-prefix cached prompts had scheduled-to-first-token around 24-32 ms;
+- this confirms that scheduled-to-first-token can respond strongly to cache
+  reuse at the tested model/context size;
+- the earlier 16 ms finding was dominance, not necessarily a material
+  bottleneck.
 
 Assumptions invalidated or weakened:
 

@@ -101,6 +101,9 @@ This result is still useful:
   high;
 - the workload design is not sufficient to demonstrate a prefix-cache failure.
 
+A follow-up serving-only cache-semantics probe isolated the missing contrast and
+is documented in `docs/VLLM_PREFIX_CACHE_SEMANTICS.md`.
+
 ## Quality Notes
 
 The runner records model outputs but does not grade task quality. Manual spot
