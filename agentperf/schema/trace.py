@@ -79,6 +79,7 @@ class LLMCall:
     llm_request_id: str | None = None
     serving_request_id: str | None = None
     model: str | None = None
+    semantic_role: str | None = None
     provider: str | None = None
     backend: str | None = None
     started_at: str | None = None
@@ -236,6 +237,9 @@ def _parse_llm_call(data: Any, step_id: str) -> LLMCall:
         llm_request_id=_optional_str(data, "llm_request_id"),
         serving_request_id=_optional_str(data, "serving_request_id"),
         model=_optional_str(data, "model"),
+        semantic_role=_optional_str(data, "semantic_role")
+        or _optional_str(_dict(data.get("metadata")), "semantic_role")
+        or _optional_str(_dict(data.get("metadata")), "role"),
         provider=_optional_str(data, "provider"),
         backend=_optional_str(data, "backend"),
         started_at=_optional_str(data, "started_at"),

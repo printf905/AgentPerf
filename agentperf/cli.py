@@ -8,7 +8,8 @@ from pathlib import Path
 
 from agentperf.analyzer import analyze_path, analyze_run
 from agentperf.backends.vllm import VLLMTelemetryProvider
-from agentperf.reporters.terminal import render_report
+from agentperf.model_choice import analyze_model_choice_path
+from agentperf.reporters.terminal import render_model_choice_report, render_report
 from agentperf.schema.trace import TraceParseError
 
 LOGGER = logging.getLogger("agentperf")
@@ -47,6 +48,21 @@ def build_parser() -> argparse.ArgumentParser:
         default="WARNING",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
+    model_choice = subparsers.add_parser(
+        "analyze-model-choice",
+        help="Analyze model-choice counterfactual replay results",
+    )
+    model_choice.add_argument("comparison_path", type=Path)
+    model_choice.add_argument(
+        "--show-provenance",
+        action="store_true",
+        help="Include derived metric provenance for each finding",
+    )
+    model_choice.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
     return parser
 
 
@@ -78,6 +94,21 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"{exc}\n")
             return 2
         sys.stdout.write(render_report(report, show_provenance=args.show_provenance))
+        sys.stdout.write("\n")
+        return 0
+    if args.command == "analyze-model-choice":
+        try:
+            model_choice_report = analyze_model_choice_path(args.comparison_path)
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            LOGGER.error("%s", exc)
+            sys.stderr.write(f"{exc}\n")
+            return 2
+        sys.stdout.write(
+            render_model_choice_report(
+                model_choice_report,
+                show_provenance=args.show_provenance,
+            )
+        )
         sys.stdout.write("\n")
         return 0
     return 2
