@@ -19,6 +19,9 @@ Recommended minimum:
 - Linux x86_64 host;
 - one NVIDIA GPU supported by current vLLM and PyTorch;
 - CUDA-capable driver visible through `nvidia-smi`;
+- NVIDIA driver branch compatible with the selected wheel's CUDA major version;
+  for the pinned CUDA 12.9 vLLM `0.26.0` wheel, driver branch `>= 525` is the
+  minimum CUDA 12.x minor-version compatibility requirement;
 - Python 3.11 or 3.12;
 - enough VRAM for `Qwen/Qwen3-0.6B` with an 8K context.
 
@@ -47,7 +50,55 @@ bash scripts/remote_vllm/setup.sh
 ```
 
 The setup script installs AgentPerf in editable mode plus vLLM, OpenAI client
-support, and Requests.
+support, and Requests. It uses `uv` and the official vLLM release wheel instead
+of an unconstrained `pip install vllm`.
+
+Default pinned vLLM installation:
+
+```bash
+uv pip install \
+  https://github.com/vllm-project/vllm/releases/download/v0.26.0/vllm-0.26.0+cu129-cp38-abi3-manylinux_2_28_x86_64.whl \
+  --extra-index-url https://download.pytorch.org/whl/cu129 \
+  --torch-backend=cu129
+```
+
+The script records `nvidia-smi`, driver version, host-reported CUDA
+compatibility, Python version, selected vLLM wheel, PyTorch index, and installed
+`torch` / `vllm` versions under `artifacts/real_vllm/setup/`.
+
+Important CUDA terminology:
+
+- the selected vLLM/PyTorch wheel has a CUDA runtime/toolkit target, such as
+  CUDA `12.9`;
+- `nvidia-smi` reports the maximum CUDA API version supported by the installed
+  driver, but this label is not an exact toolkit minor-version requirement;
+- NVIDIA driver version is the hard compatibility input;
+- CUDA minor-version compatibility allows CUDA 12.x applications to run on
+  CUDA 12-compatible drivers in the documented driver range, subject to feature
+  and PTX limitations.
+
+Before any model download or vLLM server startup, setup validates:
+
+```bash
+python -c "import torch; print(torch.__version__, torch.version.cuda)"
+python -c "import vllm; print(vllm.__version__)"
+nvidia-smi
+python - <<'PY'
+import torch
+assert torch.cuda.is_available()
+print(torch.cuda.get_device_name(0))
+x = torch.ones(1, device="cuda")
+print(x)
+PY
+```
+
+If the host driver reports CUDA compatibility below the selected vLLM wheel's
+CUDA target, that is recorded but is not treated as an automatic failure. For a
+CUDA 12.x wheel, the script rejects only drivers below branch `525`, then treats
+the real PyTorch CUDA allocation probe as authoritative. For vLLM `0.26.0`, the
+official x86_64 release assets include a `+cu129` wheel; an official `+cu128`
+wheel was not found for this release. Do not override `VLLM_CUDA_VERSION` unless
+you have verified that the matching official wheel exists.
 
 ## Start vLLM
 
@@ -225,3 +276,40 @@ At minimum compare baseline vs optimized:
 - task output correctness by manual review.
 
 Do not claim statistical significance from this small run.
+
+## Troubleshooting CUDA Wheel Mismatches
+
+A previous Runpod attempt failed before real validation because the environment
+silently installed an incompatible CUDA stack:
+
+```text
+GPU: NVIDIA RTX A5000
+driver: 570.211.01
+driver-reported CUDA compatibility: 12.8
+installed vLLM: 0.26.0
+installed torch: 2.11.0+cu130
+torch CUDA runtime: 13.0
+failure: CUDA 13.0 runtime required a newer NVIDIA driver
+```
+
+The root cause was an unconstrained vLLM install path that pulled the default
+CUDA 13.0 PyTorch/vLLM dependency set. CUDA 13.x requires a newer driver branch
+than the observed `570.211.01` host driver. Do not assume the CUDA version in a
+Runpod PyTorch template remains intact after `pip install vllm`.
+
+For this milestone, use a CUDA-specific vLLM wheel and matching PyTorch index.
+With vLLM `0.26.0`, the setup script defaults to the official CUDA 12.9 wheel:
+
+```text
+vllm-0.26.0+cu129-cp38-abi3-manylinux_2_28_x86_64.whl
+```
+
+If `nvidia-smi` reports CUDA `12.8` on a driver branch such as `570`, do not
+reject the CUDA 12.9 wheel solely because the label is below `12.9`. NVIDIA CUDA
+minor-version compatibility is based on the driver branch, not exact equality
+with the toolkit minor version. The setup script records the label, installs the
+pinned CUDA 12.9 wheel when the driver branch is compatible, and lets the actual
+PyTorch CUDA probe decide whether the runtime works.
+
+If that probe fails, stop immediately and preserve the exact exception from
+`artifacts/real_vllm/setup/` before attempting model download or vLLM startup.
