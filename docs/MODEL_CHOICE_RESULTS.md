@@ -307,3 +307,95 @@ candidate above, or a revised candidate if review rejects the noisy
 `evidence_reviewer` signal. Phase B must produce real end-to-end mixed-agent
 quality and latency measurements before any model-routing improvement is
 claimed.
+
+## Phase B Attempt Status
+
+Status: Phase B implementation prepared, but no Phase B real replay completed
+yet.
+
+Phase B target:
+
+| Role | Candidate |
+| --- | --- |
+| Planner | Qwen3-1.7B |
+| Evidence reviewer | Qwen3-0.6B |
+| Final synthesizer | Qwen3-0.6B |
+
+Implementation prepared:
+
+- `scripts/run_model_choice_phase_b.py`
+- `scripts/remote_vllm/run_model_choice_phase_b.sh`
+- `scripts/remote_vllm/start_model_choice_mixed_servers.sh`
+- `scripts/remote_vllm/stop_model_choice_mixed_servers.sh`
+
+The Phase B runner is designed to:
+
+1. replay an all-4B strong control in the same environment;
+2. repeat reviewer-only counterfactuals before trusting the noisy Phase A
+   reviewer signal;
+3. run a real end-to-end mixed agent with Planner=1.7B, Reviewer=0.6B, and
+   Synthesizer=0.6B;
+4. emit `MODEL_CHOICE_HEADROOM` with `evidence_source=END_TO_END_VALIDATED` only
+   when the mixed replay preserves the configured quality constraint.
+
+### 2026-08-09 RTX 3090 Phase B Attempt 1
+
+Environment:
+
+- Pod ID: `t8bcfhpruurgt5`
+- GPU: NVIDIA GeForce RTX 3090, 24 GB
+- Price: $0.50/hour
+- Image: `runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404`
+- Driver/KMD: `610.43.02`
+- CUDA UMD label: `13.3`
+- AgentPerf commit before setup fix: `10611ec`
+
+Failure:
+
+- `setup.sh` stopped before installing vLLM.
+- The node's `nvidia-smi` format reported `CUDA UMD Version: 13.3` instead of
+  the older `CUDA Version:` label.
+- The setup parser treated host CUDA compatibility as unknown and refused to
+  continue.
+
+Resolution:
+
+- `setup.sh` was updated to parse both `CUDA Version:` and `CUDA UMD Version:`.
+- This was a setup-script compatibility issue, not a CUDA tensor or vLLM import
+  failure.
+
+Artifacts:
+
+- `artifacts/runpod/agentperf-m4-phase-b-3090-setup-parse-failure-t8bcfhpruurgt5.tgz`
+
+Cleanup:
+
+- Pod was deleted.
+- `runpodctl pod list` returned `[]`.
+
+### 2026-08-09 RTX 3090 Phase B Attempt 2
+
+Environment:
+
+- Pod ID: `72xs7tr1aqik3q`
+- GPU requested: NVIDIA GeForce RTX 3090, 24 GB
+- Price: $0.50/hour
+- Image: `runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404`
+
+Failure:
+
+- The Pod remained in `runtimeStatus=initializing` with
+  `runtimeStatusReason=awaiting_container`.
+- SSH was never allocated.
+- No setup, CUDA probe, vLLM import, model download, or replay ran.
+
+Cleanup:
+
+- Pod was deleted while still awaiting container startup.
+- `runpodctl pod list` returned `[]`.
+
+Phase B conclusion:
+
+- No Phase B quality, latency, cost, or mixed-routing result should be reported.
+- M4 is not complete until a strong same-environment control and the selected
+  mixed route both run end to end.
