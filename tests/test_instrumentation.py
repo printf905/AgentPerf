@@ -74,6 +74,10 @@ def test_recorder_json_round_trip_and_agent_only_analysis() -> None:
     report = analyze_run(run)
 
     assert len(run.llm_calls) == 1
+    assert [component.name for component in run.llm_calls[0].prompt_components] == [
+        "system",
+        "tool_result",
+    ]
     assert [call.llm_call_id for call in report.correlation.unresolved_llm_calls] == ["llm-1"]
     assert report.token_attribution is not None
 

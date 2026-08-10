@@ -244,7 +244,7 @@ def _parse_llm_call(data: Any, step_id: str) -> LLMCall:
         backend=_optional_str(data, "backend"),
         started_at=_optional_str(data, "started_at"),
         ended_at=_optional_str(data, "ended_at"),
-        prompt_components=_parse_prompt(data.get("prompt")),
+        prompt_components=_parse_prompt(data.get("prompt", data.get("prompt_components"))),
         input_tokens=_optional_int(data, "input_tokens"),
         output_tokens=_optional_int(data, "output_tokens"),
         prompt_token_ids=_optional_int_list(data, "prompt_token_ids"),

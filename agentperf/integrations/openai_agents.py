@@ -5,16 +5,20 @@ import time
 from collections.abc import AsyncIterator, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from agentperf.instrumentation import TraceRecorder
 from agentperf.schema.trace import AgentRun, PromptComponent
 
-try:
-    from agents import Model as _OpenAIAgentsModel
-except ImportError:  # pragma: no cover - optional dependency boundary
-    class _OpenAIAgentsModel:  # type: ignore[no-redef]
+if TYPE_CHECKING:
+    class _OpenAIAgentsModel:
         pass
+else:
+    try:
+        from agents import Model as _OpenAIAgentsModel
+    except ImportError:  # pragma: no cover - optional dependency boundary
+        class _OpenAIAgentsModel:
+            pass
 
 
 class _ModelLike(Protocol):

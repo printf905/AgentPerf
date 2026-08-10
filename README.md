@@ -170,6 +170,19 @@ Details:
 [docs/EXTERNAL_AGENT_BENCHMARK.md](docs/EXTERNAL_AGENT_BENCHMARK.md), and
 [docs/GENERALIZATION_REVIEW.md](docs/GENERALIZATION_REVIEW.md).
 
+M7 adds a second external target: upstream `mini-swe-agent` `DefaultAgent`.
+AgentPerf wrapped the public model and local-environment boundaries and profiled
+five small repository-repair tasks without changing the agent loop. The run
+captured 30 LLM calls and 30 bash actions with 100% task pass rate. It surfaced
+context duplication from repeated default prompt scaffolding, but that was not
+accepted as a replay-worthy optimization because it was mostly a batch-level
+artifact and no serving telemetry was present.
+
+Details:
+[docs/REAL_WORLD_AGENT_SELECTION.md](docs/REAL_WORLD_AGENT_SELECTION.md),
+[docs/REAL_WORLD_AGENT_BENCHMARK.md](docs/REAL_WORLD_AGENT_BENCHMARK.md), and
+[docs/REAL_WORLD_GENERALIZATION_RESULTS.md](docs/REAL_WORLD_GENERALIZATION_RESULTS.md).
+
 ## Why This Is Cross-Layer
 
 ```text
@@ -230,7 +243,9 @@ AgentPerf currently explores three performance questions.
 | End-to-end mixed model routing | Pending |
 | Public instrumentation API | Implemented |
 | OpenAI Agents SDK adapter | Agent-layer validated |
-| External-agent material finding | Not found in initial workload |
+| mini-SWE-agent adapter | Agent-layer validated |
+| Real existing agent profile | Agent-layer validated; no accepted material optimization |
+| External-agent material finding | Not accepted yet |
 | SGLang ingestion | Planned |
 | Web dashboard | Not implemented |
 
@@ -406,6 +421,12 @@ Start here:
   external-agent workload and observed local result.
 - [docs/GENERALIZATION_REVIEW.md](docs/GENERALIZATION_REVIEW.md): what
   generalized unchanged and what did not.
+- [docs/REAL_WORLD_AGENT_SELECTION.md](docs/REAL_WORLD_AGENT_SELECTION.md):
+  M7 real-world agent selection.
+- [docs/REAL_WORLD_AGENT_BENCHMARK.md](docs/REAL_WORLD_AGENT_BENCHMARK.md):
+  mini-SWE-agent benchmark and running instructions.
+- [docs/REAL_WORLD_GENERALIZATION_RESULTS.md](docs/REAL_WORLD_GENERALIZATION_RESULTS.md):
+  M7 observed profile and generalization review.
 - [docs/PRODUCT.md](docs/PRODUCT.md) and
   [docs/BENCHMARK_PLAN.md](docs/BENCHMARK_PLAN.md): product contract and future
   evaluation plan.
