@@ -25,6 +25,7 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
 openai-agents = ["openai-agents>=0.19,<0.20"]
+mini-swe-agent = ["mini-swe-agent>=2,<3"]
 
 [project.scripts]
 agentperf = "agentperf.cli:main"

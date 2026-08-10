@@ -204,6 +204,21 @@ emit a material actionable warning.
 Details:
 [docs/EXTERNAL_AGENT_VLLM_VALIDATION.md](docs/EXTERNAL_AGENT_VLLM_VALIDATION.md).
 
+### Real Existing Agent Profile
+
+M7 adds a second external target: upstream `mini-swe-agent` `DefaultAgent`.
+AgentPerf wrapped the public model and local-environment boundaries and profiled
+five small repository-repair tasks without changing the agent loop. The run
+captured 30 LLM calls and 30 bash actions with 100% task pass rate. It surfaced
+context duplication from repeated default prompt scaffolding, but that was not
+accepted as a replay-worthy optimization because it was mostly a batch-level
+artifact and no serving telemetry was present.
+
+Details:
+[docs/REAL_WORLD_AGENT_SELECTION.md](docs/REAL_WORLD_AGENT_SELECTION.md),
+[docs/REAL_WORLD_AGENT_BENCHMARK.md](docs/REAL_WORLD_AGENT_BENCHMARK.md), and
+[docs/REAL_WORLD_GENERALIZATION_RESULTS.md](docs/REAL_WORLD_GENERALIZATION_RESULTS.md).
+
 ## Why This Is Cross-Layer
 
 ```text
@@ -265,7 +280,9 @@ AgentPerf currently explores three performance questions.
 | Public instrumentation API | Implemented |
 | OpenAI Agents SDK adapter | Agent-layer validated |
 | External OpenAI Agents SDK + vLLM correlation | Real validated |
-| External-agent material finding | Not found in initial workload |
+| mini-SWE-agent adapter | Agent-layer validated |
+| Real existing agent profile | Agent-layer validated; no accepted material optimization |
+| External-agent material finding | Not accepted yet |
 | SGLang ingestion | Planned |
 | Web dashboard | Not implemented |
 
@@ -401,6 +418,8 @@ Important controls used in the documented runs:
 | Prefix cacheability | vLLM 0.26.0+cu129 / Qwen3-0.6B | RTX A5000 | controlled prompt-layout replay | 3 warmups, 10 measured repetitions per config | output recorded, not quality-scored |
 | Context waste | vLLM 0.26.0+cu129 / Qwen3-0.6B | RTX 3090 | local-corpus research agent | 10 deterministic tasks | rule-based fact/pass scorer |
 | Model choice Phase A | vLLM 0.26.0+cu129 / Qwen3 0.6B, 1.7B, 4B | RTX 3090 | one-role-at-a-time replay | 10 deterministic tasks | same rule-based scorer |
+| External SDK + vLLM correlation | vLLM 0.26.0+cu129 / Qwen3-4B | RTX 3090 | OpenAI Agents SDK support triage | 5 deterministic tasks | rule-based route/policy scorer |
+| Real existing agent profile | no serving backend | none | mini-SWE-agent local repo repair | 5 bounded tasks | pytest pass/fail |
 
 Runbooks and mappings:
 
@@ -443,6 +462,12 @@ Start here:
   generalized unchanged and what did not.
 - [docs/EXTERNAL_AGENT_VLLM_VALIDATION.md](docs/EXTERNAL_AGENT_VLLM_VALIDATION.md):
   M6 external OpenAI Agents SDK plus live vLLM cross-layer validation.
+- [docs/REAL_WORLD_AGENT_SELECTION.md](docs/REAL_WORLD_AGENT_SELECTION.md):
+  M7 real-world agent selection.
+- [docs/REAL_WORLD_AGENT_BENCHMARK.md](docs/REAL_WORLD_AGENT_BENCHMARK.md):
+  mini-SWE-agent benchmark and running instructions.
+- [docs/REAL_WORLD_GENERALIZATION_RESULTS.md](docs/REAL_WORLD_GENERALIZATION_RESULTS.md):
+  M7 observed profile and generalization review.
 - [docs/PRODUCT.md](docs/PRODUCT.md) and
   [docs/BENCHMARK_PLAN.md](docs/BENCHMARK_PLAN.md): product contract and future
   evaluation plan.
@@ -477,6 +502,8 @@ See [docs/LANDSCAPE.md](docs/LANDSCAPE.md) for the detailed review.
 - The external OpenAI Agents SDK plus vLLM run required a first-turn
   tool-choice compatibility control for Qwen3 tool calling; smaller Qwen3
   models did not naturally trigger SDK tool calls under `auto`.
+- The mini-SWE-agent M7 run used bounded local repository-repair tasks and no
+  GPU/vLLM serving telemetry; it is not a SWE-bench result or optimization win.
 - The initial external-agent workload did not expose a material optimization
   target.
 - AgentPerf does not perform production-scale distributed trace ingestion.

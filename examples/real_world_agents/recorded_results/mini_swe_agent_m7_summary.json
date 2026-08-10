@@ -1,0 +1,36 @@
+{
+  "agent": "mini-SWE-agent DefaultAgent",
+  "mini_swe_agent_version": "2.4.6",
+  "mode": "deterministic",
+  "tasks": 5,
+  "llm_calls": 30,
+  "tool_calls": 30,
+  "passed": 5,
+  "pass_rate": 1.0,
+  "input_tokens": 25318,
+  "output_tokens": null,
+  "component_processed_tokens": {
+    "system": 3090,
+    "user": 17352,
+    "history": 335,
+    "tool_result": 4541
+  },
+  "component_unique_tokens": {
+    "system": 103,
+    "user": 2892,
+    "history": 23,
+    "tool_result": 1111
+  },
+  "tool_latency_ms": 1700,
+  "correlated_serving_requests": 0,
+  "findings": [
+    {
+      "id": "CONTEXT_DUPLICATION",
+      "severity": "HIGH",
+      "accepted_as_material_action": false,
+      "reason": "Repeated prompt scaffold was real, but mostly a batch-level repeated-task artifact without serving telemetry or a clear low-risk intervention."
+    }
+  ],
+  "optimization_applied": false,
+  "gpu_used": false
+}
