@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import AsyncIterator, Mapping, Sequence
+from collections.abc import AsyncIterator, Callable, Mapping, Sequence
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol, cast
@@ -59,12 +60,20 @@ class AgentPerfModelWrapper(_OpenAIAgentsModel):
         *,
         model_name: str | None = None,
         provider: str = "openai-agents-python",
+        request_id_factory: Callable[[str], str] | None = None,
+        request_extra_body: Mapping[str, Any] | None = None,
+        request_id_body_key: str = "request_id",
+        model_settings_transform: Callable[[str, Any, Any, list[Any]], Any] | None = None,
     ) -> None:
         self._model = model
         self._recorder = recorder
         self._model_name = model_name
         self._provider = provider
         self._calls = 0
+        self._request_id_factory = request_id_factory
+        self._request_extra_body = dict(request_extra_body or {})
+        self._request_id_body_key = request_id_body_key
+        self._model_settings_transform = model_settings_transform
 
     async def get_response(
         self,
@@ -82,6 +91,24 @@ class AgentPerfModelWrapper(_OpenAIAgentsModel):
     ) -> Any:
         self._calls += 1
         llm_call_id = f"openai-agents-llm-{self._calls}"
+        if self._model_settings_transform is not None:
+            model_settings = self._model_settings_transform(
+                llm_call_id,
+                input,
+                model_settings,
+                tools,
+            )
+        propagated_request_id = (
+            self._request_id_factory(llm_call_id) if self._request_id_factory else None
+        )
+        if propagated_request_id is not None:
+            model_settings = _with_extra_body(
+                model_settings,
+                {
+                    self._request_id_body_key: propagated_request_id,
+                    **self._request_extra_body,
+                },
+            )
         components = prompt_components_from_openai_agents_input(
             system_instructions=system_instructions,
             input=input,
@@ -105,10 +132,11 @@ class AgentPerfModelWrapper(_OpenAIAgentsModel):
         usage = _usage_dict(getattr(response, "usage", None))
         request_id = _optional_str(getattr(response, "request_id", None))
         response_id = _optional_str(getattr(response, "response_id", None))
+        llm_request_id = propagated_request_id or request_id or response_id or llm_call_id
         self._record_tool_results_seen_in_prompt(input)
         self._recorder.record_llm_call(
             llm_call_id=llm_call_id,
-            llm_request_id=request_id or response_id or llm_call_id,
+            llm_request_id=llm_request_id,
             prompt_components=components,
             model=self._model_name or _optional_str(getattr(self._model, "model", None)),
             provider=self._provider,
@@ -124,6 +152,8 @@ class AgentPerfModelWrapper(_OpenAIAgentsModel):
                 "previous_response_id": previous_response_id,
                 "conversation_id": conversation_id,
                 "model_settings": _stringify_model_settings(model_settings),
+                "propagated_request_id": propagated_request_id,
+                "explicit_request_correlation": propagated_request_id is not None,
             },
         )
         return response
@@ -467,6 +497,17 @@ def _stringify_model_settings(settings: Any) -> str | None:
     if isinstance(dumped, dict):
         return json.dumps(dumped, sort_keys=True, default=str)
     return str(settings)
+
+
+def _with_extra_body(settings: Any, extra_body: dict[str, Any]) -> Any:
+    dumped = _model_dump(settings)
+    existing_extra_body = _dict(dumped.get("extra_body")) if isinstance(dumped, dict) else {}
+    merged = {**existing_extra_body, **extra_body}
+    try:
+        return replace(settings, extra_body=merged)
+    except TypeError:
+        settings.extra_body = merged
+        return settings
 
 
 def _list(value: Any) -> list[Any]:

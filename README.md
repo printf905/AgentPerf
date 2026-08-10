@@ -170,6 +170,40 @@ Details:
 [docs/EXTERNAL_AGENT_BENCHMARK.md](docs/EXTERNAL_AGENT_BENCHMARK.md), and
 [docs/GENERALIZATION_REVIEW.md](docs/GENERALIZATION_REVIEW.md).
 
+### External Agent + vLLM Cross-Layer Trace
+
+Status: real cross-layer validation completed; no material issue found.
+
+M6 routed the OpenAI Agents SDK support-triage agent through a live vLLM
+OpenAI-compatible endpoint and joined SDK LLM calls to vLLM serving requests by
+explicit request ID. The final run used vLLM `0.26.0+cu129`,
+`Qwen/Qwen3-4B`, and one RTX 3090.
+
+Small Qwen3 models correlated correctly but did not naturally execute the SDK
+tool lifecycle under `tool_choice=auto`. The successful run used a narrow
+first-turn `lookup_policy` tool-choice control so the existing support-triage
+agent exercised its intended tool path; no tool output or workload pathology
+was added.
+
+| Metric | Value |
+| --- | ---: |
+| Tasks | 5 |
+| LLM calls | 10 |
+| Tool calls | 5 |
+| vLLM serving requests | 10 |
+| Explicit correlation success | 100% |
+| Input tokens | 2,955 |
+| Output tokens | 770 |
+| Scheduled->first P95 | 36.26 ms |
+| Mean score | 0.700 |
+| Pass rate | 60% |
+
+The only finding was low-severity `PREFILL_PATH_DOMINANCE`; AgentPerf did not
+emit a material actionable warning.
+
+Details:
+[docs/EXTERNAL_AGENT_VLLM_VALIDATION.md](docs/EXTERNAL_AGENT_VLLM_VALIDATION.md).
+
 ## Why This Is Cross-Layer
 
 ```text
@@ -230,6 +264,7 @@ AgentPerf currently explores three performance questions.
 | End-to-end mixed model routing | Pending |
 | Public instrumentation API | Implemented |
 | OpenAI Agents SDK adapter | Agent-layer validated |
+| External OpenAI Agents SDK + vLLM correlation | Real validated |
 | External-agent material finding | Not found in initial workload |
 | SGLang ingestion | Planned |
 | Web dashboard | Not implemented |
@@ -406,6 +441,8 @@ Start here:
   external-agent workload and observed local result.
 - [docs/GENERALIZATION_REVIEW.md](docs/GENERALIZATION_REVIEW.md): what
   generalized unchanged and what did not.
+- [docs/EXTERNAL_AGENT_VLLM_VALIDATION.md](docs/EXTERNAL_AGENT_VLLM_VALIDATION.md):
+  M6 external OpenAI Agents SDK plus live vLLM cross-layer validation.
 - [docs/PRODUCT.md](docs/PRODUCT.md) and
   [docs/BENCHMARK_PLAN.md](docs/BENCHMARK_PLAN.md): product contract and future
   evaluation plan.
@@ -437,8 +474,9 @@ See [docs/LANDSCAPE.md](docs/LANDSCAPE.md) for the detailed review.
 - M4 mixed-routing replay is not complete; Phase A role sensitivity is not an
   end-to-end routing result.
 - The experiments are not statistically powered benchmarks.
-- The first external-agent integration is agent-layer only; it does not yet
-  combine an external framework agent with live vLLM telemetry.
+- The external OpenAI Agents SDK plus vLLM run required a first-turn
+  tool-choice compatibility control for Qwen3 tool calling; smaller Qwen3
+  models did not naturally trigger SDK tool calls under `auto`.
 - The initial external-agent workload did not expose a material optimization
   target.
 - AgentPerf does not perform production-scale distributed trace ingestion.
