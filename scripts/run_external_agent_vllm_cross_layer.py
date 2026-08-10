@@ -237,7 +237,24 @@ def _trace_example(steps: list[Any]) -> dict[str, Any]:
                     for call in step.llm_calls
                 ],
             }
-    return {}
+    llm_calls = [call for step in steps for call in step.llm_calls]
+    tool_calls = [tool for step in steps for tool in step.tool_calls]
+    if not llm_calls:
+        return {}
+    return {
+        "agent_step_ids": [step.agent_step_id for step in steps[:4]],
+        "tool_call_ids": [tool.tool_call_id for tool in tool_calls[:3]],
+        "llm_calls": [
+            {
+                "llm_call_id": call.llm_call_id,
+                "llm_request_id": call.llm_request_id,
+                "serving_request_id": call.serving_request_id,
+                "input_tokens": call.input_tokens,
+                "output_tokens": call.output_tokens,
+            }
+            for call in llm_calls[:4]
+        ],
+    }
 
 
 def _environment(args: argparse.Namespace) -> dict[str, Any]:
