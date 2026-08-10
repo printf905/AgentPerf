@@ -91,6 +91,7 @@ async def _run(args: argparse.Namespace) -> int:
         provider="openai-agents-python",
         request_id_factory=lambda llm_call_id: f"agentperf-m6-{llm_call_id}-{uuid4().hex[:8]}",
         request_extra_body={"return_token_ids": True, "return_prompt_text": True},
+        model_settings_transform=_force_lookup_policy_on_first_turn,
     )
     agent = Agent(
         name="Support Triage Agent",
@@ -250,6 +251,10 @@ def _environment(args: argparse.Namespace) -> dict[str, Any]:
         "gpu": _detect_gpu(),
         "agentperf_version": "0.1.0",
         "telemetry_source": "OpenAI-compatible HTTP response body captured by httpx hook",
+        "tool_choice_control": (
+            "lookup_policy forced only before the first tool result so vLLM/Qwen "
+            "exercises the existing support-triage tool lifecycle"
+        ),
     }
 
 
@@ -265,6 +270,33 @@ def _detect_gpu() -> str | None:
     except (OSError, subprocess.TimeoutExpired):
         return None
     return result.stdout.strip() or None
+
+
+def _force_lookup_policy_on_first_turn(
+    llm_call_id: str,
+    input: Any,
+    model_settings: Any,
+    tools: list[Any],
+) -> Any:
+    del llm_call_id
+    if not tools or _has_tool_result(input):
+        return model_settings
+    from dataclasses import replace
+
+    extra_args = dict(getattr(model_settings, "extra_args", None) or {})
+    extra_args["tool_choice"] = {"type": "function", "function": {"name": "lookup_policy"}}
+    return replace(model_settings, extra_args=extra_args)
+
+
+def _has_tool_result(input: Any) -> bool:
+    if not isinstance(input, list):
+        return False
+    for item in input:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") in {"function_call_output", "tool_call_output"}:
+            return True
+    return False
 
 
 def _mean(values: list[float]) -> float:

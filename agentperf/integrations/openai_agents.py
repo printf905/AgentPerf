@@ -63,6 +63,7 @@ class AgentPerfModelWrapper(_OpenAIAgentsModel):
         request_id_factory: Callable[[str], str] | None = None,
         request_extra_body: Mapping[str, Any] | None = None,
         request_id_body_key: str = "request_id",
+        model_settings_transform: Callable[[str, Any, Any, list[Any]], Any] | None = None,
     ) -> None:
         self._model = model
         self._recorder = recorder
@@ -72,6 +73,7 @@ class AgentPerfModelWrapper(_OpenAIAgentsModel):
         self._request_id_factory = request_id_factory
         self._request_extra_body = dict(request_extra_body or {})
         self._request_id_body_key = request_id_body_key
+        self._model_settings_transform = model_settings_transform
 
     async def get_response(
         self,
@@ -89,6 +91,13 @@ class AgentPerfModelWrapper(_OpenAIAgentsModel):
     ) -> Any:
         self._calls += 1
         llm_call_id = f"openai-agents-llm-{self._calls}"
+        if self._model_settings_transform is not None:
+            model_settings = self._model_settings_transform(
+                llm_call_id,
+                input,
+                model_settings,
+                tools,
+            )
         propagated_request_id = (
             self._request_id_factory(llm_call_id) if self._request_id_factory else None
         )

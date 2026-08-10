@@ -142,6 +142,76 @@ async def _assert_model_wrapper_injects_explicit_request_id_into_extra_body() ->
     assert run.llm_calls[0].metadata["explicit_request_correlation"] is True
 
 
+def test_model_wrapper_applies_model_settings_transform() -> None:
+    asyncio.run(_assert_model_wrapper_applies_model_settings_transform())
+
+
+async def _assert_model_wrapper_applies_model_settings_transform() -> None:
+    from dataclasses import replace
+
+    from agents import ModelResponse, ModelSettings, Usage
+
+    class CapturingModel:
+        model = "fixture-model"
+
+        def __init__(self) -> None:
+            self.extra_args: dict[str, Any] | None = None
+
+        async def get_response(
+            self,
+            system_instructions: str | None,
+            input: Any,
+            model_settings: Any,
+            tools: list[Any],
+            output_schema: Any,
+            handoffs: list[Any],
+            tracing: Any,
+            *,
+            previous_response_id: str | None,
+            conversation_id: str | None,
+            prompt: Any,
+        ) -> ModelResponse:
+            self.extra_args = dict(model_settings.extra_args)
+            return ModelResponse(
+                output=[],
+                usage=Usage(input_tokens=3, output_tokens=2, total_tokens=5),
+                response_id="resp-1",
+            )
+
+        def stream_response(self, *args: Any, **kwargs: Any) -> Any:
+            raise NotImplementedError
+
+    recorder = TraceRecorder(agent_run_id="settings-transform")
+    model = CapturingModel()
+    wrapper = AgentPerfModelWrapper(
+        model,
+        recorder,
+        model_settings_transform=lambda _id, _input, settings, _tools: replace(
+            settings,
+            extra_args={
+                "tool_choice": {"type": "function", "function": {"name": "lookup_policy"}}
+            },
+        ),
+    )
+
+    await wrapper.get_response(
+        "system",
+        "hello",
+        ModelSettings(),
+        [],
+        None,
+        [],
+        type("Tracing", (), {"is_disabled": lambda self: True})(),
+        previous_response_id=None,
+        conversation_id=None,
+        prompt=None,
+    )
+
+    assert model.extra_args == {
+        "tool_choice": {"type": "function", "function": {"name": "lookup_policy"}}
+    }
+
+
 def test_openai_compatible_recorder_captures_and_merges_vllm_response() -> None:
     asyncio.run(_assert_openai_compatible_recorder_captures_and_merges_vllm_response())
 
