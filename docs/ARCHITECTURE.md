@@ -3,7 +3,7 @@
 ## Data Flow
 
 ```text
-JSON trace file or vLLM recording
+JSON trace file, instrumentation recorder, framework adapter, or vLLM recording
   -> backend adapter when needed
   -> normalized AgentRun schema
   -> TraceCorrelator
@@ -16,6 +16,11 @@ JSON trace file or vLLM recording
 ## Components
 
 - `agentperf.schema.trace`: Dataclasses for agent runs, steps, LLM calls, tool calls, serving requests, prompt components, and parsing.
+- `agentperf.instrumentation`: Public recorder/context-manager API for
+  hand-written agents and framework adapters.
+- `agentperf.integrations.openai_agents`: Optional OpenAI Agents SDK adapter
+  using public tracing callbacks plus a model wrapper for prompt-component
+  attribution.
 - `agentperf.schema.findings`: Reusable finding model.
 - `agentperf.correlation.correlator`: Associates agent-level `LLMCall` records with `ServingRequest` records only when explicit IDs match.
 - `agentperf.metrics.tokens`: Approximate tokenization and repeated-prefix/content metrics.
@@ -28,8 +33,10 @@ JSON trace file or vLLM recording
 - `agentperf.tokenization`: Exact/approximate tokenizer provider interface used
   to make token evidence reliability explicit.
 - `agentperf.reporters.terminal`: Plain terminal output.
-- `agentperf.cli`: `agentperf analyze <trace.json>` and
-  `agentperf analyze-vllm-recording <recording.json>`.
+- `agentperf.cli`: `agentperf analyze <trace.json>`,
+  `agentperf analyze-vllm-recording <recording.json>`,
+  `agentperf analyze-openai-agents-export <export.json>`, and model-choice
+  report commands.
 
 ## Correlation Policy
 
@@ -81,6 +88,27 @@ requests through explicit IDs. No timestamp-based matching is used.
 The adapter currently supports vLLM only. There is no speculative SGLang adapter
 or generic plugin layer in this milestone.
 
+## External Agent Integration
+
+The first external-framework adapter targets OpenAI Agents SDK:
+
+```text
+OpenAI Agents SDK Agent/Runner/function_tool
+  -> OpenAIAgentsTraceProcessor
+  -> AgentPerfModelWrapper
+  -> TraceRecorder
+  -> normalized AgentRun
+  -> existing analyzer and detectors
+```
+
+This path is intentionally agent-layer first. It can run without a GPU and
+without serving telemetry. Cross-layer findings remain unavailable until the
+agent model calls are backed by a serving adapter such as vLLM and explicit
+request IDs are propagated.
+
+Adapter-specific data stays in `metadata`; detector logic continues to consume
+only normalized AgentPerf trace objects.
+
 ## MVP Thresholds
 
 Thresholds are code-level configuration objects today, not CLI flags.
@@ -90,6 +118,7 @@ Thresholds are code-level configuration objects today, not CLI flags.
 | `CONTEXT_DUPLICATION` | minimum affected calls | 3 |
 | `CONTEXT_DUPLICATION` | minimum repeated context tokens | 50 approximate tokens |
 | `CONTEXT_DUPLICATION` | minimum repeated context ratio | 25% |
+| `CONTEXT_DUPLICATION` | minimum repeated tokens for material severity | 5,000 approximate tokens |
 | `PREFIX_CACHE_OPPORTUNITY` | minimum affected requests | 2 |
 | `PREFIX_CACHE_OPPORTUNITY` | minimum shared prefix ratio | 60% |
 | `PREFIX_CACHE_OPPORTUNITY` | minimum repeated non-prefix ratio | 50% |

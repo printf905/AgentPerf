@@ -62,6 +62,7 @@ Optional:
 - `llm_request_id`
 - `serving_request_id`
 - `model`
+- `semantic_role`
 - `provider`
 - `backend`
 - `started_at`
@@ -94,11 +95,16 @@ Known prompt component names:
 - `system`
 - `user`
 - `history`
-- `tool_schemas`
-- `tool_results`
-- `other_context`
+- `tool_schema` or `tool_schemas`
+- `tool_result` or `tool_results`
+- `retrieved_context`
+- `other` or `other_context`
 
 Unknown component names are preserved.
+
+Prompt components may include provenance metadata. For example, a tool-result
+component can use `metadata.source_tool_call_ids` to show which `ToolCall`
+produced the text later reinjected into an LLM prompt.
 
 ## ToolCall
 
@@ -168,6 +174,14 @@ Correlated cross-layer trace:
 - Contains LLM calls and serving requests with explicit matching IDs.
 - All MVP detectors can run.
 
+External-framework trace:
+
+- Uses the same `agent_run` structure.
+- May contain framework span exports in `metadata`.
+- May omit serving requests entirely.
+- Should preserve framework-specific data in metadata rather than adding
+  framework-only fields to core trace objects.
+
 ## Tokenization
 
 Tokenization mode is explicit:
@@ -213,3 +227,8 @@ and leave `prefill_latency_ms` unset.
 ## OpenTelemetry Alignment
 
 The schema keeps `trace_id`, `span_id`, and `parent_span_id` fields and uses GenAI terminology where practical, such as provider, model, agent invocation, tool call, token usage, TTFT, and TPOT. It intentionally stores serving-specific fields that are not currently first-class in generic GenAI semantic conventions, such as prefill latency and prefix-cache hit/miss tokens.
+
+Framework adapters should map their native events into this representation. For
+the OpenAI Agents SDK adapter, SDK generation/response spans become `LLMCall`
+records, function spans become `ToolCall` records when enabled, and SDK input
+items become `PromptComponent` records.

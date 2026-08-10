@@ -12,6 +12,7 @@ class ContextDuplicationConfig:
     min_affected_calls: int = 3
     min_repeated_tokens: int = 50
     min_repeated_ratio: float = 0.25
+    min_material_repeated_tokens: int = 5000
 
 
 class ContextDuplicationDetector:
@@ -28,7 +29,15 @@ class ContextDuplicationDetector:
         if metrics.repeated_context_ratio < self.config.min_repeated_ratio:
             return []
 
-        severity: Severity = "HIGH" if metrics.repeated_context_ratio >= 0.5 else "MEDIUM"
+        if metrics.repeated_context_tokens < self.config.min_material_repeated_tokens:
+            severity: Severity = "LOW"
+            materiality = "OBSERVATION"
+        elif metrics.repeated_context_ratio >= 0.5:
+            severity = "HIGH"
+            materiality = "MATERIAL"
+        else:
+            severity = "MEDIUM"
+            materiality = "HEADROOM"
         return [
             Finding(
                 id="CONTEXT_DUPLICATION",
@@ -47,6 +56,7 @@ class ContextDuplicationDetector:
                     "largest_common_prefix_ratio": round(metrics.largest_common_prefix_ratio, 4),
                     "repeated_non_prefix_tokens": metrics.repeated_non_prefix_tokens,
                     "repeated_tokens_by_component": metrics.repeated_tokens_by_component,
+                    "materiality": materiality,
                     "tokenization": (
                         "approximate" if metrics.approximate else "trace-provided totals"
                     ),
@@ -69,10 +79,12 @@ class ContextDuplicationDetector:
                         "repeated_context_ratio": metrics.repeated_context_ratio,
                         "largest_common_prefix_tokens": metrics.largest_common_prefix_tokens,
                         "repeated_tokens_by_component": metrics.repeated_tokens_by_component,
+                        "materiality": materiality,
                     },
                     notes=[
                         "Repeated content is measured from normalized prompt components.",
                         "The detector does not infer that repeated content is unnecessary.",
+                        "Low absolute repeated-token volume is treated as an observation.",
                     ],
                 ),
             )
