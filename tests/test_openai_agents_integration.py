@@ -1,14 +1,23 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
+from typing import Any
 
+from agentperf.backends.vllm import VLLMTelemetryProvider
 from agentperf.cli import main
 from agentperf.instrumentation import TraceRecorder
 from agentperf.integrations.openai_agents import (
+    AgentPerfModelWrapper,
     OpenAIAgentsTraceProcessor,
     agent_run_from_openai_agents_export,
     prompt_components_from_openai_agents_input,
+)
+from agentperf.integrations.openai_compatible import (
+    OpenAICompatibleRequestRecorder,
+    build_vllm_recording_from_agent_run,
+    correlation_summary,
 )
 
 
@@ -62,6 +71,132 @@ def test_trace_processor_preserves_framework_spans_and_function_calls() -> None:
     assert len(processor.span_exports) == 1
     assert len(run.tool_calls) == 1
     assert run.tool_calls[0].metadata["framework"] == "openai-agents-python"
+
+
+def test_model_wrapper_injects_explicit_request_id_into_extra_body() -> None:
+    asyncio.run(_assert_model_wrapper_injects_explicit_request_id_into_extra_body())
+
+
+async def _assert_model_wrapper_injects_explicit_request_id_into_extra_body() -> None:
+    from agents import ModelResponse, ModelSettings, Usage
+
+    class CapturingModel:
+        model = "fixture-model"
+
+        def __init__(self) -> None:
+            self.extra_body: dict[str, Any] | None = None
+
+        async def get_response(
+            self,
+            system_instructions: str | None,
+            input: Any,
+            model_settings: Any,
+            tools: list[Any],
+            output_schema: Any,
+            handoffs: list[Any],
+            tracing: Any,
+            *,
+            previous_response_id: str | None,
+            conversation_id: str | None,
+            prompt: Any,
+        ) -> ModelResponse:
+            self.extra_body = dict(model_settings.extra_body)
+            return ModelResponse(
+                output=[],
+                usage=Usage(input_tokens=3, output_tokens=2, total_tokens=5),
+                response_id="resp-1",
+            )
+
+        def stream_response(self, *args: Any, **kwargs: Any) -> Any:
+            raise NotImplementedError
+
+    recorder = TraceRecorder(agent_run_id="request-id-wrapper")
+    model = CapturingModel()
+    wrapper = AgentPerfModelWrapper(
+        model,
+        recorder,
+        request_id_factory=lambda llm_call_id: f"agentperf-{llm_call_id}",
+        request_extra_body={"return_token_ids": True},
+    )
+
+    await wrapper.get_response(
+        "system",
+        "hello",
+        ModelSettings(extra_body={"temperature_seed": 7}),
+        [],
+        None,
+        [],
+        type("Tracing", (), {"is_disabled": lambda self: True})(),
+        previous_response_id=None,
+        conversation_id=None,
+        prompt=None,
+    )
+
+    assert model.extra_body == {
+        "temperature_seed": 7,
+        "request_id": "agentperf-openai-agents-llm-1",
+        "return_token_ids": True,
+    }
+    run = recorder.finish()
+    assert run.llm_calls[0].llm_request_id == "agentperf-openai-agents-llm-1"
+    assert run.llm_calls[0].metadata["explicit_request_correlation"] is True
+
+
+def test_openai_compatible_recorder_captures_and_merges_vllm_response() -> None:
+    asyncio.run(_assert_openai_compatible_recorder_captures_and_merges_vllm_response())
+
+
+async def _assert_openai_compatible_recorder_captures_and_merges_vllm_response() -> None:
+    recorder = OpenAICompatibleRequestRecorder()
+    await recorder.capture_response(
+        _FakeHTTPResponse(
+            url="http://localhost:8000/v1/chat/completions",
+            request_body={"model": "fixture-model", "request_id": "agentperf-req-1"},
+            response_body={
+                "id": "chatcmpl-agentperf-req-1",
+                "usage": {
+                    "prompt_tokens": 2,
+                    "completion_tokens": 1,
+                    "prompt_tokens_details": {"cached_tokens": 0},
+                },
+                "prompt_token_ids": [10, 11],
+                "choices": [{"token_ids": [12]}],
+                "metrics": {
+                    "queue_time_ms": 1.0,
+                    "time_to_first_token_ms": 2.0,
+                    "generation_time_ms": 3.0,
+                    "mean_itl_ms": 3.0,
+                },
+            },
+        )
+    )
+    trace = TraceRecorder(agent_run_id="cross-layer-fixture")
+    trace.record_llm_call(
+        llm_call_id="llm-1",
+        llm_request_id="agentperf-req-1",
+        prompt_components={"user": "hello"},
+    )
+    trace.record_tool_call(tool_call_id="tool-1", name="lookup_policy", output="policy")
+    agent_run = trace.finish()
+
+    recording = build_vllm_recording_from_agent_run(
+        agent_run=agent_run,
+        captured_records=recorder.records,
+        model="fixture-model",
+        environment={"backend": "vllm"},
+    )
+    run = VLLMTelemetryProvider().build_run(recording)
+
+    assert correlation_summary(recording, expected_llm_calls=1) == {
+        "expected_llm_calls": 1,
+        "correlated_serving_requests": 1,
+        "missing_correlations": [],
+        "correlation_success_rate": 1.0,
+    }
+    assert run.llm_calls[0].llm_request_id == "agentperf-req-1"
+    assert run.llm_calls[0].serving_request_id == "chatcmpl-agentperf-req-1"
+    assert run.serving_requests[0].queue_latency_ms == 1.0
+    assert run.tool_calls[0].name == "lookup_policy"
 
 
 def test_cli_analyze_openai_agents_export_success(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
@@ -128,3 +263,26 @@ class _FakeSpan:
 
     def export(self) -> dict[str, object]:
         return self._exported
+
+
+class _FakeRequest:
+    def __init__(self, url: str, request_body: dict[str, Any]) -> None:
+        self.url = url
+        self.content = json.dumps(request_body).encode("utf-8")
+        self.headers = {"traceparent": "00-" + ("1" * 32) + "-" + ("2" * 16) + "-01"}
+
+
+class _FakeHTTPResponse:
+    def __init__(
+        self,
+        *,
+        url: str,
+        request_body: dict[str, Any],
+        response_body: dict[str, Any],
+    ) -> None:
+        self.request = _FakeRequest(url, request_body)
+        self.content = json.dumps(response_body).encode("utf-8")
+        self.status_code = 200
+
+    async def aread(self) -> bytes:
+        return bytes(self.content)

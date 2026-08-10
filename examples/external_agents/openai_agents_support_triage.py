@@ -4,7 +4,7 @@ import argparse
 import asyncio
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from agentperf.analyzer import analyze_run
 from agentperf.instrumentation import TraceRecorder
@@ -48,7 +48,7 @@ POLICY_CORPUS = {
     ),
 }
 
-TASKS = [
+TASKS: list[dict[str, str]] = [
     {
         "id": "task-refund-1",
         "text": "Customer asks for a refund for order A-100 within 20 days.",
@@ -208,7 +208,7 @@ async def run(output_dir: Path) -> None:
         },
     )
     processor = OpenAIAgentsTraceProcessor(recorder, capture_function_spans=False)
-    set_trace_processors([processor])
+    set_trace_processors([cast(Any, processor)])
     model = AgentPerfModelWrapper(
         ScriptedSupportModel(),
         recorder,
@@ -223,7 +223,7 @@ async def run(output_dir: Path) -> None:
         tools=[lookup_policy],
         model=model,
     )
-    results = []
+    results: list[dict[str, Any]] = []
     with recorder.as_current():
         for task in TASKS:
             result = await Runner.run(agent, task["text"])
