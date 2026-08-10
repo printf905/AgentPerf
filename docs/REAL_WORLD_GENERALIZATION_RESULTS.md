@@ -1,6 +1,7 @@
 # Real-World Generalization Results
 
-Status: M7 local agent-layer profile completed.
+Status: M7 local agent-layer profile completed; M7.1 materiality correction
+applied.
 
 ## Summary
 
@@ -10,8 +11,9 @@ upstream `DefaultAgent`, local shell environment, default prompt templates, and
 normal action/observation loop.
 
 The checked-in run did not use a GPU or vLLM serving telemetry. It validates
-agent-layer generalization and exposes one materiality issue in AgentPerf's
-current detector semantics.
+agent-layer generalization and exposed one materiality issue in AgentPerf's
+original duplication detector semantics. M7.1 fixed that issue by making
+duplication materiality aware of execution boundaries.
 
 ## Environment
 
@@ -71,7 +73,7 @@ No `TOOL_OUTPUT_BLOAT` finding fired.
 
 ## Findings
 
-AgentPerf emitted:
+Before M7.1, AgentPerf emitted:
 
 - `CONTEXT_DUPLICATION` / `HIGH`
 
@@ -100,7 +102,30 @@ The report is still useful because it identifies exactly where token processing
 goes, but the current detector overstates actionability for batched independent
 tasks without serving telemetry.
 
-Suppressed by reviewer judgment:
+That was a correct repeated-token measurement but an over-strong actionability
+classification.
+
+After M7.1, the same mini-SWE-agent workload emits:
+
+- `CROSS_RUN_SHARED_SCAFFOLD` / `LOW`
+
+Evidence:
+
+- independent execution scopes: 5;
+- affected LLM calls: 30;
+- cross-run repeated scaffold tokens: 668;
+- repeated tokens by component:
+  - system: 412;
+  - tool_result: 164;
+  - history: 92;
+- materiality: `OBSERVATION`;
+- serving telemetry present: false.
+
+The scoped repeated-token count is smaller because it counts content repeated
+across task scopes once per scope. It does not collapse all within-task prompt
+repetition and all cross-task prompt scaffold into one actionability score.
+
+Suppressed by detector semantics:
 
 - `CONTEXT_DUPLICATION` as an actionable optimization finding.
 
@@ -154,7 +179,7 @@ external agent or manufacturing a pathology.
 
 1. A workload batch is not always one coherent agent run. Repeated system/user
    prompt scaffolding across independent tasks can inflate context-duplication
-   severity.
+   severity when run boundaries are ignored.
 2. Prompt-component metadata is framework-specific. mini-SWE-agent exposes
    message history, but not AgentPerf component labels.
 3. Tool output exists as shell observations, not named domain tools.
@@ -168,15 +193,15 @@ external agent or manufacturing a pathology.
 | M3 research agent | AgentPerf-controlled | native trace fields | 30 LLM / 20 tools | `TOOL_OUTPUT_BLOAT` material | yes, `DEDUP_ONLY` |
 | M5 support triage | external framework pattern | OpenAI Agents SDK hooks/wrapper | 20 LLM / 10 tools | low context observation | no |
 | M6 support triage + vLLM | external framework pattern | OpenAI Agents SDK + vLLM correlation | 10 LLM / 5 tools / 10 serving | no material issue | no |
-| M7 mini-SWE-agent | existing upstream agent | model/env wrappers | 30 LLM / 30 bash | context duplication, not accepted as actionable | no |
+| M7 mini-SWE-agent | existing upstream agent | model/env wrappers | 30 LLM / 30 bash | `CROSS_RUN_SHARED_SCAFFOLD` observation | no |
 
 ## Generalization Conclusion
 
 AgentPerf's core trace and analysis architecture generalized to a second,
-independent agent runtime without detector-specific code. The main remaining
-weakness is materiality calibration for batched independent tasks: AgentPerf can
-correctly measure repeated context while still overstating whether that
-repetition is a useful developer action.
+independent agent runtime without detector-specific code. M7.1 fixed the main
+materiality weakness exposed by that run: AgentPerf now distinguishes repeated
+scaffold across independent task scopes from actionable within-run context
+duplication.
 
 M7 should be considered an agent-layer generalization validation, not a new
 optimization win.

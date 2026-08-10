@@ -203,6 +203,133 @@ def test_context_duplication_boundary_is_intentional() -> None:
     assert ContextDuplicationDetector().detect(context) == []
 
 
+def test_cross_run_shared_scaffold_is_not_high_context_removal_warning() -> None:
+    run = _multi_task_scaffold_run(tokens=8000)
+    findings = analyze_run(run).findings
+
+    assert [finding.id for finding in findings] == ["CROSS_RUN_SHARED_SCAFFOLD"]
+    finding = findings[0]
+    assert finding.severity == "LOW"
+    assert finding.evidence["materiality"] == "OBSERVATION"
+    assert finding.evidence["scope_count"] == 2
+    assert "No context-removal recommendation" in finding.recommendation
+
+
+def test_within_run_large_tool_result_duplication_remains_actionable() -> None:
+    repeated_tool_result = _prompt(8000, prefix="file")
+    run = parse_agentperf_trace(
+        {
+            "agent_run": {
+                "agent_run_id": "single-coding-task",
+                "steps": [
+                    {
+                        "agent_step_id": "task-step",
+                        "llm_calls": [
+                            {
+                                "llm_call_id": f"llm-{index}",
+                                "prompt": [
+                                    {"name": "system", "text": "coding agent"},
+                                    {
+                                        "name": "tool_result",
+                                        "text": repeated_tool_result,
+                                        "metadata": {"source_tool_call_ids": ["read-file-1"]},
+                                    },
+                                    {"name": "user", "text": f"continue {index}"},
+                                ],
+                            }
+                            for index in range(5)
+                        ],
+                        "tool_calls": [
+                            {
+                                "tool_call_id": "read-file-1",
+                                "name": "read_file",
+                                "output": repeated_tool_result,
+                            }
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+    report = analyze_run(run)
+
+    assert "CONTEXT_DUPLICATION" in [finding.id for finding in report.findings]
+    duplication = next(
+        finding for finding in report.findings if finding.id == "CONTEXT_DUPLICATION"
+    )
+    assert duplication.severity == "HIGH"
+    assert duplication.evidence["scope"] == "within_run_duplication"
+    assert duplication.evidence["repeated_tokens_by_component"]["tool_result"] >= 32000
+    assert "TOOL_OUTPUT_BLOAT" in [finding.id for finding in report.findings]
+
+
+def test_cross_run_shared_scaffold_with_serving_is_cacheability_headroom_only() -> None:
+    run = _multi_task_scaffold_run(tokens=8000, include_serving=True)
+    findings = analyze_run(run).findings
+
+    scaffold = next(
+        finding for finding in findings if finding.id == "CROSS_RUN_SHARED_SCAFFOLD"
+    )
+    assert scaffold.evidence["materiality"] == "CACHEABILITY_HEADROOM"
+    assert "context-removal" in scaffold.recommendation
+    assert "CACHEABILITY_HEADROOM" in [finding.id for finding in findings]
+    assert "CONTEXT_DUPLICATION" not in [finding.id for finding in findings]
+
+
+def test_small_repeated_scaffold_stays_low_observation() -> None:
+    run = parse_agentperf_trace(
+        {
+            "agent_run": {
+                "agent_run_id": "small-single-run",
+                "steps": [
+                    {
+                        "agent_step_id": "step-1",
+                        "llm_calls": [
+                            {
+                                "llm_call_id": f"llm-{index}",
+                                "prompt": {"system": _prompt(30), "user": f"task {index}"},
+                            }
+                            for index in range(3)
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+    findings = analyze_run(run).findings
+
+    assert [finding.id for finding in findings] == ["CONTEXT_DUPLICATION"]
+    assert findings[0].severity == "LOW"
+    assert findings[0].evidence["materiality"] == "OBSERVATION"
+
+
+def test_declared_batch_without_step_ids_degrades_to_cross_run_scope() -> None:
+    run = parse_agentperf_trace(
+        {
+            "agent_run": {
+                "agent_run_id": "batch-with-missing-scope-ids",
+                "metadata": {"task_count": 3},
+                "steps": [
+                    {
+                        "agent_step_id": f"step-{index}",
+                        "llm_calls": [
+                            {
+                                "llm_call_id": f"llm-{index}",
+                                "prompt": {"system": _prompt(8000), "user": f"task {index}"},
+                            }
+                        ],
+                    }
+                    for index in range(3)
+                ],
+            }
+        }
+    )
+    findings = analyze_run(run).findings
+
+    assert [finding.id for finding in findings] == ["CROSS_RUN_SHARED_SCAFFOLD"]
+    assert findings[0].severity == "LOW"
+
+
 def _boundary_run(shared_tokens: int, total_tokens: int) -> AgentRun:
     shared = _prompt(shared_tokens)
     unique_count = total_tokens - shared_tokens
@@ -298,6 +425,47 @@ def _dynamic_prefix_run(
             ],
         }
     )
+
+
+def _multi_task_scaffold_run(*, tokens: int, include_serving: bool = False) -> AgentRun:
+    stable = _prompt(tokens, prefix="scaffold")
+    trace: dict[str, object] = {
+        "agent_run": {
+            "agent_run_id": "mini-swe-batch",
+            "steps": [
+                {
+                    "agent_step_id": "task-a",
+                    "metadata": {"task_id": "task-a"},
+                    "llm_calls": [
+                        {
+                            "llm_call_id": "task-a-llm-1",
+                            "llm_request_id": "req-a",
+                            "serving_request_id": "srv-a",
+                            "prompt": {"system": stable, "user": "fix task A"},
+                        }
+                    ],
+                },
+                {
+                    "agent_step_id": "task-b",
+                    "metadata": {"task_id": "task-b"},
+                    "llm_calls": [
+                        {
+                            "llm_call_id": "task-b-llm-1",
+                            "llm_request_id": "req-b",
+                            "serving_request_id": "srv-b",
+                            "prompt": {"system": stable, "user": "fix task B"},
+                        }
+                    ],
+                },
+            ],
+        }
+    }
+    if include_serving:
+        trace["serving_requests"] = [
+            _serving("srv-a", "req-a", hit=0, miss=tokens, ttft=20),
+            _serving("srv-b", "req-b", hit=0, miss=tokens, ttft=20),
+        ]
+    return parse_agentperf_trace(trace)
 
 
 def _serving(

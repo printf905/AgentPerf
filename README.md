@@ -299,10 +299,17 @@ AgentPerf separates technical headroom from operational materiality.
   breakdown.
 - `MATERIAL_PREFILL_BOTTLENECK`: the first-token path is both dominant and
   operationally large enough to prioritize.
+- `CROSS_RUN_SHARED_SCAFFOLD`: repeated prompt scaffold appears across
+  independent execution scopes. This is not a context-removal warning; it may
+  be relevant to static/prefix caching only when backend telemetry supports
+  that interpretation.
 
 The design principle is simple: dominant does not necessarily mean important.
 AgentPerf should avoid warning users about technically real headroom that is not
 material in the observed run.
+
+M7 added a second materiality rule: repetition across independent tasks is not
+the same as redundant context within one task.
 
 Example finding shape:
 
@@ -441,6 +448,8 @@ Start here:
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): system architecture.
 - [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md): normalized trace schema.
+- [docs/DUPLICATION_SEMANTICS.md](docs/DUPLICATION_SEMANTICS.md):
+  run-boundary-aware context duplication semantics.
 - [docs/LANDSCAPE.md](docs/LANDSCAPE.md): competitive and novelty review.
 - [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md): vLLM field
   mapping and measurement quality.

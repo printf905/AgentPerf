@@ -25,12 +25,16 @@
   "correlated_serving_requests": 0,
   "findings": [
     {
-      "id": "CONTEXT_DUPLICATION",
-      "severity": "HIGH",
+      "id": "CROSS_RUN_SHARED_SCAFFOLD",
+      "severity": "LOW",
       "accepted_as_material_action": false,
-      "reason": "Repeated prompt scaffold was real, but mostly a batch-level repeated-task artifact without serving telemetry or a clear low-risk intervention."
+      "repeated_context_tokens": 668,
+      "materiality": "OBSERVATION",
+      "reason": "Repeated prompt scaffold exists across independent task scopes, but it is not evidence that content is removable within a task."
     }
   ],
+  "legacy_unscoped_repeated_context_tokens": 21189,
+  "legacy_unscoped_repeated_ratio": 0.837,
   "optimization_applied": false,
   "gpu_used": false
 }
