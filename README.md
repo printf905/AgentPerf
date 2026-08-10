@@ -136,6 +136,40 @@ current repository.
 Details: [docs/MODEL_CHOICE_PROFILING.md](docs/MODEL_CHOICE_PROFILING.md) and
 [docs/MODEL_CHOICE_RESULTS.md](docs/MODEL_CHOICE_RESULTS.md).
 
+### External Agent Integration
+
+Status: first external-framework adapter implemented; no material issue found
+on the initial local workload.
+
+AgentPerf now includes an optional OpenAI Agents SDK integration. The M5
+workload uses the SDK's real `Agent`, `Runner`, and `function_tool` loop with a
+deterministic local support-triage tool and scripted model, so it can run
+without OpenAI API credentials, GPU access, or live search APIs.
+
+Observed local M5 run:
+
+| Metric | Value |
+| --- | ---: |
+| Tasks | 10 |
+| LLM calls | 20 |
+| Tool calls | 10 |
+| Correlated serving requests | 0 |
+| Input tokens | 1,604 |
+| Mean score | 1.000 |
+| Pass rate | 100% |
+
+AgentPerf captured prompt components, tool-result provenance, token
+attribution, and context growth. It emitted `CONTEXT_DUPLICATION` as a repeated
+context observation, but the absolute token volume was small and there was no
+serving telemetry, so no material optimization/replay claim is made for this
+external-agent workload.
+
+Details:
+[docs/EXTERNAL_AGENT_SELECTION.md](docs/EXTERNAL_AGENT_SELECTION.md),
+[docs/INSTRUMENTATION.md](docs/INSTRUMENTATION.md),
+[docs/EXTERNAL_AGENT_BENCHMARK.md](docs/EXTERNAL_AGENT_BENCHMARK.md), and
+[docs/GENERALIZATION_REVIEW.md](docs/GENERALIZATION_REVIEW.md).
+
 ## Why This Is Cross-Layer
 
 ```text
@@ -194,6 +228,9 @@ AgentPerf currently explores three performance questions.
 | Model role attribution | Real validated |
 | Model-choice counterfactual profiling | Phase A validated |
 | End-to-end mixed model routing | Pending |
+| Public instrumentation API | Implemented |
+| OpenAI Agents SDK adapter | Agent-layer validated |
+| External-agent material finding | Not found in initial workload |
 | SGLang ingestion | Planned |
 | Web dashboard | Not implemented |
 
@@ -263,6 +300,14 @@ Analyze a recorded vLLM-shaped fixture:
 agentperf analyze-vllm-recording \
   examples/recorded_telemetry/vllm_openai_response_fixture.json \
   --show-provenance
+```
+
+Run the optional OpenAI Agents SDK integration example:
+
+```bash
+pip install -e ".[dev,openai-agents]"
+python examples/external_agents/openai_agents_support_triage.py \
+  --output-dir /tmp/agentperf_m5_openai_agents
 ```
 
 Run all local checks:
@@ -353,6 +398,14 @@ Start here:
 - [docs/MODEL_CHOICE_PROFILING.md](docs/MODEL_CHOICE_PROFILING.md): M4 design.
 - [docs/MODEL_CHOICE_RESULTS.md](docs/MODEL_CHOICE_RESULTS.md): M4 Phase A
   results and Phase B blocked attempts.
+- [docs/EXTERNAL_AGENT_SELECTION.md](docs/EXTERNAL_AGENT_SELECTION.md): M5
+  external framework selection.
+- [docs/INSTRUMENTATION.md](docs/INSTRUMENTATION.md): public recorder and
+  OpenAI Agents SDK adapter.
+- [docs/EXTERNAL_AGENT_BENCHMARK.md](docs/EXTERNAL_AGENT_BENCHMARK.md): M5
+  external-agent workload and observed local result.
+- [docs/GENERALIZATION_REVIEW.md](docs/GENERALIZATION_REVIEW.md): what
+  generalized unchanged and what did not.
 - [docs/PRODUCT.md](docs/PRODUCT.md) and
   [docs/BENCHMARK_PLAN.md](docs/BENCHMARK_PLAN.md): product contract and future
   evaluation plan.
@@ -384,6 +437,10 @@ See [docs/LANDSCAPE.md](docs/LANDSCAPE.md) for the detailed review.
 - M4 mixed-routing replay is not complete; Phase A role sensitivity is not an
   end-to-end routing result.
 - The experiments are not statistically powered benchmarks.
+- The first external-agent integration is agent-layer only; it does not yet
+  combine an external framework agent with live vLLM telemetry.
+- The initial external-agent workload did not expose a material optimization
+  target.
 - AgentPerf does not perform production-scale distributed trace ingestion.
 - No dashboard, hosted service, database, or scheduler integration is included.
 - `scheduled->first` is a measured/request-level first-token path metric. It is

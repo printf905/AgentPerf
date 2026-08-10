@@ -35,6 +35,14 @@ Real vLLM observations:
 - this was expected because both workload variants intentionally reused large
   stable runbook content.
 
+External-agent observation:
+
+- the OpenAI Agents SDK support-triage workload repeated short system/tool
+  scaffolding across 20 LLM calls;
+- the run processed only 1,604 total input tokens and had no serving telemetry;
+- AgentPerf now emits this as low-severity `materiality=OBSERVATION` rather
+  than treating ratio alone as a material optimization warning.
+
 Remaining real-trace checks:
 
 - whether chat-template serialization changes common-prefix estimates enough to
@@ -48,6 +56,8 @@ False-positive risks:
 - multiple calls may repeat content because each call is semantically
   independent;
 - approximate tokenization on synthetic fixtures can overstate repeated tokens.
+- high repeated-token ratio can be misleading when the absolute token volume is
+  small.
 
 False-negative risks:
 

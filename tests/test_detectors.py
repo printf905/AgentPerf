@@ -17,9 +17,12 @@ def ids(path: str) -> list[str]:
 
 
 def test_context_duplication_detector() -> None:
-    findings = ids("examples/traces/context_duplication.json")
+    report = analyze_path(ROOT / "examples/traces/context_duplication.json")
+    findings = [finding.id for finding in report.findings]
 
     assert findings == ["CONTEXT_DUPLICATION"]
+    assert report.findings[0].evidence["materiality"] == "OBSERVATION"
+    assert report.findings[0].severity == "LOW"
 
 
 def test_prefix_cache_opportunity_detector() -> None:
