@@ -4,6 +4,19 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT_DIR}"
 
+if [[ "${AGENTPERF_ALLOW_CONCURRENT_MODEL_CHOICE:-0}" != "1" ]]; then
+  cat >&2 <<'EOF'
+This legacy script starts all M4 model-choice servers concurrently.
+Do not use it for 24GB Phase A role-sensitivity profiling.
+
+Use scripts/remote_vllm/run_model_choice_phase_a.sh instead, which loads one
+model at a time. To intentionally run concurrent servers on a larger GPU, set:
+
+  AGENTPERF_ALLOW_CONCURRENT_MODEL_CHOICE=1
+EOF
+  exit 2
+fi
+
 MODEL_ROOT="${MODEL_ROOT:-/workspace/models}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-8192}"
 LOG_DIR="${LOG_DIR:-artifacts/model_choice_m4/server}"

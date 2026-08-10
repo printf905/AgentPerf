@@ -1,155 +1,263 @@
 # AgentPerf
 
-Agent observability tells developers what an agent did.
+AgentPerf is a cross-layer profiler for agentic LLM workloads: it connects what
+an agent did with what the inference server measured, then turns that evidence
+into optimization experiments a developer can replay.
 
-Inference telemetry tells developers what the model server did.
+Agent observability tools show LLM calls, tool calls, prompts, tokens, latency,
+and outputs. Inference engines such as vLLM expose serving facts such as request
+timing, scheduled-to-first-token latency, prefix-cache reuse, and generated
+token timing. AgentPerf correlates these layers so an engineer can ask:
 
-AgentPerf correlates the two to diagnose agent performance inefficiencies with
-evidence-backed findings.
+- Which tokens are being processed repeatedly?
+- Are repeated tokens actually reusable by prefix caching?
+- Is first-token latency material, or just dominant relative to an idle queue?
+- Which agent role appears to need a stronger model, and which does not?
+- What change should I replay to verify the diagnosis?
 
-This repository is an honest early MVP. It includes a normalized trace model,
-explicit request correlation, deterministic detectors, a terminal CLI, synthetic
-fixtures, a narrow vLLM recording adapter, one small real vLLM cacheability
-validation story, and one small real agent context-waste validation story. It
-does **not** claim general benchmark results or production readiness.
+The intended loop is:
 
-## Current Status
+```text
+TRACE -> PROFILE -> DIAGNOSE -> RECOMMEND -> REPLAY -> VERIFY
+```
 
-### Implemented
+AgentPerf is not a Langfuse clone, a scheduler replacement, an automatic
+optimizer, or an LLM that reads traces and invents advice. Findings are produced
+from telemetry, derived metrics, deterministic detectors, and replay evidence.
 
-- Normalized trace parser for agent runs, steps, LLM calls, tool calls, and
-  serving requests.
-- Explicit-ID cross-layer correlation.
-- Terminal CLI:
-  - `agentperf analyze <trace.json>`
-  - `agentperf analyze-vllm-recording <recording.json>`
-- Deterministic detectors:
-  - `CONTEXT_DUPLICATION`
-  - `CACHEABILITY_HEADROOM`
-  - `MATERIAL_PREFIX_CACHE_OPPORTUNITY`
-  - `PREFILL_PATH_DOMINANCE`
-  - `MATERIAL_PREFILL_BOTTLENECK`
-  - `TOOL_OUTPUT_BLOAT`
-- Finding provenance for LLM calls, request IDs, serving request IDs, raw
-  metrics, derived metrics, and approximation notes.
-- Exact/approximate tokenization mode labels.
-- vLLM OpenAI-compatible response adapter.
-- Repeatable vLLM demo runner for an already running vLLM server:
-  `scripts/run_vllm_real_demo.py`.
+## Real vLLM Results
 
-### Validated With Fixtures
+These are small controlled engineering validations, not general benchmark
+claims.
 
-- Synthetic AgentPerf traces in `examples/traces/`.
-- A vLLM-shaped recorded telemetry schema fixture in
-  `examples/recorded_telemetry/vllm_openai_response_fixture.json`.
-- Parser, correlator, detectors, vLLM adapter, CLI, reporter, tokenization mode,
-  unit conversion, missing telemetry handling, and provenance tests.
-- Current local validation: `pytest`, `ruff`, and `mypy` pass.
+### Prefix Cacheability
 
-The fixture data is for development and tests. It is not benchmark evidence.
+Environment: vLLM `0.26.0+cu129`, `Qwen/Qwen3-0.6B`, NVIDIA RTX A5000.
 
-### Live vLLM Validation
+The workload kept the same model, serving configuration, sampling settings, and
+semantic content. The only developer-level change was prompt layout:
 
-Completed on one Runpod NVIDIA RTX A5000 using vLLM `0.26.0+cu129` and
-`Qwen/Qwen3-0.6B`:
+```text
+baseline:  dynamic_context + stable_context
+optimized: stable_context + dynamic_context
+```
 
-- explicit request correlation from AgentPerf client request ID to vLLM
-  response/serving telemetry;
-- real per-request `cached_tokens`, queue timing, scheduled-to-first-token,
-  generation timing, and ITL ingestion;
-- controlled baseline `dynamic_request + stable_context` with low cache reuse;
-- replayed optimization `stable_context + dynamic_request` with high cache
-  reuse and lower scheduled-to-first-token latency.
+| Metric | Baseline | Optimized |
+| --- | ---: | ---: |
+| Cached-token ratio | 0.40% | 99.57% |
+| Cached tokens | 960 | 236,048 |
+| Cache-miss tokens | 236,135 | 1,009 |
+| Scheduled->first P95 | 241.73 ms | 32.61 ms |
+| Client latency P95 | 348.97 ms | 141.55 ms |
 
-These are small-sample validation results, not benchmark claims. See
-[docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md).
+AgentPerf found `CONTEXT_DUPLICATION`, `PREFIX_CACHE_OPPORTUNITY`, and
+`MATERIAL_PREFILL_BOTTLENECK` on the baseline. After reorganizing stable context
+into a reusable prefix, `PREFIX_CACHE_OPPORTUNITY` disappeared and the material
+prefill-path bottleneck downgraded.
 
-### Live Agent Context-Waste Validation
+Defensible interpretation: P95 scheduled-to-first-token latency for this
+controlled workload was about 7.4x lower after moving the same stable context
+into a reusable prefix. This is not a claim that all agents become 7.4x faster.
 
-Completed on one Runpod NVIDIA RTX 3090 using vLLM `0.26.0+cu129` and
-`Qwen/Qwen3-0.6B`:
+Details: [docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md) and
+[docs/VLLM_PREFIX_CACHE_SEMANTICS.md](docs/VLLM_PREFIX_CACHE_SEMANTICS.md).
 
-- a real multi-step research agent with planner, local search tool, evidence
-  review, second search, and final synthesis;
-- component-level token attribution for system, user, history, tool schema, and
-  tool-result prompt content;
-- `TOOL_OUTPUT_BLOAT` diagnosis on raw tool-result carry-forward;
-- deterministic quality-constrained replay across multiple context-carry
-  strategies.
+### Real-Agent Context Waste
 
-The accepted strategy was deterministic duplicate passage removal, not lossy
-summarization. On this single run it preserved quality within the documented
-tolerance while reducing processed input tokens and latency. See
+Environment: vLLM `0.26.0+cu129`, `Qwen/Qwen3-0.6B`, NVIDIA RTX 3090.
+
+The workload is a framework-free multi-step research agent:
+
+```text
+planner LLM -> local search -> evidence-review LLM -> local search -> final synthesis LLM
+```
+
+Evaluation used 10 deterministic local-corpus research tasks. AgentPerf first
+identified raw tool-result reinjection as the dominant processed-token source.
+An aggressive compact representation reduced tokens much more, but hurt
+quality. The accepted strategy, `DEDUP_ONLY`, removed duplicate retrieved
+passage carry-forward while preserving unique raw evidence.
+
+Quality constraint:
+
+```text
+mean score >= baseline - 0.05
+pass rate  >= baseline - 0.10
+```
+
+| Metric | RAW_FULL | DEDUP_ONLY |
+| --- | ---: | ---: |
+| Mean quality | 0.933 | 0.908 |
+| Pass rate | 80% | 70% |
+| Input tokens | 132,756 | 95,479 |
+| Tool-result processed tokens | 112,287 | 78,566 |
+| Scheduled->first P95 | 312.18 ms | 176.53 ms |
+| Client latency P95 | 1607.11 ms | 1247.62 ms |
+
+This is the current quality-constrained context-waste story: 28.1% fewer
+processed input tokens, 30.0% fewer processed tool-result tokens, 43.5% lower
+scheduled-to-first P95, and 22.4% lower client-latency P95 while staying within
+the declared quality tolerance.
+
+Details:
 [docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md](docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md).
 
-### Planned
+### Model-Choice Profiling
 
-- Tokenizer and detector-threshold calibration from real traces.
-- Harness/context waste analysis.
-- Additional backend ingestion only after the vLLM path is proven.
-- Model-choice counterfactual profiling later, under replay and quality
-  constraints.
+Status: Phase A validated, Phase B pending.
 
-## Not Claimed
+Environment: vLLM `0.26.0+cu129`, Qwen3 model ladder, NVIDIA RTX 3090.
 
-AgentPerf is not:
-
-- a production-ready observability platform;
-- a scheduler replacement;
-- an automatic optimizer;
-- a system for computing optimal KV-cache size;
-- a claim of benchmark-proven speedups;
-- a Langfuse, Phoenix, or ThunderAgent replacement.
-
-Recommendations are deterministic experiments to evaluate, not guaranteed
-performance fixes.
-
-## Architecture
+Strong baseline:
 
 ```text
-Agent trace JSON or vLLM recording
-  -> backend adapter when needed
-  -> normalized AgentRun
-  -> TraceCorrelator
-  -> token / latency / cache metrics
-  -> deterministic detectors
-  -> Finding objects
-  -> terminal report
+Planner 4B / Reviewer 4B / Synthesizer 4B
+mean quality = 0.967
+pass rate    = 90%
 ```
 
-Normalized shape:
+Role-sensitivity replay:
+
+| Role change | Mean quality | Pass rate | Status |
+| --- | ---: | ---: | --- |
+| Planner -> 1.7B | 0.967 | 90% | quality preserving |
+| Planner -> 0.6B | 0.933 | 80% | within tolerance |
+| Reviewer -> 1.7B | 0.900 | 70% | quality violation |
+| Reviewer -> 0.6B | 0.967 | 90% | noisy, do not generalize |
+| Synthesizer -> 1.7B | 0.967 | 90% | quality preserving |
+| Synthesizer -> 0.6B | 0.967 | 90% | quality preserving |
+
+AgentPerf emitted replay-backed `MODEL_CHOICE_HEADROOM` findings for Phase A
+counterfactuals. The proposed mixed route
+`Planner=1.7B, Reviewer=0.6B, Synthesizer=0.6B` has not been validated end to
+end. Do not report mixed-routing quality, latency, or cost improvement from the
+current repository.
+
+Details: [docs/MODEL_CHOICE_PROFILING.md](docs/MODEL_CHOICE_PROFILING.md) and
+[docs/MODEL_CHOICE_RESULTS.md](docs/MODEL_CHOICE_RESULTS.md).
+
+## Why This Is Cross-Layer
 
 ```text
-AgentRun
-  AgentStep
-    LLMCall
-      ServingRequest
-        queue
-        prefill
-        decode
-        prefix/KV cache fields
-    ToolCall
+AGENT / HARNESS LAYER
+
+Real agent
+  +-- planner LLM
+  +-- tool call
+  +-- evidence-review LLM
+  +-- tool call
+  +-- final synthesis LLM
+              |
+              v
+SERVING LAYER
+
+vLLM serving request
+  queue / scheduled->first / generation / ITL / prefix-cache tokens
+              |
+              v
+AGENTPERF
+
+normalized trace
+  -> explicit request correlation
+  -> token, latency, cache, role, and quality metrics
+  -> deterministic detectors and replay-backed analyses
+  -> evidence-backed findings
+  -> validation plan or replay result
 ```
 
-Correlation is explicit-ID only:
+AgentPerf only correlates requests when identifiers prove the relationship. It
+does not silently join agent calls to serving requests by timestamp proximity.
 
-- `LLMCall.serving_request_id == ServingRequest.serving_request_id`
-- `LLMCall.llm_request_id == ServingRequest.llm_request_id`
+## Three Classes Of Waste
 
-Timestamp, model-name, and prompt-length heuristics are intentionally avoided in
-v0.1.
+AgentPerf currently explores three performance questions.
+
+| Class | Question | Current status |
+| --- | --- | --- |
+| Cacheability waste | The tokens repeat, but why are they not reused by prefix caching? | Real end-to-end validated |
+| Context / harness waste | Why are these tokens being processed repeatedly in the first place? | Real end-to-end validated |
+| Model-capacity waste | Which semantic roles can use smaller models under replayed quality constraints? | Phase A counterfactual validated; mixed replay pending |
+
+## Implemented Capabilities
+
+| Capability | Status |
+| --- | --- |
+| Normalized agent trace schema | Implemented |
+| Explicit request correlation | Real validated with vLLM |
+| vLLM ingestion adapter | Real validated |
+| Context duplication detection | Real validated |
+| Prefix-cache diagnosis | Real replay validated |
+| Prefill materiality calibration | Real calibrated |
+| Token component attribution | Real validated |
+| Tool-output bloat detection | Real replay validated |
+| Quality-constrained context optimization | Real replay validated |
+| Model role attribution | Real validated |
+| Model-choice counterfactual profiling | Phase A validated |
+| End-to-end mixed model routing | Pending |
+| SGLang ingestion | Planned |
+| Web dashboard | Not implemented |
+
+## Detector Semantics
+
+AgentPerf separates technical headroom from operational materiality.
+
+- `CACHEABILITY_HEADROOM`: there is cacheable structure, but the measured
+  latency or uncached-token volume does not justify a strong action.
+- `MATERIAL_PREFIX_CACHE_OPPORTUNITY`: repeated stable prefix structure,
+  low actual cache reuse, and material first-token/uncached-token evidence
+  support a replayable prompt-layout experiment.
+- `PREFILL_PATH_DOMINANCE`: the first-token path dominates the latency
+  breakdown.
+- `MATERIAL_PREFILL_BOTTLENECK`: the first-token path is both dominant and
+  operationally large enough to prioritize.
+
+The design principle is simple: dominant does not necessarily mean important.
+AgentPerf should avoid warning users about technically real headroom that is not
+material in the observed run.
+
+Example finding shape:
+
+```text
+Finding:       MATERIAL_PREFIX_CACHE_OPPORTUNITY
+Evidence:      shared prefix ratio, actual cached-token ratio,
+               scheduled->first P95, uncached input tokens
+Affected:      LLM call IDs and serving request IDs
+Recommendation:evaluate reorganizing stable context into a consistent prefix
+Validation:    replay and compare cache reuse, scheduled->first, latency,
+               processed tokens, and task quality
+```
+
+The pipeline is:
+
+```text
+telemetry -> derived metrics -> deterministic/replay-backed evidence -> recommendation
+```
+
+not:
+
+```text
+trace -> LLM -> generic advice
+```
 
 ## Quick Start
+
+AgentPerf does not require a GPU for local inspection, tests, synthetic traces,
+or recorded telemetry fixtures.
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 pytest
+```
+
+Analyze a synthetic trace:
+
+```bash
 agentperf analyze examples/traces/multi_problem_agent.json
 ```
 
-Analyze the vLLM-shaped recording fixture:
+Analyze a recorded vLLM-shaped fixture:
 
 ```bash
 agentperf analyze-vllm-recording \
@@ -166,8 +274,6 @@ mypy agentperf tests scripts
 ```
 
 ## Synthetic Example
-
-Command:
 
 ```bash
 agentperf analyze examples/traces/multi_problem_agent.json
@@ -193,59 +299,108 @@ Correlated serving requests        3
 Findings
 ------------------------------------------------------------
 
-[HIGH] PREFIX_CACHE_OPPORTUNITY
+[HIGH] CONTEXT_DUPLICATION
+Multiple LLM calls contain exact repeated prompt components.
 
-Correlated requests contain substantial repeated stable content, but serving
-telemetry reports low actual prefix-cache reuse while the prefill path
-contributes materially to TTFT.
+[LOW] CACHEABILITY_HEADROOM
+Correlated requests contain cacheable structure and low cache reuse, but the
+observed TTFT and uncached-token volume are not yet material.
 ```
 
-This is a synthetic fixture, not a production benchmark.
+This fixture is synthetic. It is not benchmark evidence.
 
-## vLLM Live Demo Runner
+## Reproducing Real Experiments
 
-The runner requires an already running vLLM OpenAI-compatible server:
+The real results require a live vLLM server on a compatible NVIDIA GPU. They are
+not required for basic use of the CLI.
 
-```bash
-python scripts/run_vllm_real_demo.py \
-  --base-url http://localhost:8000/v1 \
-  --model <served-model-name> \
-  --warmups 1 \
-  --repetitions 3
-```
+Important controls used in the documented runs:
 
-The server must expose the telemetry needed by AgentPerf. In particular, the
-v0.1 mapping expects per-request metrics and prompt-token details where
-available. See [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md).
+| Result | Backend / model | GPU | Workload | Repetitions / tasks | Quality evaluator |
+| --- | --- | --- | --- | --- | --- |
+| Prefix cacheability | vLLM 0.26.0+cu129 / Qwen3-0.6B | RTX A5000 | controlled prompt-layout replay | 3 warmups, 10 measured repetitions per config | output recorded, not quality-scored |
+| Context waste | vLLM 0.26.0+cu129 / Qwen3-0.6B | RTX 3090 | local-corpus research agent | 10 deterministic tasks | rule-based fact/pass scorer |
+| Model choice Phase A | vLLM 0.26.0+cu129 / Qwen3 0.6B, 1.7B, 4B | RTX 3090 | one-role-at-a-time replay | 10 deterministic tasks | same rule-based scorer |
 
-The runner has been validated against one live vLLM/A5000 setup. The raw
-artifact bundle is gitignored because it contains repeated prompt text; summary
-results are documented in `docs/REAL_VLLM_RESULTS.md`.
+Runbooks and mappings:
 
-## Documentation
-
-- [docs/LANDSCAPE.md](docs/LANDSCAPE.md)
-- [docs/PRODUCT.md](docs/PRODUCT.md)
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md)
-- [docs/BENCHMARK_PLAN.md](docs/BENCHMARK_PLAN.md)
-- [docs/BACKEND_SELECTION.md](docs/BACKEND_SELECTION.md)
-- [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md)
 - [docs/REAL_VLLM_RUNBOOK.md](docs/REAL_VLLM_RUNBOOK.md)
+- [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md)
+- [docs/VLLM_RUNPOD_CONTAINER.md](docs/VLLM_RUNPOD_CONTAINER.md)
 - [docs/DETECTOR_CALIBRATION.md](docs/DETECTOR_CALIBRATION.md)
-- [docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md](docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md)
 
-## Roadmap
+Data types are intentionally distinguished:
 
-- M1: synthetic vertical slice. Done.
-- M2: real vLLM execution and replay validation. Done for one controlled A5000
-  workload.
-- M3: real agent harness/context waste analysis. Done for one controlled RTX
-  3090 workload with an explicit quality constraint.
-- M4: broader tokenizer and threshold calibration from more real traces.
-- M5: model-choice counterfactual profiling.
+- synthetic fixtures: hand-built examples for tests and CLI demos;
+- recorded fixtures: small vLLM-shaped response examples for parser coverage;
+- real measured experiments: documented Runpod/vLLM runs with artifacts and
+  cleanup notes.
 
-No fake dates are assigned.
+## Documentation Index
+
+Start here:
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): system architecture.
+- [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md): normalized trace schema.
+- [docs/LANDSCAPE.md](docs/LANDSCAPE.md): competitive and novelty review.
+- [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md): vLLM field
+  mapping and measurement quality.
+- [docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md): M2 real vLLM results.
+- [docs/VLLM_PREFIX_CACHE_SEMANTICS.md](docs/VLLM_PREFIX_CACHE_SEMANTICS.md):
+  request-by-request vLLM cache behavior.
+- [docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md](docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md):
+  M3 real-agent context-waste results.
+- [docs/MODEL_CHOICE_PROFILING.md](docs/MODEL_CHOICE_PROFILING.md): M4 design.
+- [docs/MODEL_CHOICE_RESULTS.md](docs/MODEL_CHOICE_RESULTS.md): M4 Phase A
+  results and Phase B blocked attempts.
+- [docs/PRODUCT.md](docs/PRODUCT.md) and
+  [docs/BENCHMARK_PLAN.md](docs/BENCHMARK_PLAN.md): product contract and future
+  evaluation plan.
+
+## Competitive Positioning
+
+AgentPerf should be judged as a profiler, not as a runtime scheduler.
+
+- ThunderAgent focuses on runtime and scheduling optimization for agent
+  workflows. AgentPerf focuses on developer-facing diagnosis, evidence, and
+  replay validation. ThunderAgent could become a backend or baseline rather
+  than only a competitor.
+- Langfuse, Phoenix/OpenInference, Opik, TraceRoot, OpenLIT, OpenLLMetry, and
+  Helicone are strong observability/evaluation systems. AgentPerf does not try
+  to replace their dashboards. Its niche is cross-layer performance analysis:
+  agent prompt structure plus serving telemetry.
+- vLLM and SGLang expose the serving telemetry that a profiler can consume.
+  AgentPerf does not claim to invent that telemetry.
+
+See [docs/LANDSCAPE.md](docs/LANDSCAPE.md) for the detailed review.
+
+## Limitations
+
+- Workloads are small and controlled.
+- vLLM is the only serving backend with real validation so far.
+- SGLang ingestion is not implemented.
+- Model coverage is limited to one Qwen3 ladder in the documented runs.
+- The local-corpus quality evaluator is deterministic but task-specific.
+- M4 mixed-routing replay is not complete; Phase A role sensitivity is not an
+  end-to-end routing result.
+- The experiments are not statistically powered benchmarks.
+- AgentPerf does not perform production-scale distributed trace ingestion.
+- No dashboard, hosted service, database, or scheduler integration is included.
+- `scheduled->first` is a measured/request-level first-token path metric. It is
+  not claimed to be pure GPU prefill kernel time.
+
+## Not Claimed
+
+AgentPerf does not claim:
+
+- automatic optimization;
+- optimal KV-cache sizing;
+- scheduler superiority;
+- production readiness;
+- benchmark-proven general speedups;
+- that repeated content is always waste;
+- that smaller models are generally better for a role;
+- that the proposed M4 mixed-routing candidate is validated.
 
 ## License
 

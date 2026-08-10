@@ -32,7 +32,13 @@ else
 fi
 
 DRIVER_VERSION="$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -n 1 | tr -d ' ')"
-HOST_CUDA_VERSION="$(sed -n 's/.*CUDA Version: \([0-9.]*\).*/\1/p' "${SETUP_ARTIFACT_DIR}/nvidia-smi.txt" | head -n 1)"
+HOST_CUDA_VERSION="$(
+  sed -n \
+    -e 's/.*CUDA Version: \([0-9.]*\).*/\1/p' \
+    -e 's/.*CUDA UMD Version: \([0-9.]*\).*/\1/p' \
+    "${SETUP_ARTIFACT_DIR}/nvidia-smi.txt" \
+    | head -n 1
+)"
 TARGET_CUDA_VERSION="$(cuda_tag_to_display "${VLLM_CUDA_VERSION}")"
 TARGET_CUDA_MAJOR="${TARGET_CUDA_VERSION%%.*}"
 DRIVER_MAJOR="$(driver_version_to_major "${DRIVER_VERSION}")"
