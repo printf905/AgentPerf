@@ -8,9 +8,14 @@ from pathlib import Path
 
 from agentperf.analyzer import analyze_path, analyze_run
 from agentperf.backends.vllm import VLLMTelemetryProvider
+from agentperf.comparison import ComparisonError, compare_paths, comparison_to_json
 from agentperf.integrations.openai_agents import agent_run_from_openai_agents_export
 from agentperf.model_choice import analyze_model_choice_path
-from agentperf.reporters.terminal import render_model_choice_report, render_report
+from agentperf.reporters.terminal import (
+    render_comparison_report,
+    render_model_choice_report,
+    render_report,
+)
 from agentperf.schema.trace import TraceParseError
 
 LOGGER = logging.getLogger("agentperf")
@@ -79,6 +84,52 @@ def build_parser() -> argparse.ArgumentParser:
         default="WARNING",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
+    compare = subparsers.add_parser(
+        "compare",
+        help="Compare a baseline AgentPerf trace/workload with a replay candidate",
+    )
+    compare.add_argument("baseline_path", type=Path)
+    compare.add_argument("candidate_path", type=Path)
+    compare.add_argument(
+        "--quality-tolerance",
+        type=float,
+        default=None,
+        help="Allowed mean-score drop, for example 0.05",
+    )
+    compare.add_argument(
+        "--pass-rate-tolerance",
+        type=float,
+        default=None,
+        help="Allowed pass-rate drop, for example 0.10",
+    )
+    compare.add_argument(
+        "--min-material-improvement",
+        type=float,
+        default=0.05,
+        help="Minimum relative token/client-latency improvement for ACCEPT",
+    )
+    compare.add_argument(
+        "--format",
+        choices=["terminal", "json"],
+        default="terminal",
+        help="Output format",
+    )
+    compare.add_argument("--output", type=Path, help="Write comparison output to a file")
+    compare.add_argument(
+        "--show-provenance",
+        action="store_true",
+        help="Include finding scope/provenance details in terminal output",
+    )
+    compare.add_argument(
+        "--fail-on-quality-regression",
+        action="store_true",
+        help="Return a nonzero exit code when the candidate violates quality constraints",
+    )
+    compare.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
     return parser
 
 
@@ -138,5 +189,34 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         sys.stdout.write("\n")
+        return 0
+    if args.command == "compare":
+        try:
+            comparison = compare_paths(
+                args.baseline_path,
+                args.candidate_path,
+                mean_score_tolerance=args.quality_tolerance,
+                pass_rate_tolerance=args.pass_rate_tolerance,
+                min_material_improvement=args.min_material_improvement,
+            )
+        except (OSError, ComparisonError) as exc:
+            LOGGER.error("%s", exc)
+            sys.stderr.write(f"{exc}\n")
+            return 2
+        output = (
+            comparison_to_json(comparison)
+            if args.format == "json"
+            else render_comparison_report(comparison, show_provenance=args.show_provenance)
+        )
+        if args.output:
+            args.output.write_text(output + "\n", encoding="utf-8")
+        else:
+            sys.stdout.write(output)
+            sys.stdout.write("\n")
+        if (
+            args.fail_on_quality_regression
+            and comparison.acceptance_result.verdict == "REJECT_QUALITY_REGRESSION"
+        ):
+            return 1
         return 0
     return 2

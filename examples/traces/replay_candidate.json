@@ -1,0 +1,69 @@
+{
+  "schema_version": "agentperf.trace.v1",
+  "synthetic": true,
+  "agent_run": {
+    "agent_run_id": "synthetic-replay-candidate",
+    "metadata": {
+      "task_id": "demo-task",
+      "quality": {
+        "score": 0.94,
+        "passed": true
+      }
+    },
+    "steps": [
+      {
+        "agent_step_id": "step-1",
+        "tool_calls": [
+          {
+            "tool_call_id": "search-1",
+            "name": "search",
+            "latency_ms": 120,
+            "output": "alpha beta gamma delta epsilon zeta eta theta iota kappa"
+          }
+        ],
+        "llm_calls": [
+          {
+            "llm_call_id": "llm-1",
+            "llm_request_id": "req-1",
+            "model": "synthetic-model",
+            "input_tokens": 800,
+            "output_tokens": 62,
+            "tokenization_mode": "APPROXIMATE",
+            "metadata": {
+              "latency_ms": 720
+            },
+            "prompt": [
+              {
+                "name": "system",
+                "text": "You are a careful support agent."
+              },
+              {
+                "name": "tool_result",
+                "text": "alpha beta gamma delta epsilon zeta",
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "search-1"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "serving_requests": [
+    {
+      "serving_request_id": "srv-1",
+      "llm_request_id": "req-1",
+      "queue_latency_ms": 10,
+      "prefill_path_latency_ms": 120,
+      "decode_latency_ms": 85,
+      "ttft_ms": 120,
+      "input_tokens": 800,
+      "output_tokens": 62,
+      "prefix_cache_hit_tokens": 100,
+      "prefix_cache_miss_tokens": 700
+    }
+  ]
+}

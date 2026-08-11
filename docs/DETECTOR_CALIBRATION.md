@@ -94,9 +94,9 @@ Real vLLM observations:
 - the first live AgentPerf workload had high cache reuse in both baseline and
   optimized variants, so `PREFIX_CACHE_OPPORTUNITY` correctly did not fire;
 - the second live AgentPerf workload used the proven `dynamic_request +
-  stable_context` baseline and produced a 0.40% cached-token ratio;
+  stable_context` baseline and showed poor prefix-cache reuse;
 - after reordering only the prompt layout to `stable_context +
-  dynamic_request`, cached-token ratio rose to 99.57%;
+  dynamic_request`, prefix-cache reuse became high;
 - `PREFIX_CACHE_OPPORTUNITY` fired only for the baseline and disappeared after
   replay.
 - the first M3 real-agent attempt showed a calibration problem: the compact
@@ -159,10 +159,9 @@ Implemented calibration change:
 - when repeated stable content or theoretical cacheability exists but the
   serving impact is small, AgentPerf reports `CACHEABILITY_HEADROOM` with low
   severity;
-- this is based on the M2 dynamic-prefix result, where TTFT P95 fell from
-  241.73 ms to 32.61 ms after stable-prefix reordering, and the M3 compact
-  traces, where TTFT P95 around 20-27 ms should not produce a high/actionable
-  cache warning.
+- this is based on the M2 dynamic-prefix result, where stable-prefix reordering
+  materially improved serving behavior, and the M3 compact traces, where TTFT
+  P95 around 20-27 ms should not produce a high/actionable cache warning.
 
 ## PREFILL_PATH_DOMINANCE And MATERIAL_PREFILL_BOTTLENECK
 
@@ -185,10 +184,10 @@ Real vLLM observations:
 
 - in the first live AgentPerf run, the old `PREFILL_BOTTLENECK` label fired even
   though scheduled-to-first-token P95 was only about 16 ms;
-- in the second live run, the dynamic-prefix baseline had scheduled-to-first
-  token P95 of 241.73 ms and P95 uncached input of 7,875 tokens;
-- after stable-prefix replay, scheduled-to-first-token P95 fell to 32.61 ms and
-  P95 uncached input fell to 50 tokens;
+- in the second live run, the dynamic-prefix baseline had material
+  scheduled-to-first-token latency and high uncached input volume;
+- after stable-prefix replay, scheduled-to-first-token latency and uncached
+  input volume were no longer material;
 - the detector now distinguishes low-severity `PREFILL_PATH_DOMINANCE` from
   `MATERIAL_PREFILL_BOTTLENECK`.
 

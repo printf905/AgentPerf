@@ -27,41 +27,34 @@ AgentPerf is not a Langfuse clone, a scheduler replacement, an automatic
 optimizer, or an LLM that reads traces and invents advice. Findings are produced
 from telemetry, derived metrics, deterministic detectors, and replay evidence.
 
-## Real vLLM Results
+## Real Validation Results
 
 These are small controlled engineering validations, not general benchmark
-claims.
+claims. The primary quantitative optimization result is the M3 real-agent
+context-waste replay. M2 is treated as a serving-mechanism validation: it
+proves AgentPerf can detect repeated context that fails to form a reusable
+prefix, recommend a layout change, and verify the behavior against real vLLM.
 
 ### Prefix Cacheability
 
 Environment: vLLM `0.26.0+cu129`, `Qwen/Qwen3-0.6B`, NVIDIA RTX A5000.
 
-The workload kept the same model, serving configuration, sampling settings, and
-semantic content. The only developer-level change was prompt layout:
+The M2 workload kept the same model, serving configuration, sampling settings,
+and semantic content while changing only prompt layout:
 
 ```text
 baseline:  dynamic_context + stable_context
 optimized: stable_context + dynamic_context
 ```
 
-| Metric | Baseline | Optimized |
-| --- | ---: | ---: |
-| Cached-token ratio | 0.40% | 99.57% |
-| Cached tokens | 960 | 236,048 |
-| Cache-miss tokens | 236,135 | 1,009 |
-| Scheduled->first P95 | 241.73 ms | 32.61 ms |
-| Client latency P95 | 348.97 ms | 141.55 ms |
-
 AgentPerf found `CONTEXT_DUPLICATION`, `PREFIX_CACHE_OPPORTUNITY`, and
 `MATERIAL_PREFILL_BOTTLENECK` on the baseline. After reorganizing stable context
 into a reusable prefix, `PREFIX_CACHE_OPPORTUNITY` disappeared and the material
 prefill-path bottleneck downgraded.
 
-Defensible interpretation: P95 scheduled-to-first-token latency for this
-controlled workload was about 7.4x lower after moving the same stable context
-into a reusable prefix. This is not a claim that all agents become 7.4x faster.
-
-Details: [docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md) and
+The exact request-level measurements remain in the reproducibility docs rather
+than being used as a headline result. Details:
+[docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md) and
 [docs/VLLM_PREFIX_CACHE_SEMANTICS.md](docs/VLLM_PREFIX_CACHE_SEMANTICS.md).
 
 ### Real-Agent Context Waste
@@ -363,6 +356,16 @@ agentperf analyze-vllm-recording \
   --show-provenance
 ```
 
+Compare a baseline trace with a replay candidate:
+
+```bash
+agentperf compare \
+  examples/traces/replay_baseline.json \
+  examples/traces/replay_candidate.json \
+  --quality-tolerance 0.05 \
+  --pass-rate-tolerance 0.10
+```
+
 Run the optional OpenAI Agents SDK integration example:
 
 ```bash
@@ -452,6 +455,10 @@ Start here:
 - [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md): normalized trace schema.
 - [docs/DUPLICATION_SEMANTICS.md](docs/DUPLICATION_SEMANTICS.md):
   run-boundary-aware context duplication semantics.
+- [docs/REPLAY_COMPARISON.md](docs/REPLAY_COMPARISON.md): generic baseline vs
+  replay comparison contract.
+- [docs/REPLAY_VERIFICATION.md](docs/REPLAY_VERIFICATION.md): user-facing
+  replay verification workflow.
 - [docs/LANDSCAPE.md](docs/LANDSCAPE.md): competitive and novelty review.
 - [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md): vLLM field
   mapping and measurement quality.
