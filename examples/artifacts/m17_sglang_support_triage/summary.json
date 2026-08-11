@@ -1,0 +1,122 @@
+{
+  "agent": "Support Triage Agent",
+  "backend": "sglang",
+  "correlated_serving_requests": 10,
+  "correlation_success_rate": 1.0,
+  "expected_llm_calls": 10,
+  "findings": [],
+  "framework": "openai-agents-python",
+  "input_tokens": 3561,
+  "llm_calls": 10,
+  "material_finding": false,
+  "mean_score": 0.7,
+  "missing_correlations": [],
+  "model": "agentperf-sglang-demo",
+  "output_tokens": 924,
+  "pass_rate": 0.6,
+  "serving_requests": 10,
+  "serving_timing": {
+    "cached_prompt_tokens": 1980,
+    "client_ttft_ms": null,
+    "generation_time_ms": null,
+    "queue_latency_ms": null,
+    "time_per_output_token_ms_average": null
+  },
+  "task_results": [
+    {
+      "answer": "<think>\nOkay, let's see. The customer is asking for a refund for order A-100 within 20 days. I need to check the support policy to see if that's allowed.\n\nFirst, I used the lookup_policy function with the query \"refund order A-100 20 days\". The response from the policy says that refunds are available within 30 days if the order ID is provided and the license hasn't been transferred. \n\nWait, the customer is asking for a refund within 20 days, which is within the 30-day window mentioned in the policy. So the policy",
+      "client_latency_ms": 3906.766,
+      "expected_policy": "POLICY-REFUND-2026",
+      "expected_route": "refund",
+      "input": "Customer asks for a refund for order A-100 within 20 days.",
+      "passed": false,
+      "score": 0.5,
+      "task_id": "task-refund-1"
+    },
+    {
+      "answer": "<think>\nOkay, let's see. The user mentioned their account was taken over and sessions are suspicious. I need to figure out which policy applies here.\n\nFirst, I'll check the policies provided. The user's issue is about account takeover and suspicious sessions. Looking at the policies, POLICY-SECURITY-2026 says account takeover reports should be escalated to Security Operations with password reset and session revocation. That seems to match the user's situation. \n\nThe other policies are about refunds, billing, and API rate limits, which don't relate to account security. So the right policy here is SECURITY-202",
+      "client_latency_ms": 2868.842,
+      "expected_policy": "POLICY-SECURITY-2026",
+      "expected_route": "security",
+      "input": "Customer says their account was taken over and sessions are suspicious.",
+      "passed": true,
+      "score": 1.0,
+      "task_id": "task-security-1"
+    },
+    {
+      "answer": "<think>\nOkay, let's see. The user mentioned that a customer reported two charges for the same invoice this morning. I need to figure out which policy applies here.\n\nFirst, I'll check the policies provided. The user already used the lookup_policy function, and the response included four policies. Let me go through each one.\n\nPOLICY-REFUND-2026 talks about refunds within 30 days with order ID and license not transferred. That seems unrelated to duplicate charges.\n\nPOLICY-SECURITY-2026 is about account takeovers, which involves security measures. Not relevant here.\n\nPOLICY-BILL",
+      "client_latency_ms": 3275.472,
+      "expected_policy": "POLICY-BILLING-2026",
+      "expected_route": "billing",
+      "input": "Customer reports two charges for the same invoice this morning.",
+      "passed": false,
+      "score": 0.0,
+      "task_id": "task-billing-1"
+    },
+    {
+      "answer": "<think>\nOkay, let's see. The customer is asking for a higher API rate limit for their workspace ws_123. I need to figure out which policy applies here. The available policies are REFUND, SECURITY, BILLING, and INTEGRATION. \n\nThe user's request is about increasing an API rate limit, which sounds related to the integration policy. The BILLING policy deals with duplicate charges, which isn't directly relevant here. The other policies are about refunds, security, and billing, so they don't fit. \n\nLooking at the POLICY-INTEGRATION-2026 entry, it says API",
+      "client_latency_ms": 3116.614,
+      "expected_policy": "POLICY-INTEGRATION-2026",
+      "expected_route": "integration",
+      "input": "Customer wants a higher API rate limit for workspace ws_123.",
+      "passed": true,
+      "score": 1.0,
+      "task_id": "task-integration-1"
+    },
+    {
+      "answer": "<think>\nOkay, let's see. The user is asking about a license purchased 12 days ago and wants a refund. I need to check the policies to see which one applies.\n\nFirst, I called the lookup_policy function with the query \"license purchased 12 days ago buyer requests money back\". The response included several policies. \n\nLooking at POLICY-REFUND-2026, it says refunds are available within 30 days if the order ID is provided and the license hasn't been transferred. The user's case is 12 days ago, which is within 30 days. But the policy",
+      "client_latency_ms": 3046.134,
+      "expected_policy": "POLICY-REFUND-2026",
+      "expected_route": "refund",
+      "input": "A license was purchased 12 days ago and the buyer requests money back.",
+      "passed": true,
+      "score": 1.0,
+      "task_id": "task-refund-2"
+    }
+  ],
+  "tasks": 5,
+  "tool_calls": 9,
+  "trace_example": {
+    "agent_step_ids": [
+      "sglang-recorded-step",
+      "step-1-task-refund-1",
+      "step-2-task-security-1",
+      "step-3-task-billing-1"
+    ],
+    "llm_calls": [
+      {
+        "input_tokens": 229,
+        "llm_call_id": "openai-agents-llm-1",
+        "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-1-859b28d0",
+        "output_tokens": 62,
+        "serving_request_id": "379e6e741d18484f9c3a41ae2600b1e0"
+      },
+      {
+        "input_tokens": 375,
+        "llm_call_id": "openai-agents-llm-2",
+        "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-2-33c218db",
+        "output_tokens": 128,
+        "serving_request_id": "140b5ed26a1c4028b6d2620040b42624"
+      },
+      {
+        "input_tokens": 223,
+        "llm_call_id": "openai-agents-llm-3",
+        "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-3-233f4777",
+        "output_tokens": 50,
+        "serving_request_id": "c4790cd5ad554234a38efb0f51a970c8"
+      },
+      {
+        "input_tokens": 545,
+        "llm_call_id": "openai-agents-llm-4",
+        "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-4-04e131ab",
+        "output_tokens": 128,
+        "serving_request_id": "16f203aef0c1492687b43dc42849cd84"
+      }
+    ],
+    "tool_call_ids": [
+      "call_873bc9c38c124bc5869b4e9e",
+      "call_971b0e7e0b7649efa1929ce2",
+      "call_da5267dd24c24e559a0289bd"
+    ]
+  }
+}

@@ -1,0 +1,2118 @@
+{
+  "agent_run": {
+    "agent_run_id": "m17-openai-agents-sglang-cross-layer",
+    "ended_at": null,
+    "metadata": {
+      "backend": "sglang",
+      "environment": {
+        "agentperf_version": "0.2.0",
+        "aggregate_server_metrics_recorded": true,
+        "backend": "sglang",
+        "base_url": "https://<runpod-pod>-30000.proxy.runpod.net/v1",
+        "correlation_mechanism": "explicit_request_id_body",
+        "date": "2026-08-11T10:45:58.874518+00:00",
+        "gpu": null,
+        "metrics_url": "https://<runpod-pod>-30000.proxy.runpod.net/metrics",
+        "missing_correlations": [],
+        "model": "agentperf-sglang-demo",
+        "platform": "macOS-14.4.1-arm64-arm-64bit-Mach-O",
+        "python": "3.14.6",
+        "telemetry_source": "OpenAI-compatible HTTP response body captured by httpx hook",
+        "tool_choice_control": "lookup_policy forced only before the first tool result so SGLang/model configuration exercises the existing support-triage tool lifecycle"
+      },
+      "model": "agentperf-sglang-demo",
+      "telemetry_reliability": {
+        "derived": [
+          "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+          "tpot_ms from decode latency and output token count when no direct TPOT exists"
+        ],
+        "directly_observed": [
+          "OpenAI-compatible response id when present",
+          "input_tokens/output_tokens from OpenAI-compatible usage when present",
+          "client TTFT from streaming client timestamps when recorded",
+          "client end-to-end latency from client timestamps when recorded",
+          "aggregate Prometheus metrics when collected separately",
+          "request trace spans when SGLang OpenTelemetry tracing is enabled"
+        ],
+        "proxy": [
+          "client TTFT is client-observed first-token latency, not a server prefill metric",
+          "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+        ],
+        "unavailable": [
+          "per-request queue latency from ordinary OpenAI-compatible responses",
+          "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+          "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+        ]
+      }
+    },
+    "name": "OpenAI Agents SDK support triage through SGLang",
+    "parent_span_id": null,
+    "span_id": null,
+    "started_at": null,
+    "steps": [
+      {
+        "agent_step_id": "sglang-recorded-step",
+        "ended_at": null,
+        "llm_calls": [],
+        "metadata": {},
+        "parent_span_id": null,
+        "span_id": null,
+        "started_at": null,
+        "tool_calls": [
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-cc0ad7758780",
+            "started_at": null,
+            "tool_call_id": "call_873bc9c38c124bc5869b4e9e",
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-56821d8b8a3f",
+            "started_at": null,
+            "tool_call_id": "call_971b0e7e0b7649efa1929ce2",
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample.",
+            "parent_span_id": "span-2",
+            "span_id": "span-tool-7a85a17e2e57",
+            "started_at": null,
+            "tool_call_id": "call_da5267dd24c24e559a0289bd",
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample.",
+            "parent_span_id": "span-2",
+            "span_id": "span-tool-a9f04fd020ab",
+            "started_at": null,
+            "tool_call_id": "call_5d156f13292747379006e40e",
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample.",
+            "parent_span_id": "span-3",
+            "span_id": "span-tool-6cb204a51a74",
+            "started_at": null,
+            "tool_call_id": "call_6bf1feaa89514a35b54f52ca",
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample.",
+            "parent_span_id": "span-3",
+            "span_id": "span-tool-2d4937305b30",
+            "started_at": null,
+            "tool_call_id": "call_b21340a832aa497da0b2474b",
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample.",
+            "parent_span_id": "span-4",
+            "span_id": "span-tool-5018aa20b7cb",
+            "started_at": null,
+            "tool_call_id": "call_f3920e0ec6324fba90ce7970",
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample.",
+            "parent_span_id": "span-5",
+            "span_id": "span-tool-3a431da58904",
+            "started_at": null,
+            "tool_call_id": "call_49b0d88ef0484af78c9dc645",
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample.",
+            "parent_span_id": "span-5",
+            "span_id": "span-tool-f60cdcd0f8e6",
+            "started_at": null,
+            "tool_call_id": "call_b729a0c577734d2f841a8141",
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148"
+          }
+        ],
+        "trace_id": null
+      },
+      {
+        "agent_step_id": "step-1-task-refund-1",
+        "ended_at": null,
+        "llm_calls": [
+          {
+            "agent_step_id": "step-1-task-refund-1",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 229,
+            "llm_call_id": "openai-agents-llm-1",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-1-859b28d0",
+            "metadata": {
+              "agent_span_id": "span-llm-79dcbf45a9ec",
+              "agent_step_id": "step-1-task-refund-1",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-1-859b28d0",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "Customer asks for a refund for order A-100 within 20 days."
+                }
+              ],
+              "raw_response_id": "379e6e741d18484f9c3a41ae2600b1e0",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 62,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer asks for a refund for order A-100 within 20 days."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "379e6e741d18484f9c3a41ae2600b1e0",
+            "span_id": "span-llm-79dcbf45a9ec",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-task-refund-1",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 375,
+            "llm_call_id": "openai-agents-llm-2",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-2-33c218db",
+            "metadata": {
+              "agent_span_id": "span-llm-511452da78b6",
+              "agent_step_id": "step-1-task-refund-1",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-2-33c218db",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "Customer asks for a refund for order A-100 within 20 days."
+                },
+                {
+                  "metadata": {},
+                  "name": "other",
+                  "text": "{\"query\": \"refund order A-100 20 days\"}"
+                },
+                {
+                  "metadata": {},
+                  "name": "other",
+                  "text": "{\"query\": \"refund order A-100 20 days\"}"
+                },
+                {
+                  "metadata": {
+                    "source_tool_call_ids": [
+                      "call_873bc9c38c124bc5869b4e9e"
+                    ]
+                  },
+                  "name": "tool_result",
+                  "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred."
+                },
+                {
+                  "metadata": {
+                    "source_tool_call_ids": [
+                      "call_971b0e7e0b7649efa1929ce2"
+                    ]
+                  },
+                  "name": "tool_result",
+                  "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred."
+                }
+              ],
+              "raw_response_id": "140b5ed26a1c4028b6d2620040b42624",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 128,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer asks for a refund for order A-100 within 20 days."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"refund order A-100 20 days\"}"
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"refund order A-100 20 days\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_873bc9c38c124bc5869b4e9e"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred."
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_971b0e7e0b7649efa1929ce2"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "140b5ed26a1c4028b6d2620040b42624",
+            "span_id": "span-llm-511452da78b6",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          }
+        ],
+        "metadata": {},
+        "parent_span_id": null,
+        "span_id": null,
+        "started_at": null,
+        "tool_calls": [],
+        "trace_id": null
+      },
+      {
+        "agent_step_id": "step-2-task-security-1",
+        "ended_at": null,
+        "llm_calls": [
+          {
+            "agent_step_id": "step-2-task-security-1",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 223,
+            "llm_call_id": "openai-agents-llm-3",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-3-233f4777",
+            "metadata": {
+              "agent_span_id": "span-llm-fb7f00f2d661",
+              "agent_step_id": "step-2-task-security-1",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-3-233f4777",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "Customer says their account was taken over and sessions are suspicious."
+                }
+              ],
+              "raw_response_id": "c4790cd5ad554234a38efb0f51a970c8",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 50,
+            "parent_span_id": "span-2",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer says their account was taken over and sessions are suspicious."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "c4790cd5ad554234a38efb0f51a970c8",
+            "span_id": "span-llm-fb7f00f2d661",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-2-task-security-1",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 545,
+            "llm_call_id": "openai-agents-llm-4",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-4-04e131ab",
+            "metadata": {
+              "agent_span_id": "span-llm-a6e835525fe8",
+              "agent_step_id": "step-2-task-security-1",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-4-04e131ab",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "Customer says their account was taken over and sessions are suspicious."
+                },
+                {
+                  "metadata": {},
+                  "name": "other",
+                  "text": "{\"query\": \"account taken over suspicious sessions\"}"
+                },
+                {
+                  "metadata": {},
+                  "name": "other",
+                  "text": "{\"query\": \"account taken over suspicious sessions\"}"
+                },
+                {
+                  "metadata": {
+                    "source_tool_call_ids": [
+                      "call_da5267dd24c24e559a0289bd"
+                    ]
+                  },
+                  "name": "tool_result",
+                  "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+                },
+                {
+                  "metadata": {
+                    "source_tool_call_ids": [
+                      "call_5d156f13292747379006e40e"
+                    ]
+                  },
+                  "name": "tool_result",
+                  "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+                }
+              ],
+              "raw_response_id": "16f203aef0c1492687b43dc42849cd84",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 128,
+            "parent_span_id": "span-2",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer says their account was taken over and sessions are suspicious."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"account taken over suspicious sessions\"}"
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"account taken over suspicious sessions\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_da5267dd24c24e559a0289bd"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_5d156f13292747379006e40e"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "16f203aef0c1492687b43dc42849cd84",
+            "span_id": "span-llm-a6e835525fe8",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          }
+        ],
+        "metadata": {},
+        "parent_span_id": null,
+        "span_id": null,
+        "started_at": null,
+        "tool_calls": [],
+        "trace_id": null
+      },
+      {
+        "agent_step_id": "step-3-task-billing-1",
+        "ended_at": null,
+        "llm_calls": [
+          {
+            "agent_step_id": "step-3-task-billing-1",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 222,
+            "llm_call_id": "openai-agents-llm-5",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-5-22a00f23",
+            "metadata": {
+              "agent_span_id": "span-llm-f817f157f170",
+              "agent_step_id": "step-3-task-billing-1",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-5-22a00f23",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "Customer reports two charges for the same invoice this morning."
+                }
+              ],
+              "raw_response_id": "80e0ae46e92c41eda157561433b67666",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 62,
+            "parent_span_id": "span-3",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer reports two charges for the same invoice this morning."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "80e0ae46e92c41eda157561433b67666",
+            "span_id": "span-llm-f817f157f170",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-3-task-billing-1",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 556,
+            "llm_call_id": "openai-agents-llm-6",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-6-b68b3c61",
+            "metadata": {
+              "agent_span_id": "span-llm-c4b982dff6ad",
+              "agent_step_id": "step-3-task-billing-1",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-6-b68b3c61",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "Customer reports two charges for the same invoice this morning."
+                },
+                {
+                  "metadata": {},
+                  "name": "other",
+                  "text": "{\"query\": \"Customer reports two charges for the same invoice this morning.\"}"
+                },
+                {
+                  "metadata": {},
+                  "name": "other",
+                  "text": "{\"query\": \"Customer reports two charges for the same invoice this morning.\"}"
+                },
+                {
+                  "metadata": {
+                    "source_tool_call_ids": [
+                      "call_6bf1feaa89514a35b54f52ca"
+                    ]
+                  },
+                  "name": "tool_result",
+                  "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+                },
+                {
+                  "metadata": {
+                    "source_tool_call_ids": [
+                      "call_b21340a832aa497da0b2474b"
+                    ]
+                  },
+                  "name": "tool_result",
+                  "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+                }
+              ],
+              "raw_response_id": "e30105d27eee4d06b549437d7e15873b",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 128,
+            "parent_span_id": "span-3",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer reports two charges for the same invoice this morning."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"Customer reports two charges for the same invoice this morning.\"}"
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"Customer reports two charges for the same invoice this morning.\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_6bf1feaa89514a35b54f52ca"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_b21340a832aa497da0b2474b"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "e30105d27eee4d06b549437d7e15873b",
+            "span_id": "span-llm-c4b982dff6ad",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          }
+        ],
+        "metadata": {},
+        "parent_span_id": null,
+        "span_id": null,
+        "started_at": null,
+        "tool_calls": [],
+        "trace_id": null
+      },
+      {
+        "agent_step_id": "step-4-task-integration-1",
+        "ended_at": null,
+        "llm_calls": [
+          {
+            "agent_step_id": "step-4-task-integration-1",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 226,
+            "llm_call_id": "openai-agents-llm-7",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-7-1b1ffc16",
+            "metadata": {
+              "agent_span_id": "span-llm-f5b67dc1de18",
+              "agent_step_id": "step-4-task-integration-1",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-7-1b1ffc16",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "Customer wants a higher API rate limit for workspace ws_123."
+                }
+              ],
+              "raw_response_id": "46dfd9ef812445fca3284409e63b8f0e",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 48,
+            "parent_span_id": "span-4",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer wants a higher API rate limit for workspace ws_123."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "46dfd9ef812445fca3284409e63b8f0e",
+            "span_id": "span-llm-f5b67dc1de18",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-4-task-integration-1",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 397,
+            "llm_call_id": "openai-agents-llm-8",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-8-96934a3e",
+            "metadata": {
+              "agent_span_id": "span-llm-804091e34e2c",
+              "agent_step_id": "step-4-task-integration-1",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-8-96934a3e",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "Customer wants a higher API rate limit for workspace ws_123."
+                },
+                {
+                  "metadata": {},
+                  "name": "other",
+                  "text": "{\"query\": \"higher API rate limit for workspace ws_123\"}"
+                },
+                {
+                  "metadata": {
+                    "source_tool_call_ids": [
+                      "call_f3920e0ec6324fba90ce7970"
+                    ]
+                  },
+                  "name": "tool_result",
+                  "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+                }
+              ],
+              "raw_response_id": "69b6c5714eef4891a24488e1215bfe64",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 128,
+            "parent_span_id": "span-4",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer wants a higher API rate limit for workspace ws_123."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"higher API rate limit for workspace ws_123\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_f3920e0ec6324fba90ce7970"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "69b6c5714eef4891a24488e1215bfe64",
+            "span_id": "span-llm-804091e34e2c",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          }
+        ],
+        "metadata": {},
+        "parent_span_id": null,
+        "span_id": null,
+        "started_at": null,
+        "tool_calls": [],
+        "trace_id": null
+      },
+      {
+        "agent_step_id": "step-5-task-refund-2",
+        "ended_at": null,
+        "llm_calls": [
+          {
+            "agent_step_id": "step-5-task-refund-2",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 227,
+            "llm_call_id": "openai-agents-llm-9",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-9-6878f003",
+            "metadata": {
+              "agent_span_id": "span-llm-689a7fdd665c",
+              "agent_step_id": "step-5-task-refund-2",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-9-6878f003",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "A license was purchased 12 days ago and the buyer requests money back."
+                }
+              ],
+              "raw_response_id": "856a568c580b445b838163050234bf65",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 62,
+            "parent_span_id": "span-5",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "A license was purchased 12 days ago and the buyer requests money back."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "856a568c580b445b838163050234bf65",
+            "span_id": "span-llm-689a7fdd665c",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-5-task-refund-2",
+            "backend": "sglang",
+            "ended_at": null,
+            "input_tokens": 561,
+            "llm_call_id": "openai-agents-llm-10",
+            "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-10-9924e616",
+            "metadata": {
+              "agent_span_id": "span-llm-41cebd28d904",
+              "agent_step_id": "step-5-task-refund-2",
+              "client_request_id": "agentperf-m17-sglang-openai-agents-llm-10-9924e616",
+              "explicit_request_correlation": true,
+              "http_status_code": 200,
+              "metric_reliability": {
+                "derived": [
+                  "decode_latency_ms = client_e2e_latency_ms - client_ttft_ms when both are recorded",
+                  "tpot_ms from decode latency and output token count when no direct TPOT exists"
+                ],
+                "directly_observed": [
+                  "OpenAI-compatible response id when present",
+                  "input_tokens/output_tokens from OpenAI-compatible usage when present",
+                  "client TTFT from streaming client timestamps when recorded",
+                  "client end-to-end latency from client timestamps when recorded",
+                  "aggregate Prometheus metrics when collected separately",
+                  "request trace spans when SGLang OpenTelemetry tracing is enabled"
+                ],
+                "proxy": [
+                  "client TTFT is client-observed first-token latency, not a server prefill metric",
+                  "aggregate cache_hit_rate is workload/server-level cache evidence, not per-request cached tokens"
+                ],
+                "unavailable": [
+                  "per-request queue latency from ordinary OpenAI-compatible responses",
+                  "per-request prefill kernel latency from ordinary OpenAI-compatible responses",
+                  "per-request prefix-cache hit/miss tokens unless usage.prompt_tokens_details is exported, for example with --enable-cache-report"
+                ]
+              },
+              "openai_compatible_path": "https://<runpod-pod>-30000.proxy.runpod.net/v1/chat/completions",
+              "prompt_components": [
+                {
+                  "metadata": {},
+                  "name": "system",
+                  "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+                },
+                {
+                  "metadata": {
+                    "framework": "openai-agents-python",
+                    "representation": "tool_names"
+                  },
+                  "name": "tool_schema",
+                  "text": "lookup_policy"
+                },
+                {
+                  "metadata": {},
+                  "name": "user",
+                  "text": "A license was purchased 12 days ago and the buyer requests money back."
+                },
+                {
+                  "metadata": {},
+                  "name": "other",
+                  "text": "{\"query\": \"license purchased 12 days ago buyer requests money back\"}"
+                },
+                {
+                  "metadata": {},
+                  "name": "other",
+                  "text": "{\"query\": \"license purchased 12 days ago buyer requests money back\"}"
+                },
+                {
+                  "metadata": {
+                    "source_tool_call_ids": [
+                      "call_49b0d88ef0484af78c9dc645"
+                    ]
+                  },
+                  "name": "tool_result",
+                  "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+                },
+                {
+                  "metadata": {
+                    "source_tool_call_ids": [
+                      "call_b729a0c577734d2f841a8141"
+                    ]
+                  },
+                  "name": "tool_result",
+                  "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+                }
+              ],
+              "raw_response_id": "9ff9b4aa3e0d4861aed9cc6a7f4f1836",
+              "telemetry_backend": "sglang",
+              "traceparent": null
+            },
+            "model": "agentperf-sglang-demo",
+            "output_token_ids": null,
+            "output_tokens": 128,
+            "parent_span_id": "span-5",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "A license was purchased 12 days ago and the buyer requests money back."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"license purchased 12 days ago buyer requests money back\"}"
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"license purchased 12 days ago buyer requests money back\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_49b0d88ef0484af78c9dc645"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_b729a0c577734d2f841a8141"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.\nPOLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.\nPOLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.\nPOLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "local",
+            "semantic_role": null,
+            "serving_request_id": "9ff9b4aa3e0d4861aed9cc6a7f4f1836",
+            "span_id": "span-llm-41cebd28d904",
+            "started_at": null,
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+            "ttft_ms": null
+          }
+        ],
+        "metadata": {},
+        "parent_span_id": null,
+        "span_id": null,
+        "started_at": null,
+        "tool_calls": [],
+        "trace_id": null
+      }
+    ],
+    "trace_id": null
+  },
+  "schema_version": "0.1",
+  "serving_requests": [
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 229,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-1-859b28d0",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 62,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 1,
+      "prefix_cache_miss_tokens": 228,
+      "queue_latency_ms": null,
+      "serving_request_id": "379e6e741d18484f9c3a41ae2600b1e0",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    },
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 375,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-2-33c218db",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 128,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 234,
+      "prefix_cache_miss_tokens": 141,
+      "queue_latency_ms": null,
+      "serving_request_id": "140b5ed26a1c4028b6d2620040b42624",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    },
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 223,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-3-233f4777",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 50,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 207,
+      "prefix_cache_miss_tokens": 16,
+      "queue_latency_ms": null,
+      "serving_request_id": "c4790cd5ad554234a38efb0f51a970c8",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    },
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 545,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-4-04e131ab",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 128,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 228,
+      "prefix_cache_miss_tokens": 317,
+      "queue_latency_ms": null,
+      "serving_request_id": "16f203aef0c1492687b43dc42849cd84",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    },
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 222,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-5-22a00f23",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 62,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 207,
+      "prefix_cache_miss_tokens": 15,
+      "queue_latency_ms": null,
+      "serving_request_id": "80e0ae46e92c41eda157561433b67666",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    },
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 556,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-6-b68b3c61",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 128,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 227,
+      "prefix_cache_miss_tokens": 329,
+      "queue_latency_ms": null,
+      "serving_request_id": "e30105d27eee4d06b549437d7e15873b",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    },
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 226,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-7-1b1ffc16",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 48,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 207,
+      "prefix_cache_miss_tokens": 19,
+      "queue_latency_ms": null,
+      "serving_request_id": "46dfd9ef812445fca3284409e63b8f0e",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    },
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 397,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-8-96934a3e",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 128,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 231,
+      "prefix_cache_miss_tokens": 166,
+      "queue_latency_ms": null,
+      "serving_request_id": "69b6c5714eef4891a24488e1215bfe64",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    },
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 227,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-9-6878f003",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 62,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 206,
+      "prefix_cache_miss_tokens": 21,
+      "queue_latency_ms": null,
+      "serving_request_id": "856a568c580b445b838163050234bf65",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    },
+    {
+      "backend": "sglang",
+      "decode_latency_ms": null,
+      "ended_at": null,
+      "input_tokens": 561,
+      "kv_cache_capacity_tokens": null,
+      "kv_cache_evictions": null,
+      "kv_cache_used_tokens": null,
+      "llm_request_id": "agentperf-m17-sglang-openai-agents-llm-10-9924e616",
+      "metadata": {
+        "aggregate_server_metrics": {
+          "metric_scope": "aggregate_snapshot",
+          "sglang:cache_hit_rate": 0.0,
+          "sglang:e2e_request_latency_seconds_count": 12.0,
+          "sglang:generation_tokens_total": 940.0,
+          "sglang:num_queue_reqs": 0.0,
+          "sglang:prompt_tokens_total": 3579.0,
+          "sglang:time_to_first_token_seconds_count": 12.0
+        },
+        "capabilities": {
+          "cache_aggregate": true,
+          "cache_per_request": true,
+          "client_ttft": false,
+          "generation_latency": false,
+          "request_tokens": true,
+          "server_first_token": false,
+          "server_queue": false
+        },
+        "metric_reliability": {
+          "backend": "sglang",
+          "cache_aggregate": "available_in_aggregate_server_metrics",
+          "cache_per_request": "direct_from_usage.prompt_tokens_details.cached_tokens",
+          "measurement_quality": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "unavailable"
+          },
+          "measurement_semantics": {
+            "decode_latency_ms": "unavailable",
+            "queue_latency_ms": "unavailable",
+            "ttft_ms": "client_time_to_first_token"
+          },
+          "prefill_latency_ms": "unavailable",
+          "prefill_path_latency_ms": "unavailable"
+        },
+        "raw_metrics": {}
+      },
+      "model": "agentperf-sglang-demo",
+      "output_tokens": 128,
+      "parent_span_id": null,
+      "prefill_latency_ms": null,
+      "prefill_path_latency_ms": null,
+      "prefix_cache_hit_tokens": 232,
+      "prefix_cache_miss_tokens": 329,
+      "queue_latency_ms": null,
+      "serving_request_id": "9ff9b4aa3e0d4861aed9cc6a7f4f1836",
+      "span_id": null,
+      "started_at": null,
+      "tokenization_mode": "UNKNOWN",
+      "tpot_ms": null,
+      "trace_id": "trace-7eec1456a60a4ed09011cce9e7a57148",
+      "ttft_ms": null
+    }
+  ],
+  "synthetic": false
+}

@@ -82,7 +82,7 @@ When serving telemetry is present, the report shows exact LLM-call to serving
 request correlation through propagated request IDs.
 
 ```text
-Agent LLM call -> llm_request_id -> vLLM serving request
+Agent LLM call -> llm_request_id -> serving request
 ```
 
 No timestamp fuzzy matching is used. Missing serving telemetry or missing
@@ -90,6 +90,8 @@ correlation is shown as missing evidence, not inferred.
 
 Scheduled-to-first-token is labeled as serving-path timing evidence. It is not
 described as pure GPU prefill kernel time.
+For SGLang recordings, client-side first-token timing is labeled as client TTFT
+unless server-stage trace telemetry is explicitly recorded.
 
 ## Findings And Provenance
 

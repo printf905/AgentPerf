@@ -1,0 +1,94 @@
+{
+  "tasks": [
+    {
+      "agent_run_ids": [
+        "m17-openai-agents-sglang-cross-layer"
+      ],
+      "client_latency_ms": 3906.766,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "support-triage-rule-v1",
+      "execution_id": "task-refund-1",
+      "input_tokens": 604,
+      "metadata": {},
+      "output_tokens": null,
+      "passed": false,
+      "quality_metrics": [],
+      "quality_score": 0.5,
+      "status": "FAIL",
+      "task_id": "task-refund-1"
+    },
+    {
+      "agent_run_ids": [
+        "m17-openai-agents-sglang-cross-layer"
+      ],
+      "client_latency_ms": 2868.842,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "support-triage-rule-v1",
+      "execution_id": "task-security-1",
+      "input_tokens": 768,
+      "metadata": {},
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "PASS",
+      "task_id": "task-security-1"
+    },
+    {
+      "agent_run_ids": [
+        "m17-openai-agents-sglang-cross-layer"
+      ],
+      "client_latency_ms": 3275.472,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "support-triage-rule-v1",
+      "execution_id": "task-billing-1",
+      "input_tokens": 778,
+      "metadata": {},
+      "output_tokens": null,
+      "passed": false,
+      "quality_metrics": [],
+      "quality_score": 0.0,
+      "status": "FAIL",
+      "task_id": "task-billing-1"
+    },
+    {
+      "agent_run_ids": [
+        "m17-openai-agents-sglang-cross-layer"
+      ],
+      "client_latency_ms": 3116.614,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "support-triage-rule-v1",
+      "execution_id": "task-integration-1",
+      "input_tokens": 623,
+      "metadata": {},
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "PASS",
+      "task_id": "task-integration-1"
+    },
+    {
+      "agent_run_ids": [
+        "m17-openai-agents-sglang-cross-layer"
+      ],
+      "client_latency_ms": 3046.134,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "support-triage-rule-v1",
+      "execution_id": "task-refund-2",
+      "input_tokens": 788,
+      "metadata": {},
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "PASS",
+      "task_id": "task-refund-2"
+    }
+  ]
+}

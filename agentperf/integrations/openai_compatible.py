@@ -57,6 +57,44 @@ def build_vllm_recording_from_agent_run(
     environment: dict[str, Any],
 ) -> dict[str, Any]:
     """Join AgentPerf agent spans to captured serving responses by explicit request ID."""
+    return build_openai_compatible_recording_from_agent_run(
+        agent_run=agent_run,
+        captured_records=captured_records,
+        model=model,
+        environment=environment,
+        backend="vllm",
+        name=agent_run.name or "OpenAI Agents SDK + vLLM cross-layer run",
+    )
+
+
+def build_sglang_recording_from_agent_run(
+    *,
+    agent_run: AgentRun,
+    captured_records: list[dict[str, Any]],
+    model: str,
+    environment: dict[str, Any],
+) -> dict[str, Any]:
+    """Join AgentPerf agent spans to captured SGLang responses by explicit request ID."""
+    return build_openai_compatible_recording_from_agent_run(
+        agent_run=agent_run,
+        captured_records=captured_records,
+        model=model,
+        environment=environment,
+        backend="sglang",
+        name=agent_run.name or "OpenAI Agents SDK + SGLang cross-layer run",
+    )
+
+
+def build_openai_compatible_recording_from_agent_run(
+    *,
+    agent_run: AgentRun,
+    captured_records: list[dict[str, Any]],
+    model: str,
+    environment: dict[str, Any],
+    backend: str,
+    name: str,
+) -> dict[str, Any]:
+    """Join AgentPerf agent spans to OpenAI-compatible responses by explicit request ID."""
 
     captured_by_request_id = {
         str(record["client_request_id"]): record
@@ -94,12 +132,13 @@ def build_vllm_recording_from_agent_run(
 
     return {
         "agent_run_id": agent_run.agent_run_id,
-        "name": agent_run.name or "OpenAI Agents SDK + vLLM cross-layer run",
+        "name": name,
         "model": model,
         "environment": {
             **environment,
             "correlation_mechanism": "explicit_request_id_body",
             "missing_correlations": missing_request_ids,
+            "backend": backend,
         },
         "records": records,
         "tool_calls": [asdict(tool_call) for tool_call in agent_run.tool_calls],

@@ -536,7 +536,7 @@ def _serving(report_input: HtmlReportInput) -> str:
             f"<td>{_h(_unknown(request.backend))}</td>"
             f"<td>{_h(_unknown(request.model))}</td>"
             f"<td>{_h(_fmt_ms(request.queue_latency_ms))}</td>"
-            f"<td>{_h(_fmt_ms(_scheduled_to_first_ms(request)))}</td>"
+            f"<td>{_h(_fmt_ms(_first_token_evidence_ms(request)))}</td>"
             f"<td>{_h(_fmt_ms(request.decode_latency_ms))}</td>"
             f"<td>{_h(_fmt_int(cached))}</td>"
             f"<td>{_h(_fmt_int(miss))}</td>"
@@ -544,8 +544,10 @@ def _serving(report_input: HtmlReportInput) -> str:
             "</tr>"
         )
     intro = (
-        '<p class="note">Scheduled-to-first is end-to-end serving path evidence, not pure GPU '
-        "prefill kernel time. Correlation uses explicit request IDs when present.</p>"
+        '<p class="note">First-token evidence preserves backend provenance. For vLLM, '
+        "scheduled-to-first is end-to-end serving path evidence, not pure GPU prefill "
+        "kernel time. For SGLang, client TTFT is client-observed unless server trace "
+        "stages are recorded. Correlation uses explicit request IDs when present.</p>"
     )
     return _section(
         "Serving Telemetry",
@@ -557,7 +559,7 @@ def _serving(report_input: HtmlReportInput) -> str:
                 "Backend",
                 "Model",
                 "Queue",
-                "Scheduled->first",
+                "First-token evidence",
                 "Generation",
                 "Cached",
                 "Miss",
@@ -707,7 +709,7 @@ def _serving_detail(request: ServingRequest) -> str:
             ("Backend", request.backend or "unknown"),
             ("Model", request.model or "unknown"),
             ("Queue", _fmt_ms(request.queue_latency_ms)),
-            ("Scheduled->first", _fmt_ms(_scheduled_to_first_ms(request))),
+            (_first_token_label(request), _fmt_ms(_first_token_evidence_ms(request))),
             ("Generation", _fmt_ms(request.decode_latency_ms)),
             ("Cached prompt tokens", _fmt_int(request.prefix_cache_hit_tokens)),
             ("Cache-miss prompt tokens", _fmt_int(request.prefix_cache_miss_tokens)),
@@ -715,8 +717,19 @@ def _serving_detail(request: ServingRequest) -> str:
     )
 
 
-def _scheduled_to_first_ms(request: ServingRequest) -> float | None:
+def _first_token_evidence_ms(request: ServingRequest) -> float | None:
     return request.prefill_path_latency_ms or request.prefill_latency_ms or request.ttft_ms
+
+
+def _first_token_label(request: ServingRequest) -> str:
+    semantics = (
+        request.metadata.get("metric_reliability", {})
+        .get("measurement_semantics", {})
+        .get("ttft_ms")
+    )
+    if semantics == "client_time_to_first_token":
+        return "Client TTFT"
+    return "Scheduled->first"
 
 
 def _quality_brief(metrics: list[QualityMetric]) -> str:

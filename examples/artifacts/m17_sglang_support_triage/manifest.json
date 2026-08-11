@@ -1,0 +1,23 @@
+{
+  "agent_name": "Support Triage Agent",
+  "agentperf_version": "0.2.0",
+  "artifact_id": "m17-openai-agents-sglang",
+  "backend": "sglang",
+  "created_at": "2026-08-11T10:45:58.987371+00:00",
+  "framework": "openai-agents-python",
+  "locations": {
+    "environment": "environment.json",
+    "findings": "findings.json",
+    "quality": "quality.json",
+    "summary": "summary.json",
+    "tasks": "tasks.json",
+    "trace": "trace.json"
+  },
+  "metadata": {},
+  "model": "agentperf-sglang-demo",
+  "schema_version": 1,
+  "serving_telemetry": true,
+  "status": "COMPLETE",
+  "task_count": 5,
+  "workload_id": "m17-openai-agents-support-triage-sglang"
+}

@@ -1,0 +1,60 @@
+{
+  "agent_run_id": "sglang-recorded-fixture",
+  "name": "SGLang recorded OpenAI-compatible fixture",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "environment": {
+    "backend": "sglang",
+    "sglang_version": "fixture",
+    "telemetry_source": "openai-compatible-response-plus-client-stream-timestamps"
+  },
+  "records": [
+    {
+      "client_request_id": "agentperf-sglang-fixture-0",
+      "llm_call_id": "llm-sglang-0",
+      "agent_step_id": "step-1",
+      "prompt_components": {
+        "system": "You triage support tickets and must call the lookup policy tool before answering.",
+        "user": "Ticket: refund request for a duplicate charge."
+      },
+      "response": {
+        "id": "chatcmpl-sglang-fixture-0",
+        "usage": {
+          "prompt_tokens": 19,
+          "completion_tokens": 5
+        },
+        "choices": [
+          {
+            "token_ids": [901, 902, 903, 904, 905]
+          }
+        ]
+      },
+      "metrics": {
+        "client_ttft_ms": 42.0,
+        "client_e2e_latency_ms": 120.0,
+        "time_per_output_token_ms": 19.5
+      },
+      "server_metrics": {
+        "sglang:cache_hit_rate": 0.72,
+        "sglang:num_queue_reqs": 0,
+        "metric_scope": "aggregate_snapshot"
+      },
+      "metadata": {
+        "correlation": "exact_client_request_id"
+      }
+    }
+  ],
+  "tool_calls": [
+    {
+      "tool_call_id": "tool-lookup-policy",
+      "agent_step_id": "step-1",
+      "name": "lookup_policy",
+      "latency_ms": 3.0,
+      "input": {
+        "topic": "refunds"
+      },
+      "output": {
+        "policy": "Duplicate charges are eligible for refund review."
+      }
+    }
+  ]
+}
