@@ -58,7 +58,7 @@ Mostly yes. The strongest claims are tied to documented real runs:
 
 Wording now avoids:
 
-- "7.4x faster agent";
+- turning the controlled M2 prefix/cacheability result into a speedup headline;
 - pure GPU prefill claims;
 - general benchmark claims;
 - validated mixed routing claims.

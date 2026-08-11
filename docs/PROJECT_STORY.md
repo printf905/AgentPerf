@@ -54,13 +54,13 @@ because performance advice can be wrong if it is not tied to measured
 quantities. For example, repeated text is not automatically waste, and a latency
 component that dominates a tiny request is not necessarily worth optimizing.
 
-M2 validated the prefix/cacheability story on real vLLM. A controlled workload
-used the same semantic content in two layouts. With dynamic content before
-stable context, vLLM reported 0.40% cached-token ratio and P95
-scheduled-to-first-token latency of 241.73 ms. Moving the same stable context
-into the prefix raised cached-token ratio to 99.57% and lowered P95
-scheduled-to-first-token latency to 32.61 ms. AgentPerf found the baseline
-pathology and the prefix-cache finding disappeared after replay.
+M2 validated the prefix/cacheability mechanism on real vLLM. A controlled
+workload used the same semantic content in two layouts. With dynamic content
+before stable context, repeated text did not become reusable prefix-cache
+blocks. Moving the same stable context into the prefix made the request layout
+cacheable. AgentPerf found the baseline pathology and the prefix-cache finding
+disappeared after replay. The exact measurements are kept in the detailed
+reproducibility docs rather than used as promotional headline numbers.
 
 M3 moved from a controlled request workload to a real framework-free research
 agent with planner, local search, evidence review, another search, and final
@@ -95,15 +95,15 @@ proposed mixed candidate must not be presented as validated.
 
 ## Strong Quantitative Results
 
-1. Prefix/cacheability story: cached-token ratio improved from 0.40% to 99.57%,
-   and P95 scheduled-to-first-token latency fell from 241.73 ms to 32.61 ms on
-   the controlled vLLM workload.
-2. Real-agent context-waste story: DEDUP_ONLY reduced processed input tokens
+1. Real-agent context-waste story: DEDUP_ONLY reduced processed input tokens
    from 132,756 to 95,479 and tool-result processed tokens from 112,287 to
    78,566 while staying within the declared quality tolerance.
-3. Real-agent latency story: under DEDUP_ONLY, P95 scheduled-to-first-token
+2. Real-agent latency story: under DEDUP_ONLY, P95 scheduled-to-first-token
    latency fell from 312.18 ms to 176.53 ms and P95 client latency fell from
    1607.11 ms to 1247.62 ms.
+3. External framework/correlation story: OpenAI Agents SDK integration
+   preserved the agent loop and M6 correlated 10/10 external-agent LLM calls to
+   real vLLM serving requests with propagated request IDs.
 4. M4 Phase A: all-4B baseline quality was 0.967 mean score and 90% pass rate;
    one-role replay found several quality-preserving smaller-model candidates.
    This is counterfactual evidence only, not an end-to-end mixed-routing result.
@@ -130,7 +130,8 @@ proposed mixed candidate must not be presented as validated.
 - Do not claim AgentPerf is production-ready.
 - Do not claim it replaces Langfuse, Phoenix, vLLM, SGLang, or ThunderAgent.
 - Do not claim it invented agent-aware KV-cache optimization.
-- Do not claim the whole agent became 7.4x faster.
+- Do not turn the controlled M2 prefix/cacheability numbers into a release
+  headline, resume bullet, or general speedup claim.
 - Do not call scheduled-to-first-token pure GPU prefill latency.
 - Do not claim optimal KV-cache sizing.
 - Do not claim M4 mixed routing is validated.
@@ -143,10 +144,9 @@ proposed mixed candidate must not be presented as validated.
   traces with vLLM serving telemetry to diagnose token, cacheability, and
   first-token latency pathologies using deterministic evidence rather than
   LLM-generated advice.
-- Validated two real vLLM replay stories: reorganizing stable context into a
-  reusable prefix improved cached-token ratio from 0.40% to 99.57%, and
+- Validated a real multi-step research-agent optimization where
   quality-constrained tool-result deduplication reduced processed input tokens
-  by 28.1% on a multi-step research agent while staying within a declared
+  by 28.1% and tool-result processing by 30.0% while staying within a declared
   quality tolerance.
 - Experimental: implemented model-choice counterfactual profiling by semantic
   agent role and validated Phase A role sensitivity on Qwen3 0.6B/1.7B/4B; the
