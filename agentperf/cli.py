@@ -35,6 +35,7 @@ from agentperf.regression import (
     regression_exit_code,
     regression_result_to_json,
 )
+from agentperf.reporters.html import write_html_report
 from agentperf.reporters.terminal import (
     render_comparison_report,
     render_model_choice_report,
@@ -192,6 +193,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     inspect.add_argument("artifact_path", type=Path)
     inspect.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
+    html_report = subparsers.add_parser(
+        "report",
+        help="Generate a standalone local HTML profiler report from an artifact or trace",
+    )
+    html_report.add_argument("input_path", type=Path)
+    html_report.add_argument(
+        "--output",
+        required=True,
+        type=Path,
+        help="Write the self-contained HTML report to this path",
+    )
+    html_report.add_argument("--title", help="Optional report title")
+    html_report.add_argument(
         "--log-level",
         default="WARNING",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -405,6 +423,15 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         sys.stdout.write(output)
         sys.stdout.write("\n")
+        return 0
+    if args.command == "report":
+        try:
+            write_html_report(args.input_path, args.output, title=args.title)
+        except (OSError, ArtifactError, TraceParseError, ValueError, json.JSONDecodeError) as exc:
+            LOGGER.error("%s", exc)
+            sys.stderr.write(f"{exc}\n")
+            return 2
+        sys.stdout.write(f"Wrote AgentPerf HTML report: {args.output}\n")
         return 0
     if args.command == "suite":
         try:

@@ -373,6 +373,12 @@ agentperf inspect examples/artifacts/m3_raw_full
 agentperf compare examples/artifacts/m3_raw_full examples/artifacts/m3_dedup_only
 ```
 
+Generate a standalone local profiler report:
+
+```bash
+agentperf report examples/artifacts/m3_dedup_only --output agentperf-report.html
+```
+
 A trace tells AgentPerf what happened. An artifact bundle also records task
 quality, findings, environment metadata, and summary data, which lets replay
 verification reach an acceptance verdict without experiment-specific scripts.
@@ -534,6 +540,8 @@ Start here:
   run-boundary-aware context duplication semantics.
 - [docs/ARTIFACT_FORMAT.md](docs/ARTIFACT_FORMAT.md): portable experiment
   artifact bundle format.
+- [docs/HTML_REPORT.md](docs/HTML_REPORT.md): standalone offline profiler
+  report.
 - [docs/EXPERIMENT_SESSION.md](docs/EXPERIMENT_SESSION.md): artifact-by-default
   experiment recording API.
 - [docs/REPLAY_COMPARISON.md](docs/REPLAY_COMPARISON.md): generic baseline vs
