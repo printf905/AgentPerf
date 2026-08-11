@@ -356,6 +356,16 @@ agentperf analyze-vllm-recording \
   --show-provenance
 ```
 
+Compare a baseline trace with a replay candidate:
+
+```bash
+agentperf compare \
+  examples/traces/replay_baseline.json \
+  examples/traces/replay_candidate.json \
+  --quality-tolerance 0.05 \
+  --pass-rate-tolerance 0.10
+```
+
 Run the optional OpenAI Agents SDK integration example:
 
 ```bash
@@ -445,6 +455,10 @@ Start here:
 - [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md): normalized trace schema.
 - [docs/DUPLICATION_SEMANTICS.md](docs/DUPLICATION_SEMANTICS.md):
   run-boundary-aware context duplication semantics.
+- [docs/REPLAY_COMPARISON.md](docs/REPLAY_COMPARISON.md): generic baseline vs
+  replay comparison contract.
+- [docs/REPLAY_VERIFICATION.md](docs/REPLAY_VERIFICATION.md): user-facing
+  replay verification workflow.
 - [docs/LANDSCAPE.md](docs/LANDSCAPE.md): competitive and novelty review.
 - [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md): vLLM field
   mapping and measurement quality.

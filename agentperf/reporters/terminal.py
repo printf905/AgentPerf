@@ -10,6 +10,7 @@ from agentperf.metrics.latency import (
 )
 from agentperf.metrics.tokens import call_input_tokens, call_output_tokens
 from agentperf.model_choice import ModelChoiceReport
+from agentperf.schema.comparison import MetricDelta, RunComparison
 
 
 def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> str:
@@ -260,6 +261,110 @@ def render_model_choice_report(
     return "\n".join(lines)
 
 
+def render_comparison_report(comparison: RunComparison, *, show_provenance: bool = False) -> str:
+    lines: list[str] = [
+        "=" * 60,
+        "AgentPerf Replay Comparison",
+        "=" * 60,
+        "Tasks",
+        "-" * 60,
+        _row("Baseline", comparison.baseline_id),
+        _row("Candidate", comparison.candidate_id),
+        _row("Matched tasks", f"{len(comparison.matched_tasks)}"),
+        _row("Unmatched baseline", len(comparison.unmatched_baseline_tasks)),
+        _row("Unmatched candidate", len(comparison.unmatched_candidate_tasks)),
+        "",
+        "Performance",
+        "-" * 60,
+        _row("Input tokens", _format_delta(comparison.token_deltas.input_tokens, integer=True)),
+        _row("Output tokens", _format_delta(comparison.token_deltas.output_tokens, integer=True)),
+    ]
+    tool_result_delta = comparison.token_deltas.component_processed_tokens.get("tool_result")
+    if tool_result_delta is not None:
+        lines.append(_row("Tool-result tokens", _format_delta(tool_result_delta, integer=True)))
+    lines.extend(
+        [
+            _row(
+                "Client P95",
+                _format_delta(comparison.latency_deltas.client_p95_ms, suffix=" ms"),
+            ),
+            _row(
+                "Scheduled->first P95",
+                _format_delta(comparison.latency_deltas.scheduled_to_first_p95_ms, suffix=" ms"),
+            ),
+            "",
+            "Token Components",
+            "-" * 60,
+        ]
+    )
+    if comparison.token_deltas.component_processed_tokens:
+        lines.append(_row("Component", "Baseline -> Candidate  Delta"))
+        for component, delta in comparison.token_deltas.component_processed_tokens.items():
+            lines.append(
+                _row(
+                    component.replace("_", " ").title(),
+                    _format_delta(delta, integer=True),
+                )
+            )
+    else:
+        lines.append("No component attribution available.")
+
+    lines.extend(
+        [
+            "",
+            "Quality",
+            "-" * 60,
+            _row("Mean score", _format_delta(comparison.quality_deltas.mean_score)),
+            _row("Pass rate", _format_delta(comparison.quality_deltas.pass_rate, ratio=True)),
+            _row("Constraint", _quality_status(comparison.quality_deltas.passed)),
+            "",
+            "Cache",
+            "-" * 60,
+            _row(
+                "Cached tokens",
+                _format_delta(comparison.cache_deltas.cached_tokens, integer=True),
+            ),
+            _row(
+                "Cache-miss tokens",
+                _format_delta(comparison.cache_deltas.cache_miss_tokens, integer=True),
+            ),
+            _row(
+                "Cached-token ratio",
+                _format_delta(comparison.cache_deltas.cached_token_ratio, ratio=True),
+            ),
+            "",
+            "Finding Lifecycle",
+            "-" * 60,
+        ]
+    )
+    if not comparison.finding_changes:
+        lines.append("No finding changes.")
+    else:
+        for change in comparison.finding_changes:
+            severity = (
+                f"{change.baseline_severity or 'absent'} -> "
+                f"{change.candidate_severity or 'absent'}"
+            )
+            lines.append(_row(change.finding_id, f"{severity}  {change.lifecycle}"))
+            if show_provenance and change.scope:
+                lines.append(_row("scope", change.scope))
+
+    lines.extend(
+        [
+            "",
+            "Verdict",
+            "-" * 60,
+            _row("Result", comparison.acceptance_result.verdict),
+            comparison.acceptance_result.reason,
+        ]
+    )
+    if comparison.warnings:
+        lines.extend(["", "Warnings", "-" * 60])
+        for warning in comparison.warnings:
+            lines.append(f"- {warning}")
+    return "\n".join(lines)
+
+
 def _row(label: str, value: object) -> str:
     return f"{label:<34} {value}"
 
@@ -288,6 +393,39 @@ def _format_ratio(value: float | None) -> str:
     if value is None:
         return "n/a"
     return f"{value * 100:.1f}%"
+
+
+def _format_delta(
+    delta: MetricDelta,
+    *,
+    integer: bool = False,
+    ratio: bool = False,
+    suffix: str = "",
+) -> str:
+    if delta.baseline is None or delta.candidate is None or delta.delta is None:
+        return "n/a"
+    if ratio:
+        baseline = f"{float(delta.baseline) * 100:.1f}%"
+        candidate = f"{float(delta.candidate) * 100:.1f}%"
+        change = f"{float(delta.delta) * 100:+.1f}pp"
+    elif integer:
+        baseline = f"{int(delta.baseline):,}"
+        candidate = f"{int(delta.candidate):,}"
+        change = f"{int(delta.delta):+,}"
+    else:
+        baseline = f"{float(delta.baseline):.3f}{suffix}"
+        candidate = f"{float(delta.candidate):.3f}{suffix}"
+        change = f"{float(delta.delta):+.3f}{suffix}"
+    percent = "" if delta.percent_delta is None else f" ({delta.percent_delta * 100:+.1f}%)"
+    return f"{baseline} -> {candidate}  {change}{percent}"
+
+
+def _quality_status(value: bool | None) -> str:
+    if value is True:
+        return "PASS"
+    if value is False:
+        return "FAIL"
+    return "UNVERIFIED"
 
 
 def _compact_dict(value: dict[str, object]) -> str:
