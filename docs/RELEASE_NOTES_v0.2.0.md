@@ -10,6 +10,8 @@ not claim production readiness or broad benchmark generality.
 - Normalized agent traces for runs, steps, LLM calls, tool calls, prompt
   components, token usage, timings, and provenance.
 - Real vLLM ingestion and explicit request correlation.
+- Prefix-cache diagnosis and replay validated against real vLLM as a
+  mechanism/correctness result.
 - Component-level processed-token attribution.
 - Deterministic, materiality-aware findings for context duplication,
   prefix-cache opportunities, prefill-path bottlenecks, tool-output bloat, and
@@ -24,24 +26,19 @@ not claim production readiness or broad benchmark generality.
 
 Environment: vLLM `0.26.0+cu129`, `Qwen/Qwen3-0.6B`, NVIDIA RTX A5000.
 
-Only the prompt layout changed:
+M2 is treated as a mechanism/correctness validation. Only the prompt layout
+changed:
 
 ```text
 baseline:  dynamic_context + stable_context
 optimized: stable_context + dynamic_context
 ```
 
-| Metric | Baseline | Optimized |
-| --- | ---: | ---: |
-| Cached-token ratio | 0.40% | 99.57% |
-| Cached tokens | 960 | 236,048 |
-| Cache-miss tokens | 236,135 | 1,009 |
-| Scheduled->first P95 | 241.73 ms | 32.61 ms |
-| Client latency P95 | 348.97 ms | 141.55 ms |
-
-This supports the narrow claim that P95 scheduled-to-first-token latency for
-this controlled workload was about 7.4x lower after moving the same stable
-context into a reusable prefix. It is not a general agent speedup claim.
+AgentPerf detected repeated context that failed to form a reusable prefix,
+recommended stable-prefix reorganization, and replay verified the serving
+behavior against real vLLM. Exact request-level measurements are kept in
+`docs/REAL_VLLM_RESULTS.md` and `docs/VLLM_PREFIX_CACHE_SEMANTICS.md` for
+reproducibility rather than used as release headline numbers.
 
 ### Real-Agent Context Waste
 
