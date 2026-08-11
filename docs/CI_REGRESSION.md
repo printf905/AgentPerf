@@ -18,6 +18,15 @@ Exit codes:
 Normal `agentperf compare` behavior is unchanged. Regression exit codes are
 only used by `agentperf check`.
 
+For teams with multiple benchmarks, prefer suite-managed checks:
+
+```bash
+agentperf suite check benchmarks/research-agent/ candidate-artifact/
+```
+
+Suites pin the accepted baseline and policy explicitly. See
+[BENCHMARK_SUITES.md](BENCHMARK_SUITES.md).
+
 ## Baselines
 
 AgentPerf only needs filesystem paths. Two practical baseline patterns are:

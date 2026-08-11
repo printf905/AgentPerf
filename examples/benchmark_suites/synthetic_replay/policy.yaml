@@ -1,0 +1,15 @@
+schema_version: 1
+quality:
+  mean_score:
+    max_drop: 0.05
+  pass_rate:
+    max_drop: 0.10
+performance:
+  input_tokens:
+    max_increase_percent: 15
+findings:
+  fail_on_new_material_findings: true
+task_coverage:
+  require_same_tasks: true
+  minimum_task_coverage: 1.0
+  allow_partial: false

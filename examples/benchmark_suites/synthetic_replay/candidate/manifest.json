@@ -1,0 +1,25 @@
+{
+  "agent_name": "synthetic-fixture-agent",
+  "agentperf_version": "0.2.0",
+  "artifact_id": "synthetic-replay-candidate",
+  "backend": null,
+  "created_at": "2026-08-11T00:00:00+00:00",
+  "framework": "none",
+  "locations": {
+    "environment": "environment.json",
+    "findings": "findings.json",
+    "quality": "quality.json",
+    "summary": "summary.json",
+    "tasks": "tasks.json",
+    "trace": "trace.json"
+  },
+  "metadata": {
+    "synthetic": true
+  },
+  "model": "fixture-model",
+  "schema_version": 1,
+  "serving_telemetry": false,
+  "status": "COMPLETE",
+  "task_count": 1,
+  "workload_id": "synthetic-replay"
+}

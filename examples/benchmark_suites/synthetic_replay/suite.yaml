@@ -1,0 +1,19 @@
+schema_version: 1
+suite_id: synthetic-replay
+suite_version: 1
+description: Tiny deterministic synthetic suite for offline CI examples.
+agent: synthetic-fixture-agent
+framework: none
+task_set:
+  id: synthetic-task-1
+  fingerprint: 7afaa346b4bf92bf9dc21e9ae809887412a86beb766842e99df7fee6573a4781
+baseline_artifact: baseline
+regression_policy: policy.yaml
+expected_task_count: 1
+quality_metrics:
+  mean_score: true
+  pass_rate: true
+environment:
+  latency_requires_compatible: false
+metadata:
+  synthetic: true

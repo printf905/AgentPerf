@@ -1,0 +1,20 @@
+{
+  "tasks": [
+    {
+      "agent_run_ids": [
+        "synthetic-baseline"
+      ],
+      "client_latency_ms": 100.0,
+      "duration_ms": 100.0,
+      "error": null,
+      "execution_id": "exec-task-1-baseline",
+      "input_tokens": 100,
+      "output_tokens": 10,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "PASSED",
+      "task_id": "task-1"
+    }
+  ]
+}

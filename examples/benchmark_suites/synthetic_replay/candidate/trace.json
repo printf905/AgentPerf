@@ -1,0 +1,42 @@
+{
+  "runs": [
+    {
+      "agent_run": {
+        "agent_run_id": "synthetic-candidate",
+        "metadata": {
+          "quality": {
+            "passed": true,
+            "score": 1.0
+          },
+          "task_id": "task-1"
+        },
+        "name": "synthetic candidate",
+        "steps": [
+          {
+            "agent_step_id": "step-1",
+            "llm_calls": [
+              {
+                "input_tokens": 90,
+                "llm_call_id": "llm-1",
+                "model": "fixture-model",
+                "output_tokens": 10,
+                "prompt": [
+                  {
+                    "name": "system",
+                    "text": "You are a concise synthetic fixture agent."
+                  },
+                  {
+                    "name": "user",
+                    "text": "Answer task one."
+                  }
+                ],
+                "tokenization_mode": "EXACT"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "schema_version": "agentperf.trace.v1"
+}
