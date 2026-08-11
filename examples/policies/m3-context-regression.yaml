@@ -1,0 +1,18 @@
+schema_version: 1
+quality:
+  mean_score:
+    max_drop: 0.05
+  pass_rate:
+    max_drop: 0.10
+performance:
+  input_tokens:
+    max_increase_percent: 15
+  tool_result_tokens:
+    max_increase_percent: 15
+  scheduled_to_first_p95:
+    max_increase_percent: 20
+findings:
+  fail_on_new_material_findings: true
+task_coverage:
+  require_same_tasks: false
+  allow_partial: false

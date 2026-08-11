@@ -81,6 +81,8 @@ class FindingChange:
     lifecycle: FindingLifecycleStatus
     baseline_severity: str | None
     candidate_severity: str | None
+    baseline_materiality: str | None = None
+    candidate_materiality: str | None = None
     scope: str | None = None
     baseline_summary: str | None = None
     candidate_summary: str | None = None

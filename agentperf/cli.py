@@ -12,9 +12,18 @@ from agentperf.backends.vllm import VLLMTelemetryProvider
 from agentperf.comparison import ComparisonError, compare_paths, comparison_to_json
 from agentperf.integrations.openai_agents import agent_run_from_openai_agents_export
 from agentperf.model_choice import analyze_model_choice_path
+from agentperf.regression import (
+    RegressionPolicyError,
+    evaluate_regression_policy,
+    load_regression_policy,
+    regression_exit_code,
+    regression_result_to_json,
+)
 from agentperf.reporters.terminal import (
     render_comparison_report,
     render_model_choice_report,
+    render_regression_markdown,
+    render_regression_report,
     render_report,
 )
 from agentperf.schema.trace import TraceParseError
@@ -131,6 +140,36 @@ def build_parser() -> argparse.ArgumentParser:
         default="WARNING",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
+    check = subparsers.add_parser(
+        "check",
+        help="Evaluate a regression policy against two AgentPerf artifacts/traces",
+    )
+    check.add_argument("baseline_path", type=Path)
+    check.add_argument("candidate_path", type=Path)
+    check.add_argument(
+        "--policy",
+        required=True,
+        type=Path,
+        help="Path to agentperf-regression.yaml/json",
+    )
+    check.add_argument(
+        "--format",
+        choices=["terminal", "json", "markdown"],
+        default="terminal",
+        help="Output format",
+    )
+    check.add_argument("--output", type=Path, help="Write check output to a file")
+    check.add_argument(
+        "--min-material-improvement",
+        type=float,
+        default=0.05,
+        help="Minimum relative improvement used by the underlying replay comparison",
+    )
+    check.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
     inspect = subparsers.add_parser(
         "inspect",
         help="Inspect an AgentPerf artifact bundle",
@@ -236,6 +275,39 @@ def main(argv: list[str] | None = None) -> int:
         ):
             return 1
         return 0
+    if args.command == "check":
+        try:
+            policy = load_regression_policy(args.policy)
+            mean_score_policy = policy.quality.get("mean_score")
+            pass_rate_policy = policy.quality.get("pass_rate")
+            comparison = compare_paths(
+                args.baseline_path,
+                args.candidate_path,
+                mean_score_tolerance=(
+                    mean_score_policy.max_drop if mean_score_policy else None
+                ),
+                pass_rate_tolerance=(
+                    pass_rate_policy.max_drop if pass_rate_policy else None
+                ),
+                min_material_improvement=args.min_material_improvement,
+            )
+            result = evaluate_regression_policy(comparison, policy)
+        except (OSError, ComparisonError, RegressionPolicyError) as exc:
+            LOGGER.error("%s", exc)
+            sys.stderr.write(f"{exc}\n")
+            return 2
+        if args.format == "json":
+            output = regression_result_to_json(result)
+        elif args.format == "markdown":
+            output = render_regression_markdown(result)
+        else:
+            output = render_regression_report(result)
+        if args.output:
+            args.output.write_text(output + "\n", encoding="utf-8")
+        else:
+            sys.stdout.write(output)
+            sys.stdout.write("\n")
+        return regression_exit_code(result)
     if args.command == "inspect":
         try:
             output = inspect_artifact(args.artifact_path)
