@@ -4,7 +4,14 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 RegressionStatus = Literal["PASS", "FAIL", "INCONCLUSIVE"]
-CheckCategory = Literal["TASK_COVERAGE", "QUALITY", "PERFORMANCE", "FINDINGS", "ARTIFACT"]
+CheckCategory = Literal[
+    "TASK_COVERAGE",
+    "QUALITY",
+    "PERFORMANCE",
+    "FINDINGS",
+    "ARTIFACT",
+    "ENVIRONMENT",
+]
 
 
 @dataclass(frozen=True)

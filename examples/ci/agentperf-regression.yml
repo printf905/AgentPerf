@@ -24,10 +24,9 @@ jobs:
 
       - name: Run AgentPerf regression check
         run: |
-          agentperf check \
-            examples/artifacts/m3_raw_full \
+          agentperf suite check \
+            examples/benchmark_suites/m3_context \
             candidate-artifact \
-            --policy examples/policies/m3-context-regression.yaml \
             --format markdown \
             --output agentperf-regression.md
           cat agentperf-regression.md >> "$GITHUB_STEP_SUMMARY"

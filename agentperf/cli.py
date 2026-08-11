@@ -9,6 +9,22 @@ from pathlib import Path
 from agentperf.analyzer import analyze_path, analyze_run
 from agentperf.artifacts import ArtifactError, analyze_artifact, inspect_artifact, is_artifact_path
 from agentperf.backends.vllm import VLLMTelemetryProvider
+from agentperf.benchmark_suites import (
+    SuiteError,
+    baseline_proposal_to_dict,
+    check_all_suites,
+    check_suite,
+    propose_baseline,
+    render_baseline_proposal,
+    render_check_all,
+    render_suite_check,
+    render_suite_validation,
+    suite_check_to_dict,
+    suite_collection_to_dict,
+    suite_result_exit_code,
+    suite_validation_to_dict,
+    validate_suite,
+)
 from agentperf.comparison import ComparisonError, compare_paths, comparison_to_json
 from agentperf.integrations.openai_agents import agent_run_from_openai_agents_export
 from agentperf.model_choice import analyze_model_choice_path
@@ -180,6 +196,78 @@ def build_parser() -> argparse.ArgumentParser:
         default="WARNING",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
+    suite = subparsers.add_parser(
+        "suite",
+        help="Validate and check AgentPerf benchmark suites",
+    )
+    suite_subparsers = suite.add_subparsers(dest="suite_command", required=True)
+    suite_validate = suite_subparsers.add_parser(
+        "validate",
+        help="Validate a benchmark suite manifest, baseline, and policy",
+    )
+    suite_validate.add_argument("suite_path", type=Path)
+    suite_validate.add_argument(
+        "--format",
+        choices=["terminal", "json", "markdown"],
+        default="terminal",
+    )
+    suite_validate.add_argument("--output", type=Path)
+    suite_validate.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
+    suite_check = suite_subparsers.add_parser(
+        "check",
+        help="Check one candidate artifact against a benchmark suite",
+    )
+    suite_check.add_argument("suite_path", type=Path)
+    suite_check.add_argument("candidate_path", type=Path)
+    suite_check.add_argument(
+        "--format",
+        choices=["terminal", "json", "markdown"],
+        default="terminal",
+    )
+    suite_check.add_argument("--output", type=Path)
+    suite_check.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
+    suite_check_all = suite_subparsers.add_parser(
+        "check-all",
+        help="Check all suites below a suites root against candidate artifacts",
+    )
+    suite_check_all.add_argument("suites_root", type=Path)
+    suite_check_all.add_argument("candidates_root", type=Path)
+    suite_check_all.add_argument(
+        "--format",
+        choices=["terminal", "json", "markdown"],
+        default="terminal",
+    )
+    suite_check_all.add_argument("--output", type=Path)
+    suite_check_all.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
+    suite_propose = suite_subparsers.add_parser(
+        "propose-baseline",
+        help="Generate a reviewable baseline update proposal without replacing files",
+    )
+    suite_propose.add_argument("suite_path", type=Path)
+    suite_propose.add_argument("candidate_path", type=Path)
+    suite_propose.add_argument(
+        "--format",
+        choices=["markdown", "terminal", "json"],
+        default="markdown",
+    )
+    suite_propose.add_argument("--output", type=Path)
+    suite_propose.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
     return parser
 
 
@@ -318,4 +406,84 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write(output)
         sys.stdout.write("\n")
         return 0
+    if args.command == "suite":
+        try:
+            if args.suite_command == "validate":
+                validation_result = validate_suite(args.suite_path)
+                if args.format == "json":
+                    output = json.dumps(
+                        suite_validation_to_dict(validation_result),
+                        indent=2,
+                        sort_keys=True,
+                    )
+                else:
+                    output = render_suite_validation(
+                        validation_result,
+                        markdown=args.format == "markdown",
+                    )
+                _write_or_print(output, args.output)
+                return suite_result_exit_code(validation_result.status)
+            if args.suite_command == "check":
+                check_result = check_suite(args.suite_path, args.candidate_path)
+                if args.format == "json":
+                    output = json.dumps(
+                        suite_check_to_dict(check_result),
+                        indent=2,
+                        sort_keys=True,
+                    )
+                else:
+                    output = render_suite_check(
+                        check_result,
+                        markdown=args.format == "markdown",
+                    )
+                _write_or_print(output, args.output)
+                return suite_result_exit_code(check_result.status)
+            if args.suite_command == "check-all":
+                collection_result = check_all_suites(args.suites_root, args.candidates_root)
+                if args.format == "json":
+                    output = json.dumps(
+                        suite_collection_to_dict(collection_result),
+                        indent=2,
+                        sort_keys=True,
+                    )
+                else:
+                    output = render_check_all(
+                        collection_result,
+                        markdown=args.format == "markdown",
+                    )
+                _write_or_print(output, args.output)
+                return suite_result_exit_code(collection_result.status)
+            if args.suite_command == "propose-baseline":
+                proposal = propose_baseline(args.suite_path, args.candidate_path)
+                if args.format == "json":
+                    output = json.dumps(
+                        baseline_proposal_to_dict(proposal),
+                        indent=2,
+                        sort_keys=True,
+                    )
+                else:
+                    output = render_baseline_proposal(
+                        proposal,
+                        markdown=args.format == "markdown",
+                    )
+                _write_or_print(output, args.output)
+                return suite_result_exit_code(proposal.regression.status)
+        except (
+            OSError,
+            ArtifactError,
+            ComparisonError,
+            RegressionPolicyError,
+            SuiteError,
+        ) as exc:
+            LOGGER.error("%s", exc)
+            sys.stderr.write(f"{exc}\n")
+            return 2
     return 2
+
+
+def _write_or_print(output: str, path: Path | None) -> None:
+    if path:
+        path.write_text(output + "\n", encoding="utf-8")
+    else:
+        sys.stdout.write(output)
+        sys.stdout.write("\n")

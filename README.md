@@ -390,6 +390,19 @@ agentperf check \
 finding, and task-coverage thresholds and returns stable PASS / FAIL /
 INCONCLUSIVE exit codes. See [docs/CI_REGRESSION.md](docs/CI_REGRESSION.md).
 
+Team benchmark suites:
+
+```bash
+agentperf suite validate examples/benchmark_suites/m3_context
+agentperf suite check examples/benchmark_suites/m3_context examples/artifacts/m3_dedup_only
+agentperf suite propose-baseline examples/benchmark_suites/m3_context runs/candidate
+```
+
+A suite pins the accepted baseline artifact and regression policy explicitly.
+Baseline updates are reviewable proposals, not automatic overwrites. See
+[docs/BENCHMARK_SUITES.md](docs/BENCHMARK_SUITES.md) and
+[docs/BASELINE_MANAGEMENT.md](docs/BASELINE_MANAGEMENT.md).
+
 SDK-first experiment recording:
 
 ```python

@@ -1,0 +1,20 @@
+schema_version: 1
+suite_id: m3-context-waste
+suite_version: 1
+description: Real M3 framework-free research-agent context waste validation suite.
+agent: m3-framework-free-research-agent
+framework: none
+task_set:
+  id: m3-local-corpus-10
+baseline_artifact: ../../artifacts/m3_raw_full
+regression_policy: ../../policies/m3-context-regression.yaml
+expected_task_count: 10
+quality_metrics:
+  mean_score: true
+  pass_rate: true
+environment:
+  latency_requires_compatible: true
+  allow_environment_mismatch: false
+metadata:
+  recorded_real: true
+  benchmark_scope: controlled-research-agent
