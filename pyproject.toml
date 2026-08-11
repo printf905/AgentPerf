@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentperf"
-version = "0.1.0"
+version = "0.2.0"
 description = "Cross-layer profiler for agentic LLM workloads"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,7 +23,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
+dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10", "build>=1", "openai-agents>=0.19,<0.20"]
 openai-agents = ["openai-agents>=0.19,<0.20"]
 mini-swe-agent = ["mini-swe-agent>=2,<3"]
 
