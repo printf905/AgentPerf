@@ -256,6 +256,10 @@ def _compare_loaded_workloads(
             "candidate_task_results": len(candidate.artifact.task_results)
             if candidate.artifact
             else None,
+            "task_quality_changes": _artifact_task_quality_changes(
+                baseline.artifact,
+                candidate.artifact,
+            ),
         },
     )
 
@@ -577,6 +581,42 @@ def _artifact_warnings(prefix: str, artifact: ExperimentArtifact | None) -> list
 
 def _artifact_task_ids(artifact: ExperimentArtifact) -> set[str]:
     return {task.task_id for task in artifact.task_results}
+
+
+def _artifact_task_quality_changes(
+    baseline: ExperimentArtifact | None,
+    candidate: ExperimentArtifact | None,
+) -> list[dict[str, Any]]:
+    if baseline is None or candidate is None:
+        return []
+    baseline_tasks = {task.task_id: task for task in baseline.task_results}
+    candidate_tasks = {task.task_id: task for task in candidate.task_results}
+    changes: list[dict[str, Any]] = []
+    for task_id in sorted(set(baseline_tasks) & set(candidate_tasks)):
+        base = baseline_tasks[task_id]
+        cand = candidate_tasks[task_id]
+        passed_changed = (
+            base.passed is not None
+            and cand.passed is not None
+            and base.passed != cand.passed
+        )
+        score_changed = (
+            base.quality_score is not None
+            and cand.quality_score is not None
+            and abs(float(cand.quality_score) - float(base.quality_score)) > 1e-12
+        )
+        if not passed_changed and not score_changed:
+            continue
+        changes.append(
+            {
+                "task_id": task_id,
+                "baseline_passed": base.passed,
+                "candidate_passed": cand.passed,
+                "baseline_score": base.quality_score,
+                "candidate_score": cand.quality_score,
+            }
+        )
+    return changes
 
 
 def _artifact_incomplete(artifact: ExperimentArtifact | None) -> bool:

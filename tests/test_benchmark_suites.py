@@ -195,7 +195,11 @@ def test_check_all_reports_missing_candidate(tmp_path: Path) -> None:
 
     assert result.status == "FAIL"
     assert result.missing_candidates == ["synthetic-replay"]
-    assert "missing candidate" in render_check_all(result)
+    terminal = render_check_all(result)
+    markdown = render_check_all(result, markdown=True)
+    assert "missing candidate" in terminal
+    assert "Failed/Inconclusive Suites" in terminal
+    assert "### Triage" in markdown
 
 
 def test_baseline_proposal_is_review_only(tmp_path: Path) -> None:

@@ -394,6 +394,17 @@ agentperf check \
 finding, and task-coverage thresholds and returns stable PASS / FAIL /
 INCONCLUSIVE exit codes. See [docs/CI_REGRESSION.md](docs/CI_REGRESSION.md).
 
+The human-readable output starts with a reviewer-oriented summary:
+
+```text
+Result: PASS
+Quality: mean_score 0.933 -> 0.908, within policy
+Biggest improvements: component.tool_result.processed_tokens -30.0%
+Biggest regressions: none above configured thresholds
+```
+
+See [docs/CI_REPORTING.md](docs/CI_REPORTING.md).
+
 Team benchmark suites:
 
 ```bash
@@ -533,6 +544,8 @@ Start here:
   AgentPerf component-attributed token semantics.
 - [docs/CI_REGRESSION.md](docs/CI_REGRESSION.md): offline regression checks
   for CI.
+- [docs/CI_REPORTING.md](docs/CI_REPORTING.md): reviewer-oriented terminal
+  and Markdown summaries.
 - [docs/BENCHMARK_SUITES.md](docs/BENCHMARK_SUITES.md): filesystem-first
   benchmark suite manifests.
 - [docs/BASELINE_MANAGEMENT.md](docs/BASELINE_MANAGEMENT.md): reviewed
