@@ -366,6 +366,17 @@ agentperf compare \
   --pass-rate-tolerance 0.10
 ```
 
+Inspect and compare self-contained experiment artifacts:
+
+```bash
+agentperf inspect examples/artifacts/m3_raw_full
+agentperf compare examples/artifacts/m3_raw_full examples/artifacts/m3_dedup_only
+```
+
+A trace tells AgentPerf what happened. An artifact bundle also records task
+quality, findings, environment metadata, and summary data, which lets replay
+verification reach an acceptance verdict without experiment-specific scripts.
+
 Run the optional OpenAI Agents SDK integration example:
 
 ```bash
@@ -455,6 +466,8 @@ Start here:
 - [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md): normalized trace schema.
 - [docs/DUPLICATION_SEMANTICS.md](docs/DUPLICATION_SEMANTICS.md):
   run-boundary-aware context duplication semantics.
+- [docs/ARTIFACT_FORMAT.md](docs/ARTIFACT_FORMAT.md): portable experiment
+  artifact bundle format.
 - [docs/REPLAY_COMPARISON.md](docs/REPLAY_COMPARISON.md): generic baseline vs
   replay comparison contract.
 - [docs/REPLAY_VERIFICATION.md](docs/REPLAY_VERIFICATION.md): user-facing

@@ -17,6 +17,7 @@ normalized AgentPerf traces after each side has already been analyzed.
 
 `agentperf compare` accepts either:
 
+- one AgentPerf artifact directory per side;
 - one normalized AgentPerf trace JSON file per side;
 - a workload object with `runs: [...]`;
 - a JSON list of normalized trace objects.
@@ -33,6 +34,11 @@ If both files contain exactly one run and no stable task ID, AgentPerf compares
 them by file cardinality and emits a warning. If multi-run workloads do not
 share stable task IDs, it reports unmatched tasks instead of silently
 subtracting unrelated runs.
+
+Artifact bundles are preferred for replay verification because they include
+quality metrics, environment metadata, and stored findings alongside the trace.
+Raw trace inputs remain supported for compatibility, but trace-only comparisons
+may be `INCONCLUSIVE` when quality is missing.
 
 ## Output Model
 
@@ -107,9 +113,10 @@ misses without backend evidence.
 
 ## Quality Deltas
 
-Quality is optional but central to acceptance. AgentPerf currently reads
-task-level quality from `AgentRun.metadata`, either directly or under a
-`quality` object:
+Quality is optional but central to acceptance. Artifact bundles should store
+quality in `quality.json` and, when available, per-task results in `tasks.json`.
+Raw traces may also provide task-level quality from `AgentRun.metadata`, either
+directly or under a `quality` object:
 
 ```json
 {
@@ -134,6 +141,9 @@ agentperf compare baseline.json candidate.json \
 If performance improves but no quality signal exists, the verdict is
 `INCONCLUSIVE` with the warning
 `PERFORMANCE_IMPROVEMENT_UNVERIFIED_FOR_QUALITY`.
+
+When an artifact includes metric tolerances, `agentperf compare` uses them by
+default. CLI flags override artifact tolerances.
 
 ## Verdicts
 
@@ -168,8 +178,17 @@ For example, `TOOL_OUTPUT_BLOAT` changing from `HIGH` to `MEDIUM` is
 ## Current Real-Artifact Note
 
 The preserved M3 normalized real traces reconstruct token, component, cache, and
-scheduled-to-first deltas. They do not currently carry task-quality metadata in
-the normalized trace itself, so the generic comparator correctly reports an
-`INCONCLUSIVE` acceptance verdict for those raw trace files. Future real
-experiment artifacts should embed per-task quality metadata directly in
-`AgentRun.metadata`.
+scheduled-to-first deltas. The raw trace files still do not carry quality
+metadata, so trace-to-trace comparison remains quality-inconclusive.
+
+M9 migrates the recorded M3 `RAW_FULL` and `DEDUP_ONLY` runs into compact
+artifact bundles under `examples/artifacts/`. Those bundles include the real
+aggregate quality metrics from the recorded experiment summary, so:
+
+```bash
+agentperf compare examples/artifacts/m3_raw_full examples/artifacts/m3_dedup_only
+```
+
+reaches `ACCEPT`. The migrated M3 bundles explicitly record that per-task
+quality rows were not preserved historically; future experiments should emit
+per-task rows directly.

@@ -1,0 +1,11 @@
+{
+  "agent_architecture": "planner LLM -> local search -> evidence review LLM -> local search -> final LLM",
+  "agent_framework": "none",
+  "backend": "vllm",
+  "date": "2026-08-09T06:15:43.173484+00:00",
+  "gpu": "GPU 0: NVIDIA GeForce RTX 3090",
+  "machine": "x86_64",
+  "model": "agentperf-vllm-demo",
+  "platform": "Linux-6.8.0-111-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3"
+}

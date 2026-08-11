@@ -1,0 +1,12 @@
+{
+  "client_latency_p95_ms": 1607.1148806251585,
+  "input_tokens": 132756,
+  "output_tokens": 4973,
+  "quality_limitation": "Historical M3 artifacts preserved aggregate mean score and pass rate, but not per-task quality rows.",
+  "source": "recorded_real_m3_quality_constrained_context_waste",
+  "strategy": "raw_full",
+  "task_count": 10,
+  "task_level_quality_available": false,
+  "tool_result_processed_tokens": 112287,
+  "ttft_p95_ms": 312.1796009945683
+}

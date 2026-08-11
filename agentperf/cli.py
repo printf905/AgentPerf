@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from agentperf.analyzer import analyze_path, analyze_run
+from agentperf.artifacts import ArtifactError, analyze_artifact, inspect_artifact, is_artifact_path
 from agentperf.backends.vllm import VLLMTelemetryProvider
 from agentperf.comparison import ComparisonError, compare_paths, comparison_to_json
 from agentperf.integrations.openai_agents import agent_run_from_openai_agents_export
@@ -26,7 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     analyze = subparsers.add_parser(
         "analyze",
-        help="Analyze a normalized AgentPerf trace JSON file",
+        help="Analyze a normalized AgentPerf trace JSON file or artifact directory",
     )
     analyze.add_argument("trace_path", type=Path)
     analyze.add_argument(
@@ -86,7 +87,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     compare = subparsers.add_parser(
         "compare",
-        help="Compare a baseline AgentPerf trace/workload with a replay candidate",
+        help="Compare a baseline AgentPerf trace/artifact with a replay candidate",
     )
     compare.add_argument("baseline_path", type=Path)
     compare.add_argument("candidate_path", type=Path)
@@ -130,6 +131,16 @@ def build_parser() -> argparse.ArgumentParser:
         default="WARNING",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
+    inspect = subparsers.add_parser(
+        "inspect",
+        help="Inspect an AgentPerf artifact bundle",
+    )
+    inspect.add_argument("artifact_path", type=Path)
+    inspect.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
     return parser
 
 
@@ -143,12 +154,18 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "analyze":
         try:
-            report = analyze_path(args.trace_path)
-        except (OSError, TraceParseError) as exc:
+            if is_artifact_path(args.trace_path):
+                reports = analyze_artifact(args.trace_path)
+            else:
+                reports = [analyze_path(args.trace_path)]
+        except (OSError, ArtifactError, TraceParseError) as exc:
             LOGGER.error("%s", exc)
             sys.stderr.write(f"{exc}\n")
             return 2
-        sys.stdout.write(render_report(report, show_provenance=args.show_provenance))
+        for index, report in enumerate(reports):
+            if index:
+                sys.stdout.write("\n\n")
+            sys.stdout.write(render_report(report, show_provenance=args.show_provenance))
         sys.stdout.write("\n")
         return 0
     if args.command == "analyze-vllm-recording":
@@ -218,5 +235,15 @@ def main(argv: list[str] | None = None) -> int:
             and comparison.acceptance_result.verdict == "REJECT_QUALITY_REGRESSION"
         ):
             return 1
+        return 0
+    if args.command == "inspect":
+        try:
+            output = inspect_artifact(args.artifact_path)
+        except (OSError, ArtifactError) as exc:
+            LOGGER.error("%s", exc)
+            sys.stderr.write(f"{exc}\n")
+            return 2
+        sys.stdout.write(output)
+        sys.stdout.write("\n")
         return 0
     return 2

@@ -7,12 +7,14 @@ from pathlib import Path
 from typing import Any, cast
 
 from agentperf.analyzer import analyze_run
+from agentperf.artifacts import ExperimentArtifact
 from agentperf.instrumentation import TraceRecorder
 from agentperf.integrations.openai_agents import (
     AgentPerfModelWrapper,
     OpenAIAgentsTraceProcessor,
 )
 from agentperf.reporters.terminal import render_report
+from agentperf.schema.artifacts import QualityMetric, TaskResult
 
 try:
     from agents import Agent, Model, ModelResponse, Runner, Usage, function_tool
@@ -245,18 +247,62 @@ async def run(output_dir: Path) -> None:
     processor.write_export(output_dir / "openai_agents_export.json")
     recorder.write_json(output_dir / "agentperf_trace.json")
     (output_dir / "agentperf_report.txt").write_text(render_report(report), encoding="utf-8")
+    mean_score = sum(float(item["score"]) for item in results) / len(results)
+    pass_rate = sum(1 for item in results if item["passed"]) / len(results)
     summary = {
         "framework": "openai-agents-python",
         "agent": "Support Triage Agent",
         "tasks": len(TASKS),
         "llm_calls": len(run_data.llm_calls),
         "tool_calls": len(run_data.tool_calls),
-        "mean_score": sum(float(item["score"]) for item in results) / len(results),
-        "pass_rate": sum(1 for item in results if item["passed"]) / len(results),
+        "mean_score": mean_score,
+        "pass_rate": pass_rate,
         "findings": [finding.id for finding in report.findings],
         "task_results": results,
     }
     (output_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    ExperimentArtifact.from_analysis(
+        report,
+        artifact_id="m5-openai-agents-support-triage",
+        workload_id="m5-openai-agents-support-triage",
+        task_results=[
+            TaskResult(
+                task_id=str(item["task_id"]),
+                passed=bool(item["passed"]),
+                quality_score=float(item["score"]),
+                evaluator="deterministic-policy-coverage",
+                agent_run_ids=[run_data.agent_run_id],
+                metadata={
+                    "expected_policy": item["expected_policy"],
+                    "expected_route": item["expected_route"],
+                },
+            )
+            for item in results
+        ],
+        quality_metrics=[
+            QualityMetric(
+                name="mean_score",
+                value=mean_score,
+                aggregation="mean",
+            ),
+            QualityMetric(
+                name="pass_rate",
+                value=pass_rate,
+                aggregation="rate",
+            ),
+        ],
+        environment={
+            "framework": "openai-agents-python",
+            "backend": "scripted",
+            "serving_telemetry": False,
+        },
+        summary=summary,
+        framework="openai-agents-python",
+        agent_name="Support Triage Agent",
+        backend="scripted",
+        model="scripted-support-model",
+        serving_telemetry=False,
+    ).save(output_dir / "agentperf_artifact")
     print(render_report(report))
     print(json.dumps(summary, indent=2))
 

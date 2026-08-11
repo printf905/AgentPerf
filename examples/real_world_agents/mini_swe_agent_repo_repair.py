@@ -9,12 +9,14 @@ from pathlib import Path
 from typing import Any
 
 from agentperf.analyzer import analyze_run
+from agentperf.artifacts import ExperimentArtifact
 from agentperf.instrumentation import TraceRecorder
 from agentperf.integrations.mini_swe_agent import (
     AgentPerfMiniSweEnvironmentWrapper,
     AgentPerfMiniSweModelWrapper,
 )
 from agentperf.reporters.terminal import render_report
+from agentperf.schema.artifacts import QualityMetric, TaskResult
 
 try:
     import yaml
@@ -186,6 +188,7 @@ def run(output_dir: Path, *, mode: str, model_name: str | None = None) -> None:
     report = analyze_run(run_data)
     recorder.write_json(output_dir / "agentperf_trace.json")
     (output_dir / "agentperf_report.txt").write_text(render_report(report), encoding="utf-8")
+    pass_rate = sum(1 for item in results if item["passed"]) / len(results)
     summary = {
         "agent": "mini-SWE-agent DefaultAgent",
         "mode": mode,
@@ -193,13 +196,52 @@ def run(output_dir: Path, *, mode: str, model_name: str | None = None) -> None:
         "llm_calls": len(run_data.llm_calls),
         "tool_calls": len(run_data.tool_calls),
         "passed": sum(1 for item in results if item["passed"]),
-        "pass_rate": sum(1 for item in results if item["passed"]) / len(results),
+        "pass_rate": pass_rate,
         "input_tokens": sum(call.input_tokens or 0 for call in run_data.llm_calls),
         "output_tokens": sum(call.output_tokens or 0 for call in run_data.llm_calls),
         "findings": [finding.id for finding in report.findings],
         "task_results": results,
     }
     (output_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    ExperimentArtifact.from_analysis(
+        report,
+        artifact_id=f"m7-mini-swe-agent-{mode}",
+        workload_id=f"m7-mini-swe-agent-{mode}",
+        task_results=[
+            TaskResult(
+                task_id=str(item["task_id"]),
+                passed=bool(item["passed"]),
+                quality_score=1.0 if item["passed"] else 0.0,
+                evaluator="local-tests-pass",
+                agent_run_ids=[run_data.agent_run_id],
+                metadata={"mode": mode},
+            )
+            for item in results
+        ],
+        quality_metrics=[
+            QualityMetric(
+                name="pass_rate",
+                value=pass_rate,
+                aggregation="rate",
+            ),
+            QualityMetric(
+                name="mean_score",
+                value=pass_rate,
+                aggregation="mean_pass_indicator",
+            ),
+        ],
+        environment={
+            "framework": "mini-swe-agent",
+            "backend": "deterministic" if mode == "deterministic" else "configured-model",
+            "serving_telemetry": False,
+        },
+        summary=summary,
+        framework="mini-swe-agent",
+        agent_name="mini-SWE-agent DefaultAgent",
+        backend="deterministic" if mode == "deterministic" else "configured-model",
+        model=model_name or mode,
+        serving_telemetry=False,
+    ).save(output_dir / "agentperf_artifact")
     print(render_report(report))
 
 
