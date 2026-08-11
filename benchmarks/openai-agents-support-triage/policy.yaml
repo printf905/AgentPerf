@@ -7,6 +7,8 @@ quality:
 performance:
   input_tokens:
     max_increase_percent: 10
+  component.system.processed_tokens:
+    max_increase_percent: 5
 findings:
   fail_on_new_material_findings: true
   fail_on_regressed_material_findings: true

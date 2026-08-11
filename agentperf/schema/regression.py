@@ -23,6 +23,8 @@ class QualityMetricPolicy:
 class PerformanceMetricPolicy:
     max_increase_percent: float | None = None
     max_increase_absolute: float | None = None
+    min_attribution_coverage: float | None = None
+    require_attribution_confidence: str | None = None
 
 
 @dataclass(frozen=True)

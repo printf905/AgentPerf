@@ -277,9 +277,33 @@ def render_comparison_report(comparison: RunComparison, *, show_provenance: bool
         "",
         "Performance",
         "-" * 60,
-        _row("Input tokens", _format_delta(comparison.token_deltas.input_tokens, integer=True)),
-        _row("Output tokens", _format_delta(comparison.token_deltas.output_tokens, integer=True)),
+        _row(
+            "Provider input tokens",
+            _format_delta(comparison.token_deltas.input_tokens, integer=True),
+        ),
+        _row(
+            "Provider output tokens",
+            _format_delta(comparison.token_deltas.output_tokens, integer=True),
+        ),
     ]
+    accounting = comparison.token_deltas.component_accounting
+    if accounting is not None:
+        lines.extend(
+            [
+                _row(
+                    "Component processed tokens",
+                    _format_delta(accounting.total_processed_tokens, integer=True),
+                ),
+                _row(
+                    "Attribution coverage",
+                    _format_delta(accounting.attribution_coverage_ratio, ratio=True),
+                ),
+                _row(
+                    "Attribution confidence",
+                    f"{accounting.baseline_confidence} -> {accounting.candidate_confidence}",
+                ),
+            ]
+        )
     tool_result_delta = comparison.token_deltas.component_processed_tokens.get("tool_result")
     if tool_result_delta is not None:
         lines.append(_row("Tool-result tokens", _format_delta(tool_result_delta, integer=True)))
@@ -509,6 +533,9 @@ def _check_value(check: RegressionCheck) -> str:
         values.append(f"delta {_format_check_number(check.actual_delta)}")
     if check.actual_percent_delta is not None:
         values.append(f"{check.actual_percent_delta * 100:+.1f}%")
+    source = check.evidence.get("accounting_source")
+    if source is not None:
+        values.append(f"source {source}")
     values.append(check.result)
     return "  ".join(values)
 

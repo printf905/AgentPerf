@@ -178,6 +178,19 @@ into trusted stored findings.
 may duplicate derived totals from the trace for convenience, but the normalized
 trace and quality files remain authoritative for analysis and comparison.
 
+M14 ExperimentSession summaries include optional component-accounting metadata:
+
+- total component-attributed processed tokens;
+- total component-attributed unique tokens;
+- processed and unique tokens by component;
+- `OTHER` processed tokens;
+- attribution coverage ratio;
+- attribution confidence.
+
+This is a backward-compatible summary addition. Older v1 bundles without this
+field remain valid; `agentperf compare` can still reconstruct component
+accounting from `trace.json` when prompt components are available.
+
 ## Versioning
 
 Unknown newer artifact schema versions fail clearly. AgentPerf does not silently

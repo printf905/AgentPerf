@@ -29,10 +29,22 @@ class MetricDelta:
 
 
 @dataclass(frozen=True)
+class ComponentAccountingSummary:
+    total_processed_tokens: MetricDelta
+    total_unique_tokens: MetricDelta
+    other_processed_tokens: MetricDelta
+    attribution_coverage_ratio: MetricDelta
+    baseline_confidence: str = "UNAVAILABLE"
+    candidate_confidence: str = "UNAVAILABLE"
+    source: str = "component"
+
+
+@dataclass(frozen=True)
 class TokenDelta:
     input_tokens: MetricDelta
     output_tokens: MetricDelta
     component_processed_tokens: dict[str, MetricDelta] = field(default_factory=dict)
+    component_accounting: ComponentAccountingSummary | None = None
 
 
 @dataclass(frozen=True)

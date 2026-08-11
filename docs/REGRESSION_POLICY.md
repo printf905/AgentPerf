@@ -34,21 +34,53 @@ movement unless the policy asks it to.
 
 ```yaml
 performance:
-  input_tokens:
+  provider.input_tokens:
     max_increase_percent: 15
+  component.tool_result.processed_tokens:
+    max_increase_percent: 15
+    min_attribution_coverage: 0.90
+    require_attribution_confidence: APPROXIMATE
   client_latency_p95:
     max_increase_percent: 20
 ```
 
 Supported lower-is-better metrics:
 
-- `input_tokens`
-- `output_tokens`
-- `tool_result_tokens`
+- `provider.input_tokens`
+- `provider.output_tokens`
+- `component.total.processed_tokens`
+- `component.system.processed_tokens`
+- `component.user.processed_tokens`
+- `component.history.processed_tokens`
+- `component.tool_schema.processed_tokens`
+- `component.tool_result.processed_tokens`
+- `component.retrieved_context.processed_tokens`
+- `component.other.processed_tokens`
 - `client_latency_p50`
 - `client_latency_p95`
 - `scheduled_to_first_p50`
 - `scheduled_to_first_p95`
+
+Backward-compatible aliases remain valid:
+
+- `input_tokens`
+- `output_tokens`
+- `tool_result_tokens`
+- `provider_input_tokens`
+- `provider_output_tokens`
+- `component_total_processed_tokens`
+- `component_system_tokens`
+- `component_user_tokens`
+- `component_history_tokens`
+- `component_tool_schema_tokens`
+- `component_tool_result_tokens`
+- `component_retrieved_context_tokens`
+- `component_other_tokens`
+
+Policy reports include an `accounting_source` field for performance checks so
+reviewers can distinguish provider usage from AgentPerf component attribution.
+Unknown performance metric names fail policy parsing instead of being silently
+ignored.
 
 Each metric supports:
 
@@ -56,6 +88,18 @@ Each metric supports:
 - `max_increase_absolute`
 
 If both are supplied, both must pass.
+
+Component-attributed token metrics also support:
+
+- `min_attribution_coverage`
+- `require_attribution_confidence`: `APPROXIMATE` or `STRUCTURED`
+
+If these requirements are configured and the comparison lacks sufficiently
+classified component attribution, the check is `INCONCLUSIVE`. `STRUCTURED` is
+stricter than `APPROXIMATE`.
+
+See [TOKEN_ACCOUNTING.md](TOKEN_ACCOUNTING.md) for provider/component accounting
+semantics, coverage, and attribution confidence.
 
 ## Finding Regression
 

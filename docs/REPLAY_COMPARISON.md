@@ -66,13 +66,27 @@ or optimization-loop use.
 
 The comparison reports:
 
-- total input tokens;
-- total output tokens;
+- provider input tokens;
+- provider output tokens;
+- AgentPerf component-attributed total processed tokens;
+- component attribution coverage and confidence;
 - component-level processed tokens for system, user, history, tool schema, tool
   result, retrieved/file context, and other components where present.
 
-This is processed-token accounting, not model-capacity cost. A model-choice
-change may reduce latency or relative cost without reducing tokens.
+Provider token usage is whatever the model provider/backend reports. Component
+attribution is AgentPerf's accounting over normalized prompt components. They
+are not guaranteed to match numerically. This distinction matters for
+frameworks or scripted models that omit system instructions or scaffolding from
+provider-style usage fields.
+
+Component attribution also distinguishes unique content from cumulative
+processed content. The comparison uses cumulative processed content for
+component deltas because the same context block can be processed repeatedly
+across downstream LLM calls.
+
+This is token accounting, not model-capacity cost. A model-choice change may
+reduce latency or relative cost without reducing tokens. See
+[TOKEN_ACCOUNTING.md](TOKEN_ACCOUNTING.md).
 
 ## Context Growth
 

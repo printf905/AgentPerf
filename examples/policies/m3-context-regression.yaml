@@ -7,7 +7,7 @@ quality:
 performance:
   input_tokens:
     max_increase_percent: 15
-  tool_result_tokens:
+  component.tool_result.processed_tokens:
     max_increase_percent: 15
   scheduled_to_first_p95:
     max_increase_percent: 20

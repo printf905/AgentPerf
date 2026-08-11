@@ -16,6 +16,7 @@ from agentperf.regression import (
 from agentperf.schema.comparison import (
     AcceptanceResult,
     CacheDelta,
+    ComponentAccountingSummary,
     ContextGrowthDelta,
     FindingChange,
     LatencyDelta,
@@ -52,6 +53,41 @@ task_coverage:
     assert policy.performance["input_tokens"].max_increase_percent == 15
     assert policy.findings.fail_on_new_material_findings is True
     assert policy.task_coverage.require_same_tasks is True
+
+
+def test_component_metric_policy_parsing_and_unknown_rejection() -> None:
+    policy = parse_regression_policy(
+        {
+            "performance": {
+                "provider.input_tokens": {"max_increase_percent": 10},
+                "component.total.processed_tokens": {"max_increase_percent": 10},
+                "component.system.processed_tokens": {"max_increase_percent": 5},
+                "component.tool_result.processed_tokens": {"max_increase_percent": 15},
+                "component_history_tokens": {"max_increase_percent": 20},
+                "component.tool_schema.processed_tokens": {
+                    "max_increase_percent": 20,
+                    "min_attribution_coverage": 0.8,
+                    "require_attribution_confidence": "APPROXIMATE",
+                },
+            }
+        }
+    )
+
+    assert "component.system.processed_tokens" in policy.performance
+    assert "component_history_tokens" in policy.performance
+    assert (
+        policy.performance["component.tool_schema.processed_tokens"]
+        .min_attribution_coverage
+        == 0.8
+    )
+    try:
+        parse_regression_policy(
+            {"performance": {"component.typo.processed_tokens": {"max_increase_percent": 1}}}
+        )
+    except ValueError as exc:
+        assert "unsupported performance metric" in str(exc)
+    else:  # pragma: no cover - defensive
+        raise AssertionError("expected unknown component metric to fail")
 
 
 def test_invalid_policy_fails() -> None:
@@ -132,6 +168,127 @@ def test_performance_pass_and_failure() -> None:
         for check in failing.checks
         if check.category == "PERFORMANCE" and check.result == "FAIL"
     } == {"input_tokens", "client_latency_p95"}
+
+
+def test_component_performance_pass_and_failure() -> None:
+    policy = parse_regression_policy(
+        {
+            "performance": {
+                "component.total.processed_tokens": {"max_increase_percent": 10},
+                "component.system.processed_tokens": {"max_increase_percent": 5},
+                "component.history.processed_tokens": {"max_increase_percent": 10},
+                "component.tool_result.processed_tokens": {"max_increase_percent": 10},
+            }
+        }
+    )
+    passing = evaluate_regression_policy(
+        _comparison(
+            component_baseline={
+                "system": 680,
+                "history": 100,
+                "tool_result": 266,
+            },
+            component_candidate={
+                "system": 520,
+                "history": 100,
+                "tool_result": 266,
+            },
+        ),
+        policy,
+    )
+    failing = evaluate_regression_policy(
+        _comparison(
+            component_baseline={
+                "system": 680,
+                "history": 100,
+                "tool_result": 12_000,
+            },
+            component_candidate={
+                "system": 900,
+                "history": 130,
+                "tool_result": 17_500,
+            },
+        ),
+        policy,
+    )
+
+    assert passing.status == "PASS"
+    assert failing.status == "FAIL"
+    assert {
+        check.metric
+        for check in failing.checks
+        if check.category == "PERFORMANCE" and check.result == "FAIL"
+    } == {
+        "component.total.processed_tokens",
+        "component.system.processed_tokens",
+        "component.history.processed_tokens",
+        "component.tool_result.processed_tokens",
+    }
+    assert all(
+        check.evidence.get("accounting_source") == "agentperf_component_attribution"
+        for check in passing.checks
+        if check.category == "PERFORMANCE"
+    )
+
+
+def test_missing_component_metadata_is_inconclusive() -> None:
+    policy = parse_regression_policy(
+        {"performance": {"component.system.processed_tokens": {"max_increase_percent": 5}}}
+    )
+
+    result = evaluate_regression_policy(_comparison(component_baseline={}), policy)
+
+    assert result.status == "INCONCLUSIVE"
+    assert any(
+        check.metric == "component.system.processed_tokens" and check.result == "INCONCLUSIVE"
+        for check in result.checks
+    )
+
+
+def test_component_attribution_coverage_and_confidence_requirements() -> None:
+    policy = parse_regression_policy(
+        {
+            "performance": {
+                "component.system.processed_tokens": {
+                    "max_increase_percent": 5,
+                    "min_attribution_coverage": 0.9,
+                    "require_attribution_confidence": "STRUCTURED",
+                }
+            }
+        }
+    )
+
+    passing = evaluate_regression_policy(
+        _comparison(
+            component_baseline={"system": 100, "other": 5},
+            component_candidate={"system": 90, "other": 5},
+            attribution_coverage=(0.95, 0.95),
+            attribution_confidence=("STRUCTURED", "STRUCTURED"),
+        ),
+        policy,
+    )
+    low_coverage = evaluate_regression_policy(
+        _comparison(
+            component_baseline={"system": 100, "other": 50},
+            component_candidate={"system": 90, "other": 50},
+            attribution_coverage=(0.67, 0.67),
+            attribution_confidence=("STRUCTURED", "STRUCTURED"),
+        ),
+        policy,
+    )
+    approximate = evaluate_regression_policy(
+        _comparison(
+            component_baseline={"system": 100, "other": 5},
+            component_candidate={"system": 90, "other": 5},
+            attribution_coverage=(0.95, 0.95),
+            attribution_confidence=("APPROXIMATE", "APPROXIMATE"),
+        ),
+        policy,
+    )
+
+    assert passing.status == "PASS"
+    assert low_coverage.status == "INCONCLUSIVE"
+    assert approximate.status == "INCONCLUSIVE"
 
 
 def test_finding_regression_respects_materiality() -> None:
@@ -295,6 +452,73 @@ def test_real_m3_artifacts_pass_sample_policy() -> None:
     assert comparison.acceptance_result.verdict == "ACCEPT"
 
 
+def test_real_m13_dogfood_component_policy_passes() -> None:
+    comparison = compare_paths(
+        Path("benchmarks/openai-agents-support-triage/baseline"),
+        Path("examples/dogfooding/openai_agents_support_triage_compact"),
+    )
+    policy = load_regression_policy(Path("benchmarks/openai-agents-support-triage/policy.yaml"))
+    result = evaluate_regression_policy(comparison, policy)
+
+    assert result.status == "PASS"
+    assert comparison.token_deltas.input_tokens.delta == 0
+    assert comparison.token_deltas.component_accounting is not None
+    assert comparison.token_deltas.component_accounting.total_processed_tokens.delta == -160
+    assert comparison.token_deltas.component_processed_tokens["system"].delta == -160
+    system_check = next(
+        check for check in result.checks if check.metric == "component.system.processed_tokens"
+    )
+    assert system_check.result == "PASS"
+    assert system_check.evidence["accounting_source"] == "agentperf_component_attribution"
+
+
+def test_real_m3_tool_result_component_policy_passes() -> None:
+    comparison = compare_paths(
+        Path("examples/artifacts/m3_raw_full"),
+        Path("examples/artifacts/m3_dedup_only"),
+    )
+    policy = parse_regression_policy(
+        {
+            "quality": {
+                "mean_score": {"max_drop": 0.05},
+                "pass_rate": {"max_drop": 0.10},
+            },
+            "performance": {
+                "component.tool_result.processed_tokens": {"max_increase_percent": 15}
+            },
+        }
+    )
+
+    result = evaluate_regression_policy(comparison, policy)
+
+    assert result.status == "PASS"
+    assert comparison.token_deltas.component_processed_tokens["tool_result"].baseline == 112_287
+    assert comparison.token_deltas.component_processed_tokens["tool_result"].candidate == 78_566
+
+
+def test_quality_regression_still_overrides_component_improvement() -> None:
+    policy = parse_regression_policy(
+        {
+            "quality": {"mean_score": {"max_drop": 0.05}},
+            "performance": {
+                "component.tool_result.processed_tokens": {"max_increase_percent": 15}
+            },
+        }
+    )
+
+    result = evaluate_regression_policy(
+        _comparison(
+            mean_candidate=0.50,
+            component_baseline={"tool_result": 100_000},
+            component_candidate={"tool_result": 10_000},
+        ),
+        policy,
+    )
+
+    assert result.status == "FAIL"
+    assert any(check.category == "QUALITY" and check.result == "FAIL" for check in result.checks)
+
+
 def test_regression_result_serializes_to_json_safe_dict() -> None:
     result = evaluate_regression_policy(
         _comparison(),
@@ -316,11 +540,42 @@ def _comparison(
     input_candidate: int = 90_000,
     client_baseline: float = 1000.0,
     client_candidate: float = 900.0,
+    component_baseline: dict[str, int] | None = None,
+    component_candidate: dict[str, int] | None = None,
+    attribution_coverage: tuple[float, float] = (1.0, 1.0),
+    attribution_confidence: tuple[str, str] = ("STRUCTURED", "STRUCTURED"),
     findings: list[FindingChange] | None = None,
     matched: tuple[str, ...] = ("task-1",),
     unmatched_baseline: tuple[str, ...] = (),
     unmatched_candidate: tuple[str, ...] = (),
 ) -> RunComparison:
+    component_baseline = (
+        {"tool_result": 50_000} if component_baseline is None else component_baseline
+    )
+    component_candidate = (
+        {"tool_result": 40_000} if component_candidate is None else component_candidate
+    )
+    component_keys = sorted(set(component_baseline) | set(component_candidate))
+    baseline_component_total = sum(component_baseline.values()) if component_baseline else None
+    candidate_component_total = sum(component_candidate.values()) if component_candidate else None
+    component_accounting = (
+        None
+        if baseline_component_total is None and candidate_component_total is None
+        else ComponentAccountingSummary(
+            total_processed_tokens=_delta(baseline_component_total, candidate_component_total),
+            total_unique_tokens=_delta(baseline_component_total, candidate_component_total),
+            other_processed_tokens=_delta(
+                component_baseline.get("other") if component_baseline else None,
+                component_candidate.get("other") if component_candidate else None,
+            ),
+            attribution_coverage_ratio=_delta(
+                attribution_coverage[0],
+                attribution_coverage[1],
+            ),
+            baseline_confidence=attribution_confidence[0],
+            candidate_confidence=attribution_confidence[1],
+        )
+    )
     return RunComparison(
         baseline_id="baseline",
         candidate_id="candidate",
@@ -330,7 +585,11 @@ def _comparison(
         token_deltas=TokenDelta(
             input_tokens=_delta(input_baseline, input_candidate),
             output_tokens=_delta(1000, 1000),
-            component_processed_tokens={"tool_result": _delta(50_000, 40_000)},
+            component_processed_tokens={
+                key: _delta(component_baseline.get(key), component_candidate.get(key))
+                for key in component_keys
+            },
+            component_accounting=component_accounting,
         ),
         context_growth_delta=ContextGrowthDelta(
             final_step_input_tokens=_delta(10_000, 9000),

@@ -376,6 +376,10 @@ agentperf compare examples/artifacts/m3_raw_full examples/artifacts/m3_dedup_onl
 A trace tells AgentPerf what happened. An artifact bundle also records task
 quality, findings, environment metadata, and summary data, which lets replay
 verification reach an acceptance verdict without experiment-specific scripts.
+Provider usage tells you how many tokens the model/backend reported; AgentPerf
+component attribution tells you which parts of the agent context caused prompt
+processing. Those numbers can differ. See
+[docs/TOKEN_ACCOUNTING.md](docs/TOKEN_ACCOUNTING.md).
 
 Use AgentPerf as a regression guard:
 
@@ -525,6 +529,16 @@ Start here:
   replay comparison contract.
 - [docs/REPLAY_VERIFICATION.md](docs/REPLAY_VERIFICATION.md): user-facing
   replay verification workflow.
+- [docs/TOKEN_ACCOUNTING.md](docs/TOKEN_ACCOUNTING.md): provider usage vs
+  AgentPerf component-attributed token semantics.
+- [docs/CI_REGRESSION.md](docs/CI_REGRESSION.md): offline regression checks
+  for CI.
+- [docs/BENCHMARK_SUITES.md](docs/BENCHMARK_SUITES.md): filesystem-first
+  benchmark suite manifests.
+- [docs/BASELINE_MANAGEMENT.md](docs/BASELINE_MANAGEMENT.md): reviewed
+  baseline workflow.
+- [docs/DOGFOODING_WORKFLOW.md](docs/DOGFOODING_WORKFLOW.md): M13 end-to-end
+  workflow dogfooding.
 - [docs/LANDSCAPE.md](docs/LANDSCAPE.md): competitive and novelty review.
 - [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md): vLLM field
   mapping and measurement quality.

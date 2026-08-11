@@ -15,6 +15,7 @@ from agentperf.metrics.tokens import call_input_tokens, call_output_tokens
 from agentperf.schema.comparison import (
     AcceptanceResult,
     CacheDelta,
+    ComponentAccountingSummary,
     ContextGrowthDelta,
     FindingChange,
     FindingLifecycleStatus,
@@ -37,6 +38,15 @@ class LoadedWorkload:
     runs: list[AgentRun]
     artifact: ExperimentArtifact | None = None
     warnings: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ComponentAccountingSide:
+    total_processed: int | None
+    total_unique: int | None
+    other_processed: int | None
+    coverage: float | None
+    confidence: str
 
 
 def compare_paths(
@@ -341,6 +351,10 @@ def _token_deltas(
         input_tokens=_delta(baseline_input, candidate_input),
         output_tokens=_delta(baseline_output, candidate_output),
         component_processed_tokens=components,
+        component_accounting=_component_accounting_summary(
+            baseline_reports,
+            candidate_reports,
+        ),
     )
 
 
@@ -360,6 +374,66 @@ def _component_totals(reports: list[AnalysisReport]) -> dict[str, int]:
         for component, tokens in report.token_attribution.processed_tokens_by_component.items():
             totals[component] += tokens
     return dict(totals)
+
+
+def _component_accounting_summary(
+    baseline_reports: list[AnalysisReport],
+    candidate_reports: list[AnalysisReport],
+) -> ComponentAccountingSummary:
+    baseline = _component_accounting_side(baseline_reports)
+    candidate = _component_accounting_side(candidate_reports)
+    return ComponentAccountingSummary(
+        total_processed_tokens=_delta(
+            baseline.total_processed,
+            candidate.total_processed,
+        ),
+        total_unique_tokens=_delta(
+            baseline.total_unique,
+            candidate.total_unique,
+        ),
+        other_processed_tokens=_delta(
+            baseline.other_processed,
+            candidate.other_processed,
+        ),
+        attribution_coverage_ratio=_delta(
+            baseline.coverage,
+            candidate.coverage,
+        ),
+        baseline_confidence=baseline.confidence,
+        candidate_confidence=candidate.confidence,
+    )
+
+
+def _component_accounting_side(reports: list[AnalysisReport]) -> ComponentAccountingSide:
+    attributions = [
+        report.token_attribution for report in reports if report.token_attribution is not None
+    ]
+    if not attributions:
+        return ComponentAccountingSide(
+            total_processed=None,
+            total_unique=None,
+            other_processed=None,
+            coverage=None,
+            confidence="UNAVAILABLE",
+        )
+    total_processed = sum(item.total_processed_tokens for item in attributions)
+    total_unique = sum(item.total_unique_tokens for item in attributions)
+    other_processed = sum(
+        item.processed_tokens_by_component.get("other", 0) for item in attributions
+    )
+    coverage = (
+        (total_processed - other_processed) / total_processed
+        if total_processed
+        else None
+    )
+    confidence = "APPROXIMATE" if any(item.approximate for item in attributions) else "STRUCTURED"
+    return ComponentAccountingSide(
+        total_processed=total_processed,
+        total_unique=total_unique,
+        other_processed=other_processed,
+        coverage=coverage,
+        confidence=confidence,
+    )
 
 
 def _context_growth_delta(

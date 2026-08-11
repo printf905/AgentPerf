@@ -160,10 +160,18 @@ The suite check verified:
 - the configured task-set fingerprint matches;
 - mean score and pass rate stayed within policy;
 - input tokens did not regress;
+- `component.system.processed_tokens` did not regress;
 - no new or regressed material findings appeared.
 
-The M8 comparison layer matched one workload-level AgentRun, while the M12
-suite layer verified the 10 stable task IDs through the task-set fingerprint.
+The M14 component-aware policy makes the accounting distinction visible:
+
+```text
+provider input tokens:              1,604 -> 1,604
+component.system.processed_tokens:    680 ->   520
+```
+
+The M8 comparison layer matched one workload-level AgentRun, while the M12 suite
+layer verified the 10 stable task IDs through the task-set fingerprint.
 
 ## CI Simulation
 

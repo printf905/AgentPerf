@@ -49,8 +49,11 @@ quality:
   pass_rate:
     max_drop: 0.10
 performance:
-  input_tokens:
+  provider.input_tokens:
     max_increase_percent: 15
+  component.tool_result.processed_tokens:
+    max_increase_percent: 15
+    min_attribution_coverage: 0.90
   client_latency_p95:
     max_increase_percent: 20
 findings:
@@ -62,6 +65,9 @@ task_coverage:
 
 Performance thresholds are opt-in. Quality should usually be configured because
 token or latency improvements are not acceptable when task success regresses.
+Provider usage metrics and AgentPerf component-attribution metrics can be gated
+separately. For example, a scripted model may report unchanged provider input
+tokens while AgentPerf sees fewer `component.system.processed_tokens`.
 
 See [REGRESSION_POLICY.md](REGRESSION_POLICY.md) for the full policy semantics.
 
@@ -127,5 +133,7 @@ access, or network storage.
 - Statistical significance is not inferred from small task sets.
 - Missing quality evidence produces an inconclusive result when quality is
   required.
+- Component-specific token checks depend on prompt-component attribution. Low
+  coverage should be treated cautiously.
 - `scheduled_to_first` remains scheduled-to-first-token timing, not pure GPU
   prefill kernel latency.
