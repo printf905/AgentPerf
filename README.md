@@ -4,6 +4,8 @@ AgentPerf is a cross-layer profiler for agentic LLM workloads: it connects what
 an agent did with what the inference server measured, then turns that evidence
 into optimization experiments a developer can replay.
 
+Current release target: `v0.2.0`, "Real-Validated Cross-Layer Agent Profiling".
+
 Agent observability tools show LLM calls, tool calls, prompts, tokens, latency,
 and outputs. Inference engines such as vLLM expose serving facts such as request
 timing, scheduled-to-first-token latency, prefix-cache reuse, and generated
@@ -403,7 +405,7 @@ Correlated serving requests        3
 Findings
 ------------------------------------------------------------
 
-[HIGH] CONTEXT_DUPLICATION
+[LOW] CONTEXT_DUPLICATION
 Multiple LLM calls contain exact repeated prompt components.
 
 [LOW] CACHEABILITY_HEADROOM
@@ -477,6 +479,9 @@ Start here:
   mini-SWE-agent benchmark and running instructions.
 - [docs/REAL_WORLD_GENERALIZATION_RESULTS.md](docs/REAL_WORLD_GENERALIZATION_RESULTS.md):
   M7 observed profile and generalization review.
+- [docs/RELEASE_NOTES_v0.2.0.md](docs/RELEASE_NOTES_v0.2.0.md): v0.2.0
+  release notes and claim boundaries.
+- [CHANGELOG.md](CHANGELOG.md): release history.
 - [docs/PRODUCT.md](docs/PRODUCT.md) and
   [docs/BENCHMARK_PLAN.md](docs/BENCHMARK_PLAN.md): product contract and future
   evaluation plan.
