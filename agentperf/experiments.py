@@ -201,6 +201,7 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
             **_safe_environment_metadata(),
             **self.environment,
         }
+        component_accounting = _component_accounting_summary(report)
         summary = {
             "workload_id": self.workload_id,
             "status": resolved_status,
@@ -212,6 +213,7 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
             "output_tokens": sum(call.output_tokens or 0 for call in run.llm_calls),
             "duration_ms": _elapsed_ms(self._started_at),
             "findings": [finding.id for finding in report.findings],
+            "component_accounting": component_accounting,
         }
         artifact = ExperimentArtifact.from_analysis(
             report,
@@ -342,3 +344,37 @@ def _atomic_save(artifact: ExperimentArtifact, output_path: Path) -> None:
 
 def _elapsed_ms(started: float) -> float:
     return (time.perf_counter() - started) * 1000
+
+
+def _component_accounting_summary(report: Any) -> dict[str, Any]:
+    attribution = report.token_attribution
+    if attribution is None:
+        return {
+            "source": "component",
+            "total_processed_tokens": None,
+            "total_unique_tokens": None,
+            "processed_tokens_by_component": {},
+            "unique_tokens_by_component": {},
+            "other_processed_tokens": None,
+            "attribution_coverage_ratio": None,
+            "confidence": "UNAVAILABLE",
+            "tokenization": "unavailable",
+        }
+    other_tokens = attribution.processed_tokens_by_component.get("other", 0)
+    coverage = (
+        (attribution.total_processed_tokens - other_tokens)
+        / attribution.total_processed_tokens
+        if attribution.total_processed_tokens
+        else None
+    )
+    return {
+        "source": "component",
+        "total_processed_tokens": attribution.total_processed_tokens,
+        "total_unique_tokens": attribution.total_unique_tokens,
+        "processed_tokens_by_component": attribution.processed_tokens_by_component,
+        "unique_tokens_by_component": attribution.unique_tokens_by_component,
+        "other_processed_tokens": other_tokens,
+        "attribution_coverage_ratio": coverage,
+        "confidence": "APPROXIMATE" if attribution.approximate else "STRUCTURED",
+        "tokenization": "approximate" if attribution.approximate else "exact_or_provider",
+    }

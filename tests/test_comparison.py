@@ -239,6 +239,7 @@ def test_comparison_json_serialization(tmp_path: Path) -> None:
 
     assert data["baseline_id"] == "base"
     assert data["token_deltas"]["input_tokens"]["baseline"] is not None
+    assert data["token_deltas"]["component_accounting"]["source"] == "component"
     assert json.loads(json.dumps(data))["matched_tasks"] == ["task"]
 
 
@@ -287,6 +288,8 @@ def test_cli_compare_terminal_and_json(tmp_path: Path, capsys) -> None:  # type:
 
     assert terminal_code == 0
     assert "AgentPerf Replay Comparison" in terminal.out
+    assert "Provider input tokens" in terminal.out
+    assert "Component processed tokens" in terminal.out
     assert "ACCEPT" in terminal.out
     assert json_code == 0
     assert json.loads(output_path.read_text(encoding="utf-8"))["acceptance_result"][

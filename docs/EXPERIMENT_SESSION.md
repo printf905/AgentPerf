@@ -101,6 +101,12 @@ You can either use `run_task(...)` or call `record_task_result(...)` manually.
 Manual recording is useful for async frameworks or existing agent loops that
 already own execution.
 
+At finalization, ExperimentSession also stores a compact component-accounting
+summary derived from the normalized trace: total processed component tokens,
+per-component totals, `OTHER` coverage, and attribution confidence. This lets
+future regression policies check AgentPerf-attributed context costs without
+experiment-specific JSON glue.
+
 ## Quality Evaluation
 
 AgentPerf stores quality; it does not judge quality generically.

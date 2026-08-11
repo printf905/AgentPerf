@@ -42,6 +42,11 @@ def test_experiment_session_finalizes_complete_artifact_with_task_quality(
     assert artifact.quality_metrics[0].name == "mean_score"
     assert artifact.quality_metrics[0].value == 1.0
     assert artifact.summary["llm_calls"] == 2
+    component_accounting = artifact.summary["component_accounting"]
+    assert component_accounting["total_processed_tokens"] > 0
+    assert component_accounting["processed_tokens_by_component"]["user"] == (
+        component_accounting["total_processed_tokens"]
+    )
     assert artifact.findings == []
     assert artifact.environment["agentperf_version"]
     assert artifact.environment["python"]

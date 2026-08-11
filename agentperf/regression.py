@@ -22,6 +22,49 @@ class RegressionPolicyError(ValueError):
     """Raised when a regression policy cannot be parsed or evaluated."""
 
 
+COMPONENT_METRIC_ALIASES = {
+    "component.total.processed_tokens": "total",
+    "component_total_processed_tokens": "total",
+    "component.system.processed_tokens": "system",
+    "component_system_tokens": "system",
+    "component.user.processed_tokens": "user",
+    "component_user_tokens": "user",
+    "component.history.processed_tokens": "history",
+    "component_history_tokens": "history",
+    "component.tool_schema.processed_tokens": "tool_schema",
+    "component_tool_schema_tokens": "tool_schema",
+    "component.tool_result.processed_tokens": "tool_result",
+    "component_tool_result_tokens": "tool_result",
+    "component.retrieved_context.processed_tokens": "retrieved_context",
+    "component_retrieved_context_tokens": "retrieved_context",
+    "component.other.processed_tokens": "other",
+    "component_other_tokens": "other",
+    "tool_result_tokens": "tool_result",
+}
+
+PROVIDER_METRIC_ALIASES = {
+    "input_tokens": "provider.input_tokens",
+    "provider_input_tokens": "provider.input_tokens",
+    "provider.input_tokens": "provider.input_tokens",
+    "output_tokens": "provider.output_tokens",
+    "provider_output_tokens": "provider.output_tokens",
+    "provider.output_tokens": "provider.output_tokens",
+}
+
+LATENCY_METRICS = {
+    "client_latency_p50",
+    "client_latency_p95",
+    "scheduled_to_first_p50",
+    "scheduled_to_first_p95",
+}
+
+ALLOWED_PERFORMANCE_METRICS = (
+    set(PROVIDER_METRIC_ALIASES)
+    | set(COMPONENT_METRIC_ALIASES)
+    | LATENCY_METRICS
+)
+
+
 def load_regression_policy(path: Path) -> RegressionPolicy:
     try:
         text = path.read_text(encoding="utf-8")
@@ -244,30 +287,46 @@ def _performance_checks(
 ) -> list[RegressionCheck]:
     checks: list[RegressionCheck] = []
     metric_map = {
-        "input_tokens": comparison.token_deltas.input_tokens,
-        "output_tokens": comparison.token_deltas.output_tokens,
-        "tool_result_tokens": comparison.token_deltas.component_processed_tokens.get(
-            "tool_result"
-        ),
         "client_latency_p50": comparison.latency_deltas.client_p50_ms,
         "client_latency_p95": comparison.latency_deltas.client_p95_ms,
         "scheduled_to_first_p50": comparison.latency_deltas.scheduled_to_first_p50_ms,
         "scheduled_to_first_p95": comparison.latency_deltas.scheduled_to_first_p95_ms,
     }
     for metric, threshold in policy.performance.items():
-        delta = metric_map.get(metric)
+        delta = _performance_delta(comparison, metric, metric_map)
         if delta is None:
             checks.append(_unsupported_check("PERFORMANCE", metric))
             continue
-        checks.append(_performance_check(metric, delta, threshold))
+        checks.append(_performance_check(comparison, metric, delta, threshold))
     return checks
 
 
+def _performance_delta(
+    comparison: RunComparison,
+    metric: str,
+    latency_metric_map: dict[str, MetricDelta],
+) -> MetricDelta | None:
+    provider_metric = PROVIDER_METRIC_ALIASES.get(metric)
+    if provider_metric == "provider.input_tokens":
+        return comparison.token_deltas.input_tokens
+    if provider_metric == "provider.output_tokens":
+        return comparison.token_deltas.output_tokens
+    component = COMPONENT_METRIC_ALIASES.get(metric)
+    if component == "total":
+        accounting = comparison.token_deltas.component_accounting
+        return accounting.total_processed_tokens if accounting is not None else None
+    if component is not None:
+        return comparison.token_deltas.component_processed_tokens.get(component)
+    return latency_metric_map.get(metric)
+
+
 def _performance_check(
+    comparison: RunComparison,
     metric: str,
     delta: MetricDelta,
     threshold: PerformanceMetricPolicy,
 ) -> RegressionCheck:
+    source = _metric_source(metric)
     if delta.baseline is None or delta.candidate is None or delta.delta is None:
         return RegressionCheck(
             category="PERFORMANCE",
@@ -275,7 +334,20 @@ def _performance_check(
             result="INCONCLUSIVE",
             baseline=delta.baseline,
             candidate=delta.candidate,
-            evidence={"reason": "performance metric missing from comparison input"},
+            evidence={
+                "reason": "performance metric missing from comparison input",
+                "accounting_source": source,
+            },
+        )
+    attribution_check = _attribution_requirement_check(comparison, metric, threshold)
+    if attribution_check is not None:
+        return RegressionCheck(
+            category="PERFORMANCE",
+            metric=metric,
+            result="INCONCLUSIVE",
+            baseline=delta.baseline,
+            candidate=delta.candidate,
+            evidence=attribution_check,
         )
     allowed_percent = (
         threshold.max_increase_percent / 100.0
@@ -299,7 +371,62 @@ def _performance_check(
         allowed=allowed,
         actual_delta=delta.delta,
         actual_percent_delta=delta.percent_delta,
+        evidence={"accounting_source": source},
     )
+
+
+def _attribution_requirement_check(
+    comparison: RunComparison,
+    metric: str,
+    threshold: PerformanceMetricPolicy,
+) -> dict[str, Any] | None:
+    if metric not in COMPONENT_METRIC_ALIASES:
+        return None
+    accounting = comparison.token_deltas.component_accounting
+    if accounting is None:
+        return {
+            "reason": "component attribution accounting unavailable",
+            "accounting_source": "agentperf_component_attribution",
+        }
+    if threshold.min_attribution_coverage is not None:
+        baseline_coverage = accounting.attribution_coverage_ratio.baseline
+        candidate_coverage = accounting.attribution_coverage_ratio.candidate
+        if (
+            baseline_coverage is None
+            or candidate_coverage is None
+            or float(baseline_coverage) + 1e-12 < threshold.min_attribution_coverage
+            or float(candidate_coverage) + 1e-12 < threshold.min_attribution_coverage
+        ):
+            return {
+                "reason": "component attribution coverage below policy requirement",
+                "accounting_source": "agentperf_component_attribution",
+                "min_attribution_coverage": threshold.min_attribution_coverage,
+                "baseline_coverage": baseline_coverage,
+                "candidate_coverage": candidate_coverage,
+            }
+    if threshold.require_attribution_confidence is not None:
+        required = threshold.require_attribution_confidence
+        if not (
+            _confidence_satisfies(accounting.baseline_confidence, required)
+            and _confidence_satisfies(accounting.candidate_confidence, required)
+        ):
+            return {
+                "reason": "component attribution confidence below policy requirement",
+                "accounting_source": "agentperf_component_attribution",
+                "required_confidence": required,
+                "baseline_confidence": accounting.baseline_confidence,
+                "candidate_confidence": accounting.candidate_confidence,
+            }
+    return None
+
+
+def _confidence_satisfies(actual: str, required: str) -> bool:
+    rank = {"UNAVAILABLE": 0, "APPROXIMATE": 1, "STRUCTURED": 2}
+    if required not in rank:
+        raise RegressionPolicyError(
+            "require_attribution_confidence must be STRUCTURED or APPROXIMATE"
+        )
+    return rank.get(actual, 0) >= rank[required]
 
 
 def _finding_checks(
@@ -410,12 +537,36 @@ def _parse_quality(data: Any) -> dict[str, QualityMetricPolicy]:
 def _parse_performance(data: Any) -> dict[str, PerformanceMetricPolicy]:
     result: dict[str, PerformanceMetricPolicy] = {}
     for metric, raw in _mapping(data, "performance").items():
+        metric_name = str(metric)
+        if metric_name not in ALLOWED_PERFORMANCE_METRICS:
+            allowed = ", ".join(sorted(ALLOWED_PERFORMANCE_METRICS))
+            raise RegressionPolicyError(
+                f"unsupported performance metric {metric_name!r}; "
+                f"supported metrics: {allowed}"
+            )
         values = _mapping(raw, f"performance.{metric}")
-        result[str(metric)] = PerformanceMetricPolicy(
+        confidence = _optional_str(values, "require_attribution_confidence")
+        if confidence is not None and confidence not in {"STRUCTURED", "APPROXIMATE"}:
+            raise RegressionPolicyError(
+                "require_attribution_confidence must be STRUCTURED or APPROXIMATE"
+            )
+        result[metric_name] = PerformanceMetricPolicy(
             max_increase_percent=_optional_float(values, "max_increase_percent"),
             max_increase_absolute=_optional_float(values, "max_increase_absolute"),
+            min_attribution_coverage=_optional_float(values, "min_attribution_coverage"),
+            require_attribution_confidence=confidence,
         )
     return result
+
+
+def _metric_source(metric: str) -> str:
+    if metric in PROVIDER_METRIC_ALIASES:
+        return "provider_usage"
+    if metric in COMPONENT_METRIC_ALIASES:
+        return "agentperf_component_attribution"
+    if metric.startswith(("client_latency", "scheduled_to_first")):
+        return "latency"
+    return "unknown"
 
 
 def _parse_findings(data: Any) -> FindingPolicy:
@@ -453,6 +604,15 @@ def _optional_float(data: dict[str, Any], key: str) -> float | None:
     if not isinstance(value, int | float):
         raise RegressionPolicyError(f"{key} must be numeric")
     return float(value)
+
+
+def _optional_str(data: dict[str, Any], key: str) -> str | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise RegressionPolicyError(f"{key} must be a string")
+    return value
 
 
 def _bool(value: Any, default: bool) -> bool:
