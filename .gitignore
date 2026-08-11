@@ -18,6 +18,8 @@ dist/
 *.p12
 *.log
 artifacts/
+!examples/artifacts/
+!examples/artifacts/**
 models/
 weights/
 checkpoints/

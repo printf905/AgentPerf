@@ -18,6 +18,19 @@ agentperf compare before.json after.json \
   --pass-rate-tolerance 0.10
 ```
 
+With M9 artifact bundles, the same workflow can be self-contained:
+
+```bash
+agentperf analyze before/
+agentperf analyze after/
+agentperf inspect before/
+agentperf compare before/ after/
+```
+
+The bundle contains the normalized trace plus task quality, findings,
+environment metadata, and summary data. That is the preferred format for real
+experiments.
+
 ## Why Comparison Matters
 
 An optimization is not accepted just because tokens or latency decrease.
@@ -37,6 +50,18 @@ agentperf compare \
   --quality-tolerance 0.05 \
   --pass-rate-tolerance 0.10
 ```
+
+Recorded real M3 artifact comparison:
+
+```bash
+agentperf compare examples/artifacts/m3_raw_full examples/artifacts/m3_dedup_only
+```
+
+This comparison uses real vLLM traces plus recorded aggregate M3 quality metrics
+from the quality-constrained context-waste experiment. It reaches `ACCEPT`
+because the artifact bundle contains the quality evidence needed for the
+configured constraint. The historical M3 run did not preserve per-task quality
+rows, so the bundle marks quality granularity as aggregate.
 
 JSON output:
 
@@ -94,7 +119,8 @@ behavior from unrelated signals.
   workloads should include stable `task_id` or `workload_item_id` values.
 - Existing real M3 normalized traces do not embed task-quality metadata, so
   their raw trace-to-trace comparison is performance-informative but acceptance
-  is quality-inconclusive.
+  is quality-inconclusive. Use the M9 artifact bundles for self-contained M3
+  replay verification.
 - P95 values over tiny samples are descriptive, not statistically robust.
 - Cache comparison requires real serving telemetry.
 - The comparator does not search for globally optimal configurations.

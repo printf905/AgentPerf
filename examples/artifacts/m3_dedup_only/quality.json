@@ -1,0 +1,24 @@
+{
+  "metrics": [
+    {
+      "aggregation": "mean",
+      "direction": "higher_is_better",
+      "metadata": {
+        "source": "recorded_m3_comparison_json"
+      },
+      "name": "mean_score",
+      "tolerance": 0.05,
+      "value": 0.9083333333333334
+    },
+    {
+      "aggregation": "rate",
+      "direction": "higher_is_better",
+      "metadata": {
+        "source": "recorded_m3_comparison_json"
+      },
+      "name": "pass_rate",
+      "tolerance": 0.1,
+      "value": 0.7
+    }
+  ]
+}

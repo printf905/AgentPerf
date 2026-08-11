@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
 from agentperf.analyzer import AnalysisReport, analyze_run
+from agentperf.artifacts import ArtifactError, ExperimentArtifact, is_artifact_path, load_artifact
 from agentperf.metrics.attribution import ContextGrowthRow
 from agentperf.metrics.cache import prefix_cache_hit_ratio
 from agentperf.metrics.latency import percentile, prefill_or_path_latency_ms
@@ -31,6 +32,13 @@ class ComparisonError(ValueError):
     """Raised when replay comparison inputs cannot be loaded."""
 
 
+@dataclass(frozen=True)
+class LoadedWorkload:
+    runs: list[AgentRun]
+    artifact: ExperimentArtifact | None = None
+    warnings: list[str] = field(default_factory=list)
+
+
 def compare_paths(
     baseline_path: Path,
     candidate_path: Path,
@@ -41,7 +49,7 @@ def compare_paths(
 ) -> RunComparison:
     baseline = load_workload(baseline_path)
     candidate = load_workload(candidate_path)
-    return compare_workloads(
+    return _compare_loaded_workloads(
         baseline,
         candidate,
         mean_score_tolerance=mean_score_tolerance,
@@ -50,13 +58,19 @@ def compare_paths(
     )
 
 
-def load_workload(path: Path) -> list[AgentRun]:
+def load_workload(path: Path) -> LoadedWorkload:
+    if is_artifact_path(path):
+        try:
+            artifact = load_artifact(path)
+        except ArtifactError as exc:
+            raise ComparisonError(str(exc)) from exc
+        return LoadedWorkload(runs=artifact.runs_for_comparison(), artifact=artifact)
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise ComparisonError(f"invalid JSON: {exc}") from exc
     try:
-        return _parse_workload_data(data)
+        return LoadedWorkload(runs=_parse_workload_data(data))
     except TraceParseError as exc:
         raise ComparisonError(str(exc)) from exc
 
@@ -69,12 +83,41 @@ def compare_workloads(
     pass_rate_tolerance: float | None = None,
     min_material_improvement: float = 0.05,
 ) -> RunComparison:
+    return _compare_loaded_workloads(
+        LoadedWorkload(runs=baseline_runs),
+        LoadedWorkload(runs=candidate_runs),
+        mean_score_tolerance=mean_score_tolerance,
+        pass_rate_tolerance=pass_rate_tolerance,
+        min_material_improvement=min_material_improvement,
+    )
+
+
+def _compare_loaded_workloads(
+    baseline: LoadedWorkload,
+    candidate: LoadedWorkload,
+    *,
+    mean_score_tolerance: float | None = None,
+    pass_rate_tolerance: float | None = None,
+    min_material_improvement: float = 0.05,
+) -> RunComparison:
+    baseline_runs = baseline.runs
+    candidate_runs = candidate.runs
     if not baseline_runs:
         raise ComparisonError("baseline contains no AgentRun entries")
     if not candidate_runs:
         raise ComparisonError("candidate contains no AgentRun entries")
 
-    warnings: list[str] = []
+    warnings: list[str] = [*baseline.warnings, *candidate.warnings]
+    mean_score_tolerance = (
+        mean_score_tolerance
+        if mean_score_tolerance is not None
+        else _artifact_tolerance(baseline.artifact, "mean_score")
+    )
+    pass_rate_tolerance = (
+        pass_rate_tolerance
+        if pass_rate_tolerance is not None
+        else _artifact_tolerance(baseline.artifact, "pass_rate")
+    )
     baseline_by_task = _runs_by_task_id(baseline_runs)
     candidate_by_task = _runs_by_task_id(candidate_runs)
     matched_tasks = sorted(set(baseline_by_task) & set(candidate_by_task))
@@ -111,6 +154,8 @@ def compare_workloads(
     latency_deltas = _latency_deltas(baseline_reports, candidate_reports)
     cache_deltas = _cache_deltas(baseline_reports, candidate_reports)
     quality_deltas = _quality_deltas(
+        baseline,
+        candidate,
         [baseline_by_task[key] for key in matched_tasks],
         [candidate_by_task[key] for key in matched_tasks],
         mean_score_tolerance=mean_score_tolerance,
@@ -130,8 +175,8 @@ def compare_workloads(
     )
 
     return RunComparison(
-        baseline_id=_workload_id(baseline_runs),
-        candidate_id=_workload_id(candidate_runs),
+        baseline_id=_workload_id(baseline_runs, baseline.artifact),
+        candidate_id=_workload_id(candidate_runs, candidate.artifact),
         matched_tasks=matched_tasks,
         unmatched_baseline_tasks=unmatched_baseline,
         unmatched_candidate_tasks=unmatched_candidate,
@@ -147,6 +192,12 @@ def compare_workloads(
             "baseline_runs": len(baseline_runs),
             "candidate_runs": len(candidate_runs),
             "min_material_improvement": min_material_improvement,
+            "baseline_artifact": baseline.artifact.manifest.artifact_id
+            if baseline.artifact
+            else None,
+            "candidate_artifact": candidate.artifact.manifest.artifact_id
+            if candidate.artifact
+            else None,
         },
     )
 
@@ -211,7 +262,11 @@ def _has_explicit_task_id(run: AgentRun) -> bool:
     )
 
 
-def _workload_id(runs: list[AgentRun]) -> str:
+def _workload_id(runs: list[AgentRun], artifact: ExperimentArtifact | None = None) -> str:
+    if artifact and artifact.manifest.workload_id:
+        return artifact.manifest.workload_id
+    if artifact:
+        return artifact.manifest.artifact_id
     if len(runs) == 1:
         return runs[0].agent_run_id
     return f"workload:{len(runs)}"
@@ -391,12 +446,22 @@ def _cache_summary(reports: list[AnalysisReport]) -> dict[str, float | int | Non
 
 
 def _quality_deltas(
+    baseline: LoadedWorkload,
+    candidate: LoadedWorkload,
     baseline_runs: list[AgentRun],
     candidate_runs: list[AgentRun],
     *,
     mean_score_tolerance: float | None,
     pass_rate_tolerance: float | None,
 ) -> QualityDelta:
+    artifact_quality = _artifact_quality_deltas(
+        baseline,
+        candidate,
+        mean_score_tolerance=mean_score_tolerance,
+        pass_rate_tolerance=pass_rate_tolerance,
+    )
+    if artifact_quality is not None:
+        return artifact_quality
     baseline_scores = [_quality_score(run) for run in baseline_runs]
     candidate_scores = [_quality_score(run) for run in candidate_runs]
     baseline_passed = [_task_passed(run) for run in baseline_runs]
@@ -409,15 +474,17 @@ def _quality_deltas(
     pass_delta = _delta(_pass_rate(baseline_pass_values), _pass_rate(candidate_pass_values))
     passed: bool | None = None
     if mean_delta.baseline is not None and mean_delta.candidate is not None:
-        mean_ok = (
-            mean_score_tolerance is None
-            or float(mean_delta.candidate) >= float(mean_delta.baseline) - mean_score_tolerance
+        mean_ok = _within_drop_tolerance(
+            float(mean_delta.baseline),
+            float(mean_delta.candidate),
+            mean_score_tolerance,
         )
         pass_ok = True
         if pass_delta.baseline is not None and pass_delta.candidate is not None:
-            pass_ok = (
-                pass_rate_tolerance is None
-                or float(pass_delta.candidate) >= float(pass_delta.baseline) - pass_rate_tolerance
+            pass_ok = _within_drop_tolerance(
+                float(pass_delta.baseline),
+                float(pass_delta.candidate),
+                pass_rate_tolerance,
             )
         passed = mean_ok and pass_ok
     return QualityDelta(
@@ -429,6 +496,96 @@ def _quality_deltas(
         pass_rate_tolerance=pass_rate_tolerance,
         passed=passed,
     )
+
+
+def _artifact_quality_deltas(
+    baseline: LoadedWorkload,
+    candidate: LoadedWorkload,
+    *,
+    mean_score_tolerance: float | None,
+    pass_rate_tolerance: float | None,
+) -> QualityDelta | None:
+    if baseline.artifact is None or candidate.artifact is None:
+        return None
+    baseline_mean = _artifact_metric_value(baseline.artifact, "mean_score")
+    candidate_mean = _artifact_metric_value(candidate.artifact, "mean_score")
+    baseline_pass = _artifact_metric_value(baseline.artifact, "pass_rate")
+    candidate_pass = _artifact_metric_value(candidate.artifact, "pass_rate")
+    if (
+        baseline_mean is None
+        and candidate_mean is None
+        and baseline_pass is None
+        and candidate_pass is None
+    ):
+        return None
+    mean_delta = _delta(baseline_mean, candidate_mean)
+    pass_delta = _delta(baseline_pass, candidate_pass)
+    passed: bool | None = None
+    if mean_delta.baseline is not None and mean_delta.candidate is not None:
+        mean_ok = _within_drop_tolerance(
+            float(mean_delta.baseline),
+            float(mean_delta.candidate),
+            mean_score_tolerance,
+        )
+        pass_ok = True
+        if pass_delta.baseline is not None and pass_delta.candidate is not None:
+            pass_ok = _within_drop_tolerance(
+                float(pass_delta.baseline),
+                float(pass_delta.candidate),
+                pass_rate_tolerance,
+            )
+        passed = mean_ok and pass_ok
+    return QualityDelta(
+        mean_score=mean_delta,
+        pass_rate=pass_delta,
+        baseline_tasks_with_quality=_artifact_task_count(baseline.artifact),
+        candidate_tasks_with_quality=_artifact_task_count(candidate.artifact),
+        mean_score_tolerance=mean_score_tolerance,
+        pass_rate_tolerance=pass_rate_tolerance,
+        passed=passed,
+    )
+
+
+def _artifact_metric_value(artifact: ExperimentArtifact, name: str) -> float | None:
+    aliases = {
+        "mean_score": {"mean_score", "score", "quality_score", "rule_score"},
+        "pass_rate": {"pass_rate", "task_success_rate"},
+    }[name]
+    for metric in artifact.quality_metrics:
+        if metric.name in aliases and isinstance(metric.value, int | float):
+            return float(metric.value)
+    return None
+
+
+def _within_drop_tolerance(
+    baseline: float,
+    candidate: float,
+    tolerance: float | None,
+) -> bool:
+    if tolerance is None:
+        return True
+    return candidate + 1e-12 >= baseline - tolerance
+
+
+def _artifact_tolerance(artifact: ExperimentArtifact | None, name: str) -> float | None:
+    if artifact is None:
+        return None
+    aliases = {
+        "mean_score": {"mean_score", "score", "quality_score", "rule_score"},
+        "pass_rate": {"pass_rate", "task_success_rate"},
+    }[name]
+    for metric in artifact.quality_metrics:
+        if metric.name in aliases and metric.tolerance is not None:
+            return metric.tolerance
+    return None
+
+
+def _artifact_task_count(artifact: ExperimentArtifact) -> int:
+    if artifact.task_results:
+        return len(artifact.task_results)
+    if artifact.manifest.task_count is not None:
+        return artifact.manifest.task_count
+    return len(artifact.runs)
 
 
 def _quality_score(run: AgentRun) -> float | None:
@@ -452,6 +609,9 @@ def _task_passed(run: AgentRun) -> bool | None:
             value = quality.get(key)
             if isinstance(value, bool):
                 return value
+        value = quality.get("pass_rate")
+        if isinstance(value, int | float):
+            return bool(float(value) >= 1.0)
     for key in ("passed", "success", "task_success"):
         value = run.metadata.get(key)
         if isinstance(value, bool):
