@@ -35,8 +35,9 @@ For each recommendation, validate by replaying or rerunning the workload and com
 - input token count;
 - output token count;
 - TTFT P50/P95;
-- prefill latency;
-- decode latency;
+- backend first-token path or server-stage prefill timing where explicitly
+  exposed;
+- decode/generation latency where explicitly exposed;
 - prefix-cache hit rate;
 - throughput;
 - end-to-end task latency;
@@ -75,5 +76,5 @@ This requires replay/evaluation infrastructure and real quality metrics.
 
 No GPU is required for the MVP synthetic-trace analyzer.
 
-Real vLLM/SGLang ingestion and backend-supported replay experiments require access to at least one GPU server running the target inference backend.
-
+Real vLLM/SGLang ingestion and backend-supported replay experiments require
+access to at least one GPU server running the target inference backend.

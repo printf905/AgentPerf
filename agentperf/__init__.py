@@ -1,4 +1,4 @@
-"""AgentPerf cross-layer profiler MVP."""
+"""AgentPerf cross-layer profiler."""
 
 from agentperf.artifacts import ExperimentArtifact, load_artifact
 from agentperf.benchmark_suites import BenchmarkSuite, check_suite, load_suite, validate_suite
@@ -7,7 +7,7 @@ from agentperf.experiments import ExperimentSession, QualityResult
 from agentperf.instrumentation import TraceRecorder, current_recorder, trace_run, trace_tool
 from agentperf.regression import evaluate_regression_policy, load_regression_policy
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "ExperimentArtifact",

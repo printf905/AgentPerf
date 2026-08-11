@@ -226,7 +226,7 @@ and leave `prefill_latency_ms` unset.
 
 ## OpenTelemetry Alignment
 
-The schema keeps `trace_id`, `span_id`, and `parent_span_id` fields and uses GenAI terminology where practical, such as provider, model, agent invocation, tool call, token usage, TTFT, and TPOT. It intentionally stores serving-specific fields that are not currently first-class in generic GenAI semantic conventions, such as prefill latency and prefix-cache hit/miss tokens.
+The schema keeps `trace_id`, `span_id`, and `parent_span_id` fields and uses GenAI terminology where practical, such as provider, model, agent invocation, tool call, token usage, TTFT, and TPOT. It intentionally stores serving-specific fields that are not currently first-class in generic GenAI semantic conventions, such as explicitly labeled prefill-path timing and prefix-cache hit/miss tokens.
 
 Framework adapters should map their native events into this representation. For
 the OpenAI Agents SDK adapter, SDK generation/response spans become `LLMCall`

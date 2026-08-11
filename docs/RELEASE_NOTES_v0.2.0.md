@@ -2,6 +2,10 @@
 
 Target release: `v0.2.0`, "Real-Validated Cross-Layer Agent Profiling".
 
+Historical note: these notes describe the v0.2.0 release boundary. Current
+v0.3.0 support adds additional workflow and SGLang backend capabilities; see
+[RELEASE_NOTES_v0.3.0.md](RELEASE_NOTES_v0.3.0.md).
+
 These notes summarize what has been implemented and validated so far. They do
 not claim production readiness or broad benchmark generality.
 
@@ -85,7 +89,8 @@ tool-result tokens by 30.0% while staying within the declared tolerance.
 
 AgentPerf correlates agent LLM calls with serving requests only when explicit
 identifiers prove the relationship. It does not join requests by timestamp
-proximity. Current real serving validation is vLLM-only.
+proximity. At the v0.2.0 release boundary, real serving validation was
+vLLM-only.
 
 ## Detector And Materiality Improvements
 
@@ -110,8 +115,9 @@ claim mixed-routing quality, latency, or cost improvements.
 
 ## Known Limitations
 
-- vLLM is the only serving backend with real validation.
-- SGLang ingestion is not implemented.
+- At the v0.2.0 release boundary, vLLM was the only serving backend with real
+  validation.
+- At the v0.2.0 release boundary, SGLang ingestion was not implemented.
 - Workloads are small, controlled, and not statistically powered benchmarks.
 - Quality evaluators are task-specific.
 - `scheduled->first` is a measured request-level first-token path metric, not

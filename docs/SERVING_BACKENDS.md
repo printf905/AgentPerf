@@ -51,9 +51,10 @@ Detailed vLLM semantics are documented in:
 
 SGLang public telemetry includes OpenAI-compatible response usage, optional
 client streaming timings, aggregate Prometheus metrics, and OpenTelemetry
-request tracing when configured. Ordinary OpenAI-compatible responses do not
-provide a vLLM-equivalent per-request cached-token counter or scheduled-to-first
-stage.
+request tracing when configured. Per-request cached prompt tokens are available
+when SGLang exposes `usage.prompt_tokens_details.cached_tokens`, for example
+with cache-report response usage enabled. Ordinary OpenAI-compatible responses
+do not provide a vLLM-equivalent scheduled-to-first stage metric.
 
 M17 validated the SGLang path on an OpenAI Agents SDK support-triage workload:
 5 tasks, 10 LLM calls, 9 tool calls, 10 SGLang serving requests, and 10/10 exact
