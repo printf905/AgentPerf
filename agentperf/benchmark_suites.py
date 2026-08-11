@@ -301,6 +301,17 @@ def render_suite_check(result: SuiteCheckResult, *, markdown: bool = False) -> s
 def render_check_all(result: SuiteCollectionResult, *, markdown: bool = False) -> str:
     if markdown:
         lines = ["## AgentPerf Benchmark Suites", "", f"**Overall:** {result.status}", ""]
+        if result.status != "PASS":
+            lines.extend(["### Triage", ""])
+            for item in result.results:
+                if item.status != "PASS":
+                    reason = _suite_reason(item.regression.checks)
+                    lines.append(
+                        f"- `{item.suite.manifest.suite_id}`: {item.status}; {reason}"
+                    )
+            for suite_id in result.missing_candidates:
+                lines.append(f"- `{suite_id}`: FAIL; missing candidate artifact")
+            lines.append("")
         lines.extend(["| Suite | Result |", "| --- | --- |"])
         for item in result.results:
             lines.append(f"| `{item.suite.manifest.suite_id}` | {item.status} |")
@@ -317,6 +328,14 @@ def render_check_all(result: SuiteCollectionResult, *, markdown: bool = False) -
     for suite_id in result.missing_candidates:
         lines.append(f"{suite_id:<34} FAIL missing candidate")
     lines.extend(["", f"Overall: {result.status}"])
+    if result.status != "PASS":
+        lines.extend(["", "Failed/Inconclusive Suites", "-" * 60])
+        for item in result.results:
+            if item.status != "PASS":
+                reason = _suite_reason(item.regression.checks)
+                lines.append(f"{item.suite.manifest.suite_id:<34} {reason}")
+        for suite_id in result.missing_candidates:
+            lines.append(f"{suite_id:<34} missing candidate artifact")
     return "\n".join(lines)
 
 
@@ -577,7 +596,9 @@ def _render_checks_terminal(
     if suite_id:
         lines.append(f"{'Suite':<34} {suite_id}")
     lines.append(f"{'Result':<34} {status}")
-    lines.append("")
+    lines.extend(["", "Summary", "-" * 60])
+    lines.extend(_suite_summary_lines(checks))
+    lines.extend(["", "Detailed Checks", "-" * 60])
     for check in checks:
         lines.append(
             f"{check.category + ':' + check.metric:<34} {check.result} {_check_evidence(check)}"
@@ -586,7 +607,9 @@ def _render_checks_terminal(
 
 
 def _render_checks_markdown(title: str, status: str, checks: list[RegressionCheck]) -> str:
-    lines = [f"## {title}", "", f"**Result:** {status}", "", "| Check | Result | Evidence |"]
+    lines = [f"## {title}", "", f"**Result:** {status}", "", "### Summary", ""]
+    lines.extend(f"- {line}" for line in _suite_summary_lines(checks, markdown=True))
+    lines.extend(["", "### Detailed Checks", "", "| Check | Result | Evidence |"])
     lines.append("| --- | --- | --- |")
     for check in checks:
         lines.append(
@@ -611,6 +634,121 @@ def _check_evidence(check: RegressionCheck) -> str:
     if check.evidence:
         parts.append("; ".join(f"{key}={value}" for key, value in check.evidence.items()))
     return "; ".join(parts)
+
+
+def _suite_summary_lines(
+    checks: list[RegressionCheck],
+    *,
+    markdown: bool = False,
+) -> list[str]:
+    lines: list[str] = []
+    quality = [check for check in checks if check.category == "QUALITY"]
+    failed_quality = [check for check in quality if check.result == "FAIL"]
+    if failed_quality:
+        lines.append(
+            "QUALITY REGRESSION: "
+            + "; ".join(_check_summary(check) for check in failed_quality)
+        )
+    elif quality:
+        lines.append("Quality: " + "; ".join(_check_summary(check) for check in quality))
+    coverage = next(
+        (
+            check
+            for check in checks
+            if check.category == "TASK_COVERAGE" and check.metric == "same_tasks"
+        ),
+        None,
+    )
+    if coverage is not None:
+        matched = coverage.evidence.get("matched_tasks")
+        lines.append(f"Task coverage: {matched} matched ({coverage.result})")
+    failures = [check for check in checks if check.result == "FAIL"]
+    if failures and not failed_quality:
+        lines.append("Primary failure: " + _check_summary(failures[0]))
+    perf = [check for check in checks if check.category == "PERFORMANCE"]
+    improvements = sorted(
+        [check for check in perf if check.actual_delta is not None and check.actual_delta < 0],
+        key=lambda check: check.actual_percent_delta
+        if check.actual_percent_delta is not None
+        else -abs(float(check.actual_delta or 0)),
+    )
+    perf_failures = [check for check in perf if check.result == "FAIL"]
+    if improvements:
+        lines.append(
+            "Biggest improvements: "
+            + "; ".join(_check_summary(check) for check in improvements[:3])
+        )
+    lines.append(
+        "Biggest regressions: "
+        + (
+            "; ".join(_check_summary(check) for check in perf_failures)
+            if perf_failures
+            else "none above configured thresholds"
+        )
+    )
+    accounting_note = _suite_accounting_note(perf)
+    if accounting_note:
+        lines.append(accounting_note)
+    findings = [check for check in checks if check.category == "FINDINGS"]
+    if findings:
+        lines.append(
+            "Findings: "
+            + "; ".join(_finding_summary(check) for check in findings)
+        )
+    if markdown:
+        return [line.replace("|", "\\|") for line in lines]
+    return lines or ["No summary checks available."]
+
+
+def _check_summary(check: RegressionCheck) -> str:
+    values: list[str] = []
+    if check.baseline is not None and check.candidate is not None:
+        values.append(f"{check.baseline} -> {check.candidate}")
+    if check.actual_percent_delta is not None:
+        values.append(f"{check.actual_percent_delta * 100:+.1f}%")
+    elif check.actual_delta is not None:
+        values.append(f"delta {check.actual_delta}")
+    if check.result == "FAIL" and check.allowed is not None:
+        values.append(f"allowed {check.allowed}")
+    value = ", ".join(values) if values else _check_evidence(check)
+    return f"{check.metric}: {value} ({check.result})"
+
+
+def _finding_summary(check: RegressionCheck) -> str:
+    value = check.candidate if check.candidate is not None else check.result
+    return f"{check.metric}={value}"
+
+
+def _suite_accounting_note(checks: list[RegressionCheck]) -> str | None:
+    provider_flat = any(
+        check.evidence.get("accounting_source") == "provider_usage"
+        and check.actual_percent_delta is not None
+        and abs(check.actual_percent_delta) < 0.01
+        for check in checks
+    )
+    component_moved = any(
+        check.evidence.get("accounting_source") == "agentperf_component_attribution"
+        and check.actual_percent_delta is not None
+        and abs(check.actual_percent_delta) >= 0.05
+        for check in checks
+    )
+    if provider_flat and component_moved:
+        return (
+            "Accounting note: provider-reported usage is unchanged, but "
+            "AgentPerf observed component-level context movement."
+        )
+    return None
+
+
+def _suite_reason(checks: list[RegressionCheck]) -> str:
+    for category in ("QUALITY", "TASK_COVERAGE", "PERFORMANCE", "FINDINGS", "ARTIFACT"):
+        for check in checks:
+            if check.category == category and check.result == "FAIL":
+                return _check_summary(check)
+    for check in checks:
+        if check.result == "INCONCLUSIVE":
+            return _check_summary(check)
+    return "no failing detail"
 
 
 def _proposal_recommendation(status: str) -> str:

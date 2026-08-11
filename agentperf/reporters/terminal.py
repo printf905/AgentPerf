@@ -267,6 +267,23 @@ def render_comparison_report(comparison: RunComparison, *, show_provenance: bool
         "=" * 60,
         "AgentPerf Replay Comparison",
         "=" * 60,
+        _row("Result", comparison.acceptance_result.verdict),
+        _row("Quality", _quality_summary(comparison)),
+        _row(
+            "Task coverage",
+            f"{len(comparison.matched_tasks)} matched; "
+            f"{len(comparison.unmatched_baseline_tasks)} baseline-only; "
+            f"{len(comparison.unmatched_candidate_tasks)} candidate-only",
+        ),
+        "",
+        "Largest Context Changes",
+        "-" * 60,
+        *_component_change_lines(comparison, limit=3),
+        "",
+        "Finding Summary",
+        "-" * 60,
+        *_finding_summary_lines(comparison),
+        "",
         "Tasks",
         "-" * 60,
         _row("Baseline", comparison.baseline_id),
@@ -324,7 +341,10 @@ def render_comparison_report(comparison: RunComparison, *, show_provenance: bool
     )
     if comparison.token_deltas.component_processed_tokens:
         lines.append(_row("Component", "Baseline -> Candidate  Delta"))
-        for component, delta in comparison.token_deltas.component_processed_tokens.items():
+        for component, delta in _rank_component_deltas(
+            comparison.token_deltas.component_processed_tokens,
+            include_tiny=True,
+        ):
             lines.append(
                 _row(
                     component.replace("_", " ").title(),
@@ -400,6 +420,10 @@ def render_regression_report(result: RegressionResult) -> str:
         _row("Candidate", result.metadata.get("candidate_id", "unknown")),
         _row("Matched tasks", result.metadata.get("matched_tasks", "unknown")),
         "",
+        "Summary",
+        "-" * 60,
+        *_regression_summary_lines(result),
+        "",
     ]
     for category in ("TASK_COVERAGE", "ARTIFACT", "QUALITY", "PERFORMANCE", "FINDINGS"):
         checks = [check for check in result.checks if check.category == category]
@@ -424,9 +448,19 @@ def render_regression_markdown(result: RegressionResult) -> str:
         "",
         f"**Result:** {result.status}",
         "",
-        "| Check | Result | Evidence |",
-        "| --- | --- | --- |",
+        "### Summary",
+        "",
     ]
+    lines.extend(f"- {line}" for line in _regression_summary_lines(result, markdown=True))
+    lines.extend(
+        [
+            "",
+            "### Detailed Checks",
+            "",
+            "| Check | Result | Evidence |",
+            "| --- | --- | --- |",
+        ]
+    )
     for check in result.checks:
         lines.append(
             f"| {check.category}: `{check.metric}` | {check.result} | "
@@ -492,6 +526,249 @@ def _format_delta(
         change = f"{float(delta.delta):+.3f}{suffix}"
     percent = "" if delta.percent_delta is None else f" ({delta.percent_delta * 100:+.1f}%)"
     return f"{baseline} -> {candidate}  {change}{percent}"
+
+
+def _quality_summary(comparison: RunComparison) -> str:
+    status = _quality_status(comparison.quality_deltas.passed)
+    mean_score = _format_delta(comparison.quality_deltas.mean_score)
+    pass_rate = _format_delta(comparison.quality_deltas.pass_rate, ratio=True)
+    return f"{status}; mean {mean_score}; pass {pass_rate}"
+
+
+def _component_change_lines(comparison: RunComparison, *, limit: int) -> list[str]:
+    ranked = _rank_component_deltas(comparison.token_deltas.component_processed_tokens)
+    if not ranked:
+        return ["No component attribution available."]
+    lines = [
+        _row(
+            component.replace("_", " ").title(),
+            _format_delta(delta, integer=True),
+        )
+        for component, delta in ranked[:limit]
+    ]
+    if not lines:
+        return ["No component changes above presentation threshold."]
+    provider = comparison.token_deltas.input_tokens
+    component_accounting = comparison.token_deltas.component_accounting
+    if (
+        provider.percent_delta is not None
+        and abs(provider.percent_delta) < 0.01
+        and component_accounting is not None
+        and component_accounting.total_processed_tokens.percent_delta is not None
+        and abs(component_accounting.total_processed_tokens.percent_delta) >= 0.05
+    ):
+        lines.append(
+            "Provider-reported usage is unchanged, but AgentPerf observed "
+            "component-level context movement."
+        )
+    return lines
+
+
+def _rank_component_deltas(
+    deltas: dict[str, MetricDelta],
+    *,
+    include_tiny: bool = False,
+) -> list[tuple[str, MetricDelta]]:
+    items = [
+        (component, delta)
+        for component, delta in deltas.items()
+        if delta.delta is not None
+        and (include_tiny or _presentation_material(delta))
+    ]
+    return sorted(
+        items,
+        key=lambda item: (
+            0 if item[1].delta is not None and item[1].delta < 0 else 1,
+            -(abs(item[1].percent_delta) if item[1].percent_delta is not None else 0.0),
+            item[0],
+        ),
+    )
+
+
+def _presentation_material(delta: MetricDelta) -> bool:
+    if delta.percent_delta is not None:
+        return abs(delta.percent_delta) >= 0.01
+    return delta.delta not in {None, 0}
+
+
+def _finding_summary_lines(comparison: RunComparison) -> list[str]:
+    if not comparison.finding_changes:
+        return ["No finding changes."]
+    counts: dict[str, int] = {}
+    new_material = 0
+    regressed_material = 0
+    for change in comparison.finding_changes:
+        counts[change.lifecycle] = counts.get(change.lifecycle, 0) + 1
+        if change.lifecycle == "NEW" and _material(
+            change.candidate_severity,
+            change.candidate_materiality,
+        ):
+            new_material += 1
+        if change.lifecycle == "REGRESSED" and _material(
+            change.candidate_severity,
+            change.candidate_materiality,
+        ):
+            regressed_material += 1
+    lines = [
+        _row("Resolved", counts.get("RESOLVED", 0)),
+        _row("Improved", counts.get("IMPROVED", 0)),
+        _row("Regressed", counts.get("REGRESSED", 0)),
+        _row("New material", new_material),
+        _row("Regressed material", regressed_material),
+    ]
+    return lines
+
+
+def _regression_summary_lines(
+    result: RegressionResult,
+    *,
+    markdown: bool = False,
+) -> list[str]:
+    lines: list[str] = []
+    quality_checks = [check for check in result.checks if check.category == "QUALITY"]
+    failed_quality = [check for check in quality_checks if check.result == "FAIL"]
+    if failed_quality:
+        lines.append(
+            "QUALITY REGRESSION: "
+            + "; ".join(_brief_check(check) for check in failed_quality)
+        )
+    elif quality_checks:
+        lines.append("Quality: " + "; ".join(_brief_check(check) for check in quality_checks))
+    else:
+        lines.append("Quality: not configured")
+
+    coverage = next(
+        (
+            check
+            for check in result.checks
+            if check.category == "TASK_COVERAGE" and check.metric == "same_tasks"
+        ),
+        None,
+    )
+    if coverage is not None:
+        matched = coverage.evidence.get("matched_tasks")
+        lines.append(f"Task coverage: {matched} matched ({coverage.result})")
+    else:
+        lines.append(f"Task coverage: {result.metadata.get('matched_tasks', 'unknown')} matched")
+
+    performance_checks = [check for check in result.checks if check.category == "PERFORMANCE"]
+    improvements = sorted(
+        [check for check in performance_checks if _negative_delta(check)],
+        key=lambda check: check.actual_percent_delta
+        if check.actual_percent_delta is not None
+        else -abs(float(check.actual_delta or 0)),
+    )
+    regressions = [check for check in performance_checks if check.result == "FAIL"]
+    lines.append("Biggest improvements: " + _brief_check_list(improvements[:3]))
+    lines.append(
+        "Biggest regressions: "
+        + (
+            _brief_check_list(regressions)
+            if regressions
+            else "none above configured thresholds"
+        )
+    )
+    disagreement = _provider_component_disagreement(performance_checks)
+    if disagreement:
+        lines.append(disagreement)
+
+    finding_checks = [check for check in result.checks if check.category == "FINDINGS"]
+    if finding_checks:
+        lines.append(
+            "Findings: "
+            + "; ".join(_brief_finding_check(check) for check in finding_checks)
+        )
+    task_changes = result.metadata.get("task_quality_changes")
+    if isinstance(task_changes, list) and task_changes:
+        changed = task_changes[:5]
+        lines.append(
+            "Task regressions: "
+            + "; ".join(_brief_task_change(item) for item in changed if isinstance(item, dict))
+        )
+    elif failed_quality:
+        lines.append("Task regressions: unavailable in comparison metadata")
+    return [line.replace("|", "\\|") for line in lines] if markdown else lines
+
+
+def _brief_check_list(checks: list[RegressionCheck]) -> str:
+    if not checks:
+        return "none"
+    return "; ".join(_brief_check(check) for check in checks)
+
+
+def _brief_check(check: RegressionCheck) -> str:
+    values: list[str] = []
+    if check.baseline is not None and check.candidate is not None:
+        values.append(
+            f"{_format_check_number(check.baseline)} -> "
+            f"{_format_check_number(check.candidate)}"
+        )
+    if check.actual_percent_delta is not None:
+        values.append(f"{check.actual_percent_delta * 100:+.1f}%")
+    elif check.actual_delta is not None:
+        values.append(f"delta {_format_check_number(check.actual_delta)}")
+    if check.result == "FAIL" and check.allowed is not None:
+        values.append(f"allowed {check.allowed}")
+    value = ", ".join(values) if values else check.result
+    return f"{check.metric}: {value}"
+
+
+def _brief_finding_check(check: RegressionCheck) -> str:
+    return f"{check.metric}={check.candidate if check.candidate is not None else check.result}"
+
+
+def _check_delta(check: RegressionCheck) -> float | int | None:
+    return check.actual_delta
+
+
+def _negative_delta(check: RegressionCheck) -> bool:
+    delta = _check_delta(check)
+    return delta is not None and delta < 0
+
+
+def _provider_component_disagreement(checks: list[RegressionCheck]) -> str | None:
+    provider = [
+        check for check in checks
+        if check.evidence.get("accounting_source") == "provider_usage"
+    ]
+    component = [
+        check for check in checks
+        if check.evidence.get("accounting_source") == "agentperf_component_attribution"
+    ]
+    provider_flat = any(
+        check.actual_percent_delta is not None and abs(check.actual_percent_delta) < 0.01
+        for check in provider
+    )
+    component_moved = [
+        check
+        for check in component
+        if check.actual_percent_delta is not None and abs(check.actual_percent_delta) >= 0.05
+    ]
+    if provider_flat and component_moved:
+        return (
+            "Accounting note: provider-reported usage is unchanged, but "
+            "AgentPerf observed component-level context movement."
+        )
+    return None
+
+
+def _brief_task_change(item: dict[str, object]) -> str:
+    task_id = str(item.get("task_id", "unknown"))
+    base_pass = item.get("baseline_passed")
+    cand_pass = item.get("candidate_passed")
+    base_score = item.get("baseline_score")
+    cand_score = item.get("candidate_score")
+    if base_pass != cand_pass:
+        return f"{task_id}: {base_pass} -> {cand_pass}"
+    return f"{task_id}: score {base_score} -> {cand_score}"
+
+
+def _material(severity: str | None, materiality: str | None) -> bool:
+    if materiality in {"MATERIAL", "ACTIONABLE"}:
+        return True
+    if materiality in {"OBSERVATION", "HEADROOM", "CACHEABILITY_HEADROOM"}:
+        return False
+    return severity == "HIGH"
 
 
 def _quality_status(value: bool | None) -> str:

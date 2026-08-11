@@ -99,6 +99,9 @@ agentperf check baseline/ candidate/ \
 
 Then append `agentperf-summary.md` to `$GITHUB_STEP_SUMMARY`.
 
+See [CI_REPORTING.md](CI_REPORTING.md) for the reviewer-oriented summary
+hierarchy and Markdown presentation details.
+
 ## Task Coverage
 
 If a candidate runs fewer tasks than the baseline, AgentPerf reports the

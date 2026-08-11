@@ -119,6 +119,7 @@ def evaluate_regression_policy(
             "unmatched_baseline_tasks": len(comparison.unmatched_baseline_tasks),
             "unmatched_candidate_tasks": len(comparison.unmatched_candidate_tasks),
             "comparison_verdict": comparison.acceptance_result.verdict,
+            "task_quality_changes": comparison.metadata.get("task_quality_changes", []),
         },
     )
 
