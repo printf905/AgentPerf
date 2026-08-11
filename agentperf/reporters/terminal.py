@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from agentperf.analyzer import AnalysisReport
 from agentperf.metrics.cache import prefix_cache_hit_ratio
 from agentperf.metrics.latency import (
@@ -41,9 +43,9 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
         ]
     )
 
-    queue_ms = sum(request.queue_latency_ms or 0 for request in serving)
-    prefill_ms = sum(prefill_or_path_latency_ms(request) or 0 for request in serving)
-    decode_ms = sum(request.decode_latency_ms or 0 for request in serving)
+    queue_ms = _sum_optional(request.queue_latency_ms for request in serving)
+    prefill_ms = _sum_optional(prefill_or_path_latency_ms(request) for request in serving)
+    decode_ms = _sum_optional(request.decode_latency_ms for request in serving)
     tool_ms = total_tool_latency_ms(run)
     lines.extend(
         [
@@ -491,6 +493,13 @@ def _format_seconds(ms: float | None) -> str:
     return f"{ms / 1000:.1f} s"
 
 
+def _sum_optional(values: Iterable[float | None]) -> float | None:
+    known = [float(value) for value in values if value is not None]
+    if not known:
+        return None
+    return sum(known)
+
+
 def _format_ms(ms: float | None) -> str:
     if ms is None:
         return "n/a"
@@ -786,6 +795,8 @@ def _compact_dict(value: dict[str, object]) -> str:
 def _prefill_report_label(label: str) -> str:
     if label == "prefill_path_proxy":
         return "Prefill path proxy"
+    if label == "unavailable":
+        return "First-token path evidence"
     return "Prefill"
 
 

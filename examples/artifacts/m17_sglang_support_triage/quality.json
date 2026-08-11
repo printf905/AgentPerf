@@ -1,0 +1,24 @@
+{
+  "metrics": [
+    {
+      "aggregation": "mean",
+      "direction": "higher_is_better",
+      "metadata": {
+        "evaluator": "support-triage-rule-v1"
+      },
+      "name": "mean_score",
+      "tolerance": 0.05,
+      "value": 0.7
+    },
+    {
+      "aggregation": "rate",
+      "direction": "higher_is_better",
+      "metadata": {
+        "evaluator": "support-triage-rule-v1"
+      },
+      "name": "pass_rate",
+      "tolerance": 0.1,
+      "value": 0.6
+    }
+  ]
+}

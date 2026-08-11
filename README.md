@@ -199,6 +199,37 @@ emit a material actionable warning.
 Details:
 [docs/EXTERNAL_AGENT_VLLM_VALIDATION.md](docs/EXTERNAL_AGENT_VLLM_VALIDATION.md).
 
+### External Agent + SGLang Cross-Layer Trace
+
+Status: real cross-layer validation completed; no material issue found.
+
+M17 routed the same OpenAI Agents SDK support-triage workload through a live
+SGLang OpenAI-compatible endpoint and joined SDK LLM calls to SGLang serving
+requests by explicit request ID. The run used the official SGLang
+`v0.5.16-cu129-runtime` image, `Qwen/Qwen3-4B`, and one RTX A5000.
+
+| Metric | Value |
+| --- | ---: |
+| Tasks | 5 |
+| LLM calls | 10 |
+| Tool calls | 9 |
+| SGLang serving requests | 10 |
+| Exact request correlation | 10 / 10 |
+| Input tokens | 3,561 |
+| Output tokens | 924 |
+| Mean score | 0.700 |
+| Pass rate | 60% |
+
+This is backend-generalization evidence, not a vLLM-versus-SGLang performance
+comparison. Ordinary SGLang OpenAI-compatible responses did not expose
+per-request queue, server-stage first-token, or generation latency in this run;
+per-request cache tokens were available through SGLang cache-report response
+usage.
+
+Details:
+[docs/SGLANG_TELEMETRY.md](docs/SGLANG_TELEMETRY.md) and
+[docs/SERVING_BACKENDS.md](docs/SERVING_BACKENDS.md).
+
 ### Real Existing Agent Profile
 
 M7 adds a second external target: upstream `mini-swe-agent` `DefaultAgent`.
@@ -229,8 +260,8 @@ Real agent
               v
 SERVING LAYER
 
-vLLM serving request
-  queue / scheduled->first / generation / ITL / prefix-cache tokens
+vLLM or SGLang serving request
+  backend-specific queue / first-token / generation / cache evidence
               |
               v
 AGENTPERF
@@ -261,8 +292,9 @@ AgentPerf currently explores three performance questions.
 | Capability | Status |
 | --- | --- |
 | Normalized agent trace schema | Implemented |
-| Explicit request correlation | Real validated with vLLM |
+| Explicit request correlation | Real validated with vLLM and SGLang when stable request IDs are captured |
 | vLLM ingestion adapter | Real validated |
+| SGLang ingestion adapter | Real validated |
 | Context duplication detection | Real validated |
 | Prefix-cache diagnosis | Real replay validated |
 | Prefill materiality calibration | Real calibrated |
@@ -278,7 +310,6 @@ AgentPerf currently explores three performance questions.
 | mini-SWE-agent adapter | Agent-layer validated |
 | Real existing agent profile | Agent-layer validated; no accepted material optimization |
 | External-agent material finding | Not accepted yet |
-| SGLang ingestion | Planned |
 | Web dashboard | Not implemented |
 
 ## Detector Semantics
@@ -353,6 +384,14 @@ Analyze a recorded vLLM-shaped fixture:
 ```bash
 agentperf analyze-vllm-recording \
   examples/recorded_telemetry/vllm_openai_response_fixture.json \
+  --show-provenance
+```
+
+Analyze a recorded SGLang-shaped fixture:
+
+```bash
+agentperf analyze-sglang-recording \
+  examples/recorded_telemetry/sglang_openai_response_fixture.json \
   --show-provenance
 ```
 
@@ -563,6 +602,10 @@ Start here:
 - [docs/LANDSCAPE.md](docs/LANDSCAPE.md): competitive and novelty review.
 - [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md): vLLM field
   mapping and measurement quality.
+- [docs/SERVING_BACKENDS.md](docs/SERVING_BACKENDS.md): normalized serving
+  backend capability matrix.
+- [docs/SGLANG_TELEMETRY.md](docs/SGLANG_TELEMETRY.md): SGLang telemetry field
+  mapping and limitations.
 - [docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md): M2 real vLLM results.
 - [docs/VLLM_PREFIX_CACHE_SEMANTICS.md](docs/VLLM_PREFIX_CACHE_SEMANTICS.md):
   request-by-request vLLM cache behavior.
@@ -614,8 +657,9 @@ See [docs/LANDSCAPE.md](docs/LANDSCAPE.md) for the detailed review.
 ## Limitations
 
 - Workloads are small and controlled.
-- vLLM is the only serving backend with real validation so far.
-- SGLang ingestion is not implemented.
+- vLLM and SGLang both have real cross-layer validation, but their telemetry
+  surfaces differ. Some SGLang server-stage timings are unavailable unless
+  explicit tracing/export paths are configured.
 - Model coverage is limited to one Qwen3 ladder in the documented runs.
 - The local-corpus quality evaluator is deterministic but task-specific.
 - M4 mixed-routing replay is not complete; Phase A role sensitivity is not an

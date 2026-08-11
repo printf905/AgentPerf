@@ -8,6 +8,7 @@ from pathlib import Path
 
 from agentperf.analyzer import analyze_path, analyze_run
 from agentperf.artifacts import ArtifactError, analyze_artifact, inspect_artifact, is_artifact_path
+from agentperf.backends.sglang import SGLangTelemetryProvider
 from agentperf.backends.vllm import VLLMTelemetryProvider
 from agentperf.benchmark_suites import (
     SuiteError,
@@ -77,6 +78,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include raw and derived metric provenance for each finding",
     )
     vllm.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
+    sglang = subparsers.add_parser(
+        "analyze-sglang-recording",
+        help="Analyze a recorded SGLang OpenAI-compatible response bundle",
+    )
+    sglang.add_argument("recording_path", type=Path)
+    sglang.add_argument(
+        "--show-provenance",
+        action="store_true",
+        help="Include raw and derived metric provenance for each finding",
+    )
+    sglang.add_argument(
         "--log-level",
         default="WARNING",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -317,6 +333,18 @@ def main(argv: list[str] | None = None) -> int:
         try:
             data = json.loads(args.recording_path.read_text(encoding="utf-8"))
             run = VLLMTelemetryProvider().build_run(data)
+            report = analyze_run(run)
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            LOGGER.error("%s", exc)
+            sys.stderr.write(f"{exc}\n")
+            return 2
+        sys.stdout.write(render_report(report, show_provenance=args.show_provenance))
+        sys.stdout.write("\n")
+        return 0
+    if args.command == "analyze-sglang-recording":
+        try:
+            data = json.loads(args.recording_path.read_text(encoding="utf-8"))
+            run = SGLangTelemetryProvider().build_run(data)
             report = analyze_run(run)
         except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
             LOGGER.error("%s", exc)
