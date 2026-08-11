@@ -17,8 +17,9 @@ under a quality constraint.
 
 AgentPerf normalizes agent traces into runs, steps, LLM calls, tool calls, and
 serving requests. It uses explicit request IDs to correlate application-level LLM
-calls with vLLM telemetry such as cached prompt tokens, queue time,
-scheduled-to-first-token timing, generation timing, and ITL.
+calls with vLLM or SGLang serving telemetry where the backend exposes compatible
+fields, such as token usage, cached prompt tokens, queue timing, first-token path
+timing, generation timing, or backend-specific provenance.
 
 The profiler then computes deterministic metrics and findings:
 
@@ -29,6 +30,8 @@ The profiler then computes deterministic metrics and findings:
   results;
 - tool-output bloat from reinjected tool results;
 - model-choice headroom from role-specific counterfactual replay.
+- replay verification, regression policies, benchmark suites, and local HTML
+  reports for the developer workflow around those findings.
 
 The important product stance is that recommendations must be backed by evidence
 and replay. AgentPerf is not an LLM that reads a trace and invents advice.
@@ -76,6 +79,15 @@ It found role-specific model headroom, but Phase B end-to-end mixed routing did
 not complete because GPU/runtime setup attempts failed before replay. The
 proposed mixed candidate must not be presented as validated.
 
+Post-v0.2 work turned the profiler into a reusable development workflow:
+self-contained experiment artifacts, baseline/candidate comparison,
+quality-aware regression policies, benchmark suites with reviewed baselines,
+component-aware token gates, and a standalone local HTML profiler report. M17
+then added SGLang as a second real serving backend. In the validated M17 run,
+AgentPerf correlated all 10 OpenAI Agents SDK LLM calls to SGLang serving
+requests with propagated request IDs. This is serving-backend generalization
+evidence, not a vLLM-versus-SGLang performance benchmark.
+
 ## Strong Engineering Challenges
 
 1. Request correlation had to be explicit and auditable. Timestamp-based joins
@@ -89,7 +101,11 @@ proposed mixed candidate must not be presented as validated.
 4. Agent quality had to be preserved. The first context compaction looked great
    for tokens and latency but degraded task quality, so the accepted
    recommendation became quality-constrained.
-5. GPU environment reproducibility was nontrivial. CUDA runtime, driver labels,
+5. Provider token accounting and agent-context attribution diverged in
+   dogfooding. Aggregate provider usage stayed flat while AgentPerf showed
+   lower system-component processing, which justified component-aware
+   regression policies.
+6. GPU environment reproducibility was nontrivial. CUDA runtime, driver labels,
    vLLM wheels, container startup, and Runpod node variability all affected live
    execution.
 
@@ -104,7 +120,13 @@ proposed mixed candidate must not be presented as validated.
 3. External framework/correlation story: OpenAI Agents SDK integration
    preserved the agent loop and M6 correlated 10/10 external-agent LLM calls to
    real vLLM serving requests with propagated request IDs.
-4. M4 Phase A: all-4B baseline quality was 0.967 mean score and 90% pass rate;
+4. SGLang backend-generalization story: M17 correlated 10/10 external-agent LLM
+   calls to real SGLang serving requests with propagated request IDs, preserving
+   backend-specific telemetry provenance and explicit missing-metric semantics.
+5. Dogfooding/accounting story: provider input tokens stayed at 1,604 -> 1,604
+   while AgentPerf system-component processing changed from 680 -> 520 with
+   quality unchanged at 1.000 -> 1.000.
+6. M4 Phase A: all-4B baseline quality was 0.967 mean score and 90% pass rate;
    one-role replay found several quality-preserving smaller-model candidates.
    This is counterfactual evidence only, not an end-to-end mixed-routing result.
 
@@ -130,6 +152,8 @@ proposed mixed candidate must not be presented as validated.
 - Do not claim AgentPerf is production-ready.
 - Do not claim it replaces Langfuse, Phoenix, vLLM, SGLang, or ThunderAgent.
 - Do not claim it invented agent-aware KV-cache optimization.
+- Do not claim vLLM and SGLang expose feature-equivalent telemetry.
+- Do not present M17 as an SGLang-versus-vLLM speed benchmark.
 - Do not turn the controlled M2 prefix/cacheability numbers into a release
   headline, resume bullet, or general speedup claim.
 - Do not call scheduled-to-first-token pure GPU prefill latency.
@@ -141,13 +165,19 @@ proposed mixed candidate must not be presented as validated.
 ## Resume Bullets
 
 - Built AgentPerf, an open-source cross-layer profiler that correlates agent
-  traces with vLLM serving telemetry to diagnose token, cacheability, and
-  first-token latency pathologies using deterministic evidence rather than
-  LLM-generated advice.
+  traces with vLLM/SGLang serving telemetry where available to diagnose token,
+  cacheability, and first-token-path issues using deterministic evidence rather
+  than LLM-generated advice.
 - Validated a real multi-step research-agent optimization where
   quality-constrained tool-result deduplication reduced processed input tokens
   by 28.1% and tool-result processing by 30.0% while staying within a declared
   quality tolerance.
+- Built artifact-based replay verification, CI regression policies, reviewed
+  benchmark-suite baselines, component-aware token gates, and a standalone local
+  HTML profiler report for agent-performance development workflows.
+- Added SGLang as a second serving backend and validated 10/10 exact
+  external-agent request correlations in a real SGLang-backed support-triage
+  run without timestamp fuzzy matching.
 - Experimental: implemented model-choice counterfactual profiling by semantic
   agent role and validated Phase A role sensitivity on Qwen3 0.6B/1.7B/4B; the
   end-to-end mixed-routing replay remains pending.

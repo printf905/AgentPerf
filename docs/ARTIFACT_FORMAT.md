@@ -28,7 +28,7 @@ The current artifact schema version is `1`.
 {
   "schema_version": 1,
   "artifact_id": "m3-raw_full",
-  "agentperf_version": "0.2.0",
+  "agentperf_version": "0.3.0",
   "created_at": "2026-08-09T06:17:10.948324+00:00",
   "workload_id": "m3-real-agent-context-waste",
   "framework": "none",

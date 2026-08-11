@@ -1,5 +1,9 @@
 # Backend Selection: vLLM vs SGLang
 
+Historical note: this document records the first real-ingestion backend
+selection before SGLang support existed. Current serving-backend capabilities
+are summarized in [SERVING_BACKENDS.md](SERVING_BACKENDS.md).
+
 Status: selected backend for the first real-ingestion milestone is **vLLM**.
 
 Date of review: 2026-08-08.
