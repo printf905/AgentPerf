@@ -1,0 +1,304 @@
+{
+  "tasks": [
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 5.478792008943856,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-REFUND-2026",
+        "expected_route": "refund"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-refund-1"
+    },
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 2.3999999975785613,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-SECURITY-2026",
+        "expected_route": "security"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-security-1"
+    },
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 2.1190420375205576,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-BILLING-2026",
+        "expected_route": "billing"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-billing-1"
+    },
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 2.1542920148931444,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-INTEGRATION-2026",
+        "expected_route": "integration"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-integration-1"
+    },
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 2.1301250089891255,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-REFUND-2026",
+        "expected_route": "refund"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-refund-2"
+    },
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 2.0912080071866512,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-SECURITY-2026",
+        "expected_route": "security"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-security-2"
+    },
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 2.300958032719791,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-BILLING-2026",
+        "expected_route": "billing"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-billing-2"
+    },
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 2.413000038359314,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-INTEGRATION-2026",
+        "expected_route": "integration"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-integration-2"
+    },
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 2.2416249848902225,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-REFUND-2026",
+        "expected_route": "refund"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-refund-3"
+    },
+    {
+      "agent_run_ids": [
+        "m5-openai-agents-support-triage-compact"
+      ],
+      "client_latency_ms": 2.2330000065267086,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "deterministic-policy-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "expected_policy": "POLICY-SECURITY-2026",
+        "expected_route": "security"
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [
+        {
+          "aggregation": "mean",
+          "direction": "higher_is_better",
+          "metadata": {},
+          "name": "answer_score",
+          "tolerance": null,
+          "value": 1.0
+        }
+      ],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "task-security-3"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+schema_version: 1
+suite_id: openai-agents-support-triage
+suite_version: 1
+description: OpenAI Agents SDK deterministic support-triage dogfooding suite.
+agent: Support Triage Agent
+framework: openai-agents-python
+task_set:
+  id: support-triage-10
+  fingerprint: 0c47d26cf05a9f3067874affb160babb0144a1dc22db946058a778915a3997fe
+baseline_artifact: baseline
+regression_policy: policy.yaml
+expected_task_count: 10
+quality_metrics:
+  mean_score: true
+  pass_rate: true
+environment:
+  latency_requires_compatible: false
+  allow_environment_mismatch: false
+metadata:
+  dogfooding_milestone: M13
+  serving_telemetry: false

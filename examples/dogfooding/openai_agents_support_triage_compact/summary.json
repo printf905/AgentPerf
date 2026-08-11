@@ -1,0 +1,14 @@
+{
+  "duration_ms": 58.390374993905425,
+  "expected_task_count": 10,
+  "findings": [
+    "CONTEXT_DUPLICATION"
+  ],
+  "input_tokens": 1604,
+  "llm_calls": 20,
+  "output_tokens": 153,
+  "recorded_task_count": 10,
+  "status": "COMPLETE",
+  "tool_calls": 10,
+  "workload_id": "m5-openai-agents-support-triage"
+}

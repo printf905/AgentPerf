@@ -1,0 +1,26 @@
+{
+  "agent_name": "Support Triage Agent",
+  "agentperf_version": "0.2.0",
+  "artifact_id": "m5-openai-agents-support-triage-compact",
+  "backend": "scripted",
+  "created_at": "2026-08-11T05:47:53.134660+00:00",
+  "framework": "openai-agents-python",
+  "locations": {
+    "environment": "environment.json",
+    "findings": "findings.json",
+    "quality": "quality.json",
+    "summary": "summary.json",
+    "tasks": "tasks.json",
+    "trace": "trace.json"
+  },
+  "metadata": {
+    "experiment_session": true,
+    "status": "COMPLETE"
+  },
+  "model": "scripted-support-model",
+  "schema_version": 1,
+  "serving_telemetry": false,
+  "status": "COMPLETE",
+  "task_count": 10,
+  "workload_id": "m5-openai-agents-support-triage"
+}
