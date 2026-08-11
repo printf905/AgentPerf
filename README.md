@@ -377,6 +377,19 @@ A trace tells AgentPerf what happened. An artifact bundle also records task
 quality, findings, environment metadata, and summary data, which lets replay
 verification reach an acceptance verdict without experiment-specific scripts.
 
+Use AgentPerf as a regression guard:
+
+```bash
+agentperf check \
+  examples/artifacts/m3_raw_full \
+  examples/artifacts/m3_dedup_only \
+  --policy examples/policies/m3-context-regression.yaml
+```
+
+`agentperf check` is intended for CI: it applies explicit quality, performance,
+finding, and task-coverage thresholds and returns stable PASS / FAIL /
+INCONCLUSIVE exit codes. See [docs/CI_REGRESSION.md](docs/CI_REGRESSION.md).
+
 SDK-first experiment recording:
 
 ```python

@@ -11,6 +11,7 @@ from agentperf.metrics.latency import (
 from agentperf.metrics.tokens import call_input_tokens, call_output_tokens
 from agentperf.model_choice import ModelChoiceReport
 from agentperf.schema.comparison import MetricDelta, RunComparison
+from agentperf.schema.regression import RegressionCheck, RegressionResult
 
 
 def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> str:
@@ -365,6 +366,55 @@ def render_comparison_report(comparison: RunComparison, *, show_provenance: bool
     return "\n".join(lines)
 
 
+def render_regression_report(result: RegressionResult) -> str:
+    lines: list[str] = [
+        "=" * 60,
+        "AgentPerf Regression Check",
+        "=" * 60,
+        _row("Result", result.status),
+        _row("Baseline", result.metadata.get("baseline_id", "unknown")),
+        _row("Candidate", result.metadata.get("candidate_id", "unknown")),
+        _row("Matched tasks", result.metadata.get("matched_tasks", "unknown")),
+        "",
+    ]
+    for category in ("TASK_COVERAGE", "ARTIFACT", "QUALITY", "PERFORMANCE", "FINDINGS"):
+        checks = [check for check in result.checks if check.category == category]
+        if not checks:
+            continue
+        lines.extend([category.replace("_", " ").title(), "-" * 60])
+        for check in checks:
+            lines.append(_row(_check_label(check), _check_value(check)))
+        lines.append("")
+    if result.warnings:
+        lines.extend(["Warnings", "-" * 60])
+        for warning in result.warnings:
+            lines.append(f"- {warning}")
+        lines.append("")
+    lines.extend(["Final Result", "-" * 60, result.status])
+    return "\n".join(lines).rstrip()
+
+
+def render_regression_markdown(result: RegressionResult) -> str:
+    lines = [
+        "## AgentPerf Regression Check",
+        "",
+        f"**Result:** {result.status}",
+        "",
+        "| Check | Result | Evidence |",
+        "| --- | --- | --- |",
+    ]
+    for check in result.checks:
+        lines.append(
+            f"| {check.category}: `{check.metric}` | {check.result} | "
+            f"{_markdown_escape(_check_value(check))} |"
+        )
+    if result.warnings:
+        lines.extend(["", "### Warnings", ""])
+        for warning in result.warnings:
+            lines.append(f"- {_markdown_escape(warning)}")
+    return "\n".join(lines)
+
+
 def _row(label: str, value: object) -> str:
     return f"{label:<34} {value}"
 
@@ -436,3 +486,40 @@ def _prefill_report_label(label: str) -> str:
     if label == "prefill_path_proxy":
         return "Prefill path proxy"
     return "Prefill"
+
+
+def _check_label(check: RegressionCheck) -> str:
+    return check.metric.replace("_", " ").title()
+
+
+def _check_value(check: RegressionCheck) -> str:
+    values: list[str] = []
+    if check.baseline is not None and check.candidate is not None:
+        values.append(
+            f"{_format_check_number(check.baseline)} -> "
+            f"{_format_check_number(check.candidate)}"
+        )
+    elif check.baseline is not None:
+        values.append(_format_check_number(check.baseline))
+    elif check.candidate is not None:
+        values.append(_format_check_number(check.candidate))
+    if check.allowed is not None:
+        values.append(f"allowed {check.allowed}")
+    if check.actual_delta is not None:
+        values.append(f"delta {_format_check_number(check.actual_delta)}")
+    if check.actual_percent_delta is not None:
+        values.append(f"{check.actual_percent_delta * 100:+.1f}%")
+    values.append(check.result)
+    return "  ".join(values)
+
+
+def _format_check_number(value: object) -> str:
+    if value is None:
+        return "n/a"
+    if isinstance(value, float):
+        return f"{value:.3f}"
+    return str(value)
+
+
+def _markdown_escape(value: str) -> str:
+    return value.replace("|", "\\|")

@@ -228,6 +228,24 @@ def _compare_loaded_workloads(
             "candidate_artifact": candidate.artifact.manifest.artifact_id
             if candidate.artifact
             else None,
+            "baseline_artifact_status": baseline.artifact.manifest.status
+            if baseline.artifact
+            else None,
+            "candidate_artifact_status": candidate.artifact.manifest.status
+            if candidate.artifact
+            else None,
+            "baseline_artifact_task_count": baseline.artifact.manifest.task_count
+            if baseline.artifact
+            else None,
+            "candidate_artifact_task_count": candidate.artifact.manifest.task_count
+            if candidate.artifact
+            else None,
+            "baseline_task_results": len(baseline.artifact.task_results)
+            if baseline.artifact
+            else None,
+            "candidate_task_results": len(candidate.artifact.task_results)
+            if candidate.artifact
+            else None,
         },
     )
 
@@ -739,6 +757,8 @@ def _finding_changes(
                 lifecycle=lifecycle,
                 baseline_severity=base.severity if base else None,
                 candidate_severity=cand.severity if cand else None,
+                baseline_materiality=_finding_materiality(base) if base else None,
+                candidate_materiality=_finding_materiality(cand) if cand else None,
                 scope=_finding_scope(selected),
                 baseline_summary=base.summary if base else None,
                 candidate_summary=cand.summary if cand else None,
@@ -765,6 +785,20 @@ def _finding_scope(finding: Finding) -> str | None:
             return f"{key}:{value}"
     if finding.provenance.llm_call_ids:
         return "llm:" + ",".join(finding.provenance.llm_call_ids[:3])
+    return None
+
+
+def _finding_materiality(finding: Finding) -> str | None:
+    value = finding.evidence.get("materiality")
+    if value is not None:
+        return str(value)
+    value = finding.provenance.derived_metrics.get("materiality")
+    if value is not None:
+        return str(value)
+    if finding.id == "TOOL_OUTPUT_BLOAT":
+        return "MATERIAL"
+    if finding.severity == "HIGH":
+        return "MATERIAL"
     return None
 
 

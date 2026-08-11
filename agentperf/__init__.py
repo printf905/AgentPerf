@@ -4,6 +4,7 @@ from agentperf.artifacts import ExperimentArtifact, load_artifact
 from agentperf.comparison import compare_paths, compare_workloads
 from agentperf.experiments import ExperimentSession, QualityResult
 from agentperf.instrumentation import TraceRecorder, current_recorder, trace_run, trace_tool
+from agentperf.regression import evaluate_regression_policy, load_regression_policy
 
 __version__ = "0.2.0"
 
@@ -16,7 +17,9 @@ __all__ = [
     "compare_paths",
     "compare_workloads",
     "current_recorder",
+    "evaluate_regression_policy",
     "load_artifact",
+    "load_regression_policy",
     "trace_run",
     "trace_tool",
 ]
