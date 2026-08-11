@@ -6,6 +6,7 @@ from typing import Any, Literal
 ARTIFACT_SCHEMA_VERSION = 1
 
 MetricDirection = Literal["higher_is_better", "lower_is_better", "neutral"]
+ArtifactStatus = Literal["COMPLETE", "PARTIAL", "FAILED"]
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,7 @@ class ArtifactManifest:
     model: str | None = None
     task_count: int | None = None
     serving_telemetry: bool = False
+    status: ArtifactStatus = "COMPLETE"
     locations: ArtifactLocation = field(default_factory=ArtifactLocation)
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -55,6 +57,9 @@ class TaskResult:
     input_tokens: int | None = None
     output_tokens: int | None = None
     duration_ms: float | None = None
+    client_latency_ms: float | None = None
+    error: str | None = None
+    status: str | None = None
     agent_run_ids: list[str] = field(default_factory=list)
     quality_metrics: list[QualityMetric] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)

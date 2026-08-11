@@ -107,7 +107,26 @@ def _compare_loaded_workloads(
     if not candidate_runs:
         raise ComparisonError("candidate contains no AgentRun entries")
 
-    warnings: list[str] = [*baseline.warnings, *candidate.warnings]
+    warnings: list[str] = [
+        *baseline.warnings,
+        *candidate.warnings,
+        *_artifact_warnings("baseline", baseline.artifact),
+        *_artifact_warnings("candidate", candidate.artifact),
+    ]
+    if baseline.artifact and candidate.artifact:
+        baseline_tasks = _artifact_task_ids(baseline.artifact)
+        candidate_tasks = _artifact_task_ids(candidate.artifact)
+        if baseline_tasks and candidate_tasks:
+            missing_candidate = sorted(baseline_tasks - candidate_tasks)
+            missing_baseline = sorted(candidate_tasks - baseline_tasks)
+            if missing_candidate or missing_baseline:
+                warnings.append(
+                    "Artifact task coverage differs; compare task-level success before "
+                    "accepting the replay."
+                )
+    artifact_incomplete = _artifact_incomplete(baseline.artifact) or _artifact_incomplete(
+        candidate.artifact
+    )
     mean_score_tolerance = (
         mean_score_tolerance
         if mean_score_tolerance is not None
@@ -151,7 +170,7 @@ def _compare_loaded_workloads(
 
     token_deltas = _token_deltas(baseline_reports, candidate_reports)
     context_delta = _context_growth_delta(baseline_reports, candidate_reports)
-    latency_deltas = _latency_deltas(baseline_reports, candidate_reports)
+    latency_deltas = _latency_deltas(baseline_reports, candidate_reports, baseline, candidate)
     cache_deltas = _cache_deltas(baseline_reports, candidate_reports)
     quality_deltas = _quality_deltas(
         baseline,
@@ -173,6 +192,17 @@ def _compare_loaded_workloads(
         unmatched_candidate=unmatched_candidate,
         min_material_improvement=min_material_improvement,
     )
+    if artifact_incomplete and acceptance.verdict == "ACCEPT":
+        acceptance = AcceptanceResult(
+            verdict="INCONCLUSIVE",
+            reason=(
+                "Artifact status or task coverage is incomplete; "
+                "replay acceptance is inconclusive."
+            ),
+            performance_improved=acceptance.performance_improved,
+            quality_passed=acceptance.quality_passed,
+            material_regression=acceptance.material_regression,
+        )
 
     return RunComparison(
         baseline_id=_workload_id(baseline_runs, baseline.artifact),
@@ -361,9 +391,17 @@ def _avg_growth_slope(reports: list[AnalysisReport]) -> float | None:
 def _latency_deltas(
     baseline_reports: list[AnalysisReport],
     candidate_reports: list[AnalysisReport],
+    baseline_workload: LoadedWorkload | None = None,
+    candidate_workload: LoadedWorkload | None = None,
 ) -> LatencyDelta:
-    baseline = _latency_summary(baseline_reports)
-    candidate = _latency_summary(candidate_reports)
+    baseline = _latency_summary(
+        baseline_reports,
+        baseline_workload.artifact if baseline_workload else None,
+    )
+    candidate = _latency_summary(
+        candidate_reports,
+        candidate_workload.artifact if candidate_workload else None,
+    )
     return LatencyDelta(
         tool_latency_ms=_delta(baseline["tool_total"], candidate["tool_total"]),
         queue_p50_ms=_delta(baseline["queue_p50"], candidate["queue_p50"]),
@@ -377,7 +415,10 @@ def _latency_deltas(
     )
 
 
-def _latency_summary(reports: list[AnalysisReport]) -> dict[str, float | None]:
+def _latency_summary(
+    reports: list[AnalysisReport],
+    artifact: ExperimentArtifact | None = None,
+) -> dict[str, float | None]:
     queue = [
         request.queue_latency_ms
         for report in reports
@@ -401,6 +442,12 @@ def _latency_summary(reports: list[AnalysisReport]) -> dict[str, float | None]:
         for call in report.run.llm_calls
         if isinstance(call.metadata.get("latency_ms"), int | float)
     ]
+    if artifact is not None:
+        client.extend(
+            float(task.client_latency_ms)
+            for task in artifact.task_results
+            if task.client_latency_ms is not None
+        )
     return {
         "tool_total": sum(
             tool.latency_ms or 0
@@ -416,6 +463,40 @@ def _latency_summary(reports: list[AnalysisReport]) -> dict[str, float | None]:
         "client_p50": percentile(client, 0.50),
         "client_p95": percentile(client, 0.95),
     }
+
+
+def _artifact_warnings(prefix: str, artifact: ExperimentArtifact | None) -> list[str]:
+    if artifact is None:
+        return []
+    warnings: list[str] = []
+    if artifact.manifest.status != "COMPLETE":
+        warnings.append(f"{prefix} artifact status is {artifact.manifest.status}.")
+    if (
+        artifact.manifest.task_count is not None
+        and artifact.task_results
+        and len(artifact.task_results) < artifact.manifest.task_count
+    ):
+        warnings.append(
+            f"{prefix} artifact has {len(artifact.task_results)} of "
+            f"{artifact.manifest.task_count} expected task results."
+        )
+    return warnings
+
+
+def _artifact_task_ids(artifact: ExperimentArtifact) -> set[str]:
+    return {task.task_id for task in artifact.task_results}
+
+
+def _artifact_incomplete(artifact: ExperimentArtifact | None) -> bool:
+    if artifact is None:
+        return False
+    if artifact.manifest.status != "COMPLETE":
+        return True
+    return (
+        artifact.manifest.task_count is not None
+        and bool(artifact.task_results)
+        and len(artifact.task_results) < artifact.manifest.task_count
+    )
 
 
 def _cache_deltas(

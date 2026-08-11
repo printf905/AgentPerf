@@ -71,6 +71,7 @@ class ExperimentArtifact:
             serving_telemetry=(
                 bool(run.serving_requests) if serving_telemetry is None else serving_telemetry
             ),
+            status="COMPLETE",
             metadata=metadata or {},
         )
         return cls(
@@ -162,6 +163,7 @@ def inspect_artifact(path: Path) -> str:
         f"Backend: {manifest.backend or 'none'}",
         f"Model: {manifest.model or 'unknown'}",
         f"Serving telemetry: {'yes' if manifest.serving_telemetry else 'no'}",
+        f"Status: {manifest.status}",
         f"Runs: {len(artifact.runs)}",
         f"Tasks: {len(artifact.task_results) or manifest.task_count or 0}",
         "",
@@ -253,6 +255,7 @@ def _parse_manifest(data: Any) -> ArtifactManifest:
         model=_optional_str(root, "model"),
         task_count=_optional_int(root, "task_count"),
         serving_telemetry=bool(root.get("serving_telemetry", False)),
+        status=_artifact_status(root.get("status", "COMPLETE")),
         locations=locations,
         metadata=_dict(root.get("metadata", {}), "manifest.metadata"),
     )
@@ -354,6 +357,9 @@ def _parse_task(data: Any) -> TaskResult:
         input_tokens=_optional_int(root, "input_tokens"),
         output_tokens=_optional_int(root, "output_tokens"),
         duration_ms=_optional_float(root, "duration_ms"),
+        client_latency_ms=_optional_float(root, "client_latency_ms"),
+        error=_optional_str(root, "error"),
+        status=_optional_str(root, "status"),
         agent_run_ids=_str_list(root.get("agent_run_ids", []), "agent_run_ids"),
         quality_metrics=_parse_metric_list(root.get("quality_metrics", [])),
         metadata=_dict(root.get("metadata", {}), "task.metadata"),
@@ -538,4 +544,11 @@ def _confidence(value: Any) -> Any:
     text = str(value)
     if text not in {"LOW", "MEDIUM", "HIGH"}:
         raise ArtifactError("finding confidence must be LOW, MEDIUM, or HIGH")
+    return text
+
+
+def _artifact_status(value: Any) -> Any:
+    text = str(value)
+    if text not in {"COMPLETE", "PARTIAL", "FAILED"}:
+        raise ArtifactError("artifact status must be COMPLETE, PARTIAL, or FAILED")
     return text

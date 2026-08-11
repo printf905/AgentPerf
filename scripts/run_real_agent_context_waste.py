@@ -15,6 +15,7 @@ from typing import Any, cast
 from uuid import uuid4
 
 from agentperf.analyzer import analyze_run
+from agentperf.artifacts import ExperimentArtifact
 from agentperf.backends.vllm import VLLMTelemetryProvider
 from agentperf.metrics.attribution import component_token_attribution
 from agentperf.metrics.cache import prefix_cache_hit_ratio
@@ -22,6 +23,7 @@ from agentperf.metrics.latency import percentile, prefill_or_path_latency_ms
 from agentperf.metrics.roles import role_profiles
 from agentperf.metrics.tokens import token_count
 from agentperf.reporters.terminal import render_report
+from agentperf.schema.artifacts import QualityMetric, TaskResult
 from agentperf.schema.trace import AgentRun
 
 SYSTEM_INSTRUCTIONS = """You are a careful incident research agent.
@@ -496,6 +498,83 @@ def write_artifacts(output_dir: Path, name: str, recording: dict[str, Any]) -> N
     trace_path.write_text(json.dumps(agent_run_to_json(run), indent=2), encoding="utf-8")
     report = analyze_run(run)
     report_path.write_text(render_report(report, show_provenance=True), encoding="utf-8")
+    summary = summarize_recording(recording)
+    correctness_summary = summary["correctness"]
+    ExperimentArtifact.from_analysis(
+        report,
+        artifact_id=f"m3-{name}",
+        workload_id="m3-real-agent-context-waste",
+        task_results=_task_results_from_recording(recording, run),
+        task_count=summary["questions"],
+        quality_metrics=[
+            QualityMetric(
+                name="mean_score",
+                value=correctness_summary["mean_score"],
+                aggregation="mean",
+                tolerance=QUALITY_MEAN_SCORE_TOLERANCE,
+            ),
+            QualityMetric(
+                name="pass_rate",
+                value=correctness_summary["pass_rate"],
+                aggregation="rate",
+                tolerance=QUALITY_PASS_RATE_TOLERANCE,
+            ),
+        ],
+        environment=recording.get("environment", {}),
+        summary=summary,
+        framework="none",
+        agent_name="m3-framework-free-research-agent",
+        backend="vllm" if not recording.get("mock_llm") else "mock",
+        model=recording.get("model"),
+        serving_telemetry=bool(run.serving_requests),
+        metadata={"status": "COMPLETE", "experiment_session_compatible": True},
+    ).save(output_dir / name / "agentperf_artifact")
+
+
+def _task_results_from_recording(recording: dict[str, Any], run: AgentRun) -> list[TaskResult]:
+    records = [record for record in recording.get("records", []) if isinstance(record, dict)]
+    client_latency_by_question: dict[str, float] = {}
+    input_tokens_by_question: dict[str, int] = {}
+    output_tokens_by_question: dict[str, int] = {}
+    for record in records:
+        llm_call_id = str(record.get("llm_call_id", ""))
+        question_id = llm_call_id.rsplit("-", maxsplit=1)[0]
+        elapsed = record.get("client_elapsed_ms")
+        if isinstance(elapsed, int | float):
+            client_latency_by_question[question_id] = (
+                client_latency_by_question.get(question_id, 0.0) + float(elapsed)
+            )
+        usage = record.get("usage")
+        if isinstance(usage, dict):
+            prompt_tokens = usage.get("prompt_tokens")
+            completion_tokens = usage.get("completion_tokens")
+            if isinstance(prompt_tokens, int):
+                input_tokens_by_question[question_id] = (
+                    input_tokens_by_question.get(question_id, 0) + prompt_tokens
+                )
+            if isinstance(completion_tokens, int):
+                output_tokens_by_question[question_id] = (
+                    output_tokens_by_question.get(question_id, 0) + completion_tokens
+                )
+    answers = [answer for answer in recording.get("answers", []) if isinstance(answer, dict)]
+    return [
+        TaskResult(
+            task_id=str(answer["question_id"]),
+            passed=bool(answer["passed"]),
+            quality_score=float(answer["score"]),
+            evaluator="local-corpus-fact-coverage",
+            input_tokens=input_tokens_by_question.get(str(answer["question_id"])),
+            output_tokens=output_tokens_by_question.get(str(answer["question_id"])),
+            client_latency_ms=client_latency_by_question.get(str(answer["question_id"])),
+            agent_run_ids=[run.agent_run_id],
+            status="COMPLETE",
+            metadata={
+                "fact_hits": answer.get("fact_hits", []),
+                "doc_id_hits": answer.get("doc_id_hits", []),
+            },
+        )
+        for answer in answers
+    ]
 
 
 def summarize_recording(recording: dict[str, Any]) -> dict[str, Any]:
