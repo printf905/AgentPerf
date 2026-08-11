@@ -5,18 +5,19 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
 from agentperf.analyzer import analyze_run
-from agentperf.artifacts import ExperimentArtifact
+from agentperf.experiments import ExperimentSession
 from agentperf.instrumentation import TraceRecorder
 from agentperf.integrations.mini_swe_agent import (
     AgentPerfMiniSweEnvironmentWrapper,
     AgentPerfMiniSweModelWrapper,
 )
 from agentperf.reporters.terminal import render_report
-from agentperf.schema.artifacts import QualityMetric, TaskResult
+from agentperf.schema.artifacts import QualityMetric
 
 try:
     import yaml
@@ -170,10 +171,27 @@ def run(output_dir: Path, *, mode: str, model_name: str | None = None) -> None:
         },
     )
 
-    with recorder.as_current():
+    experiment = ExperimentSession(
+        output_path=output_dir / "agentperf_artifact",
+        artifact_id=f"m7-mini-swe-agent-{mode}",
+        workload_id=f"m7-mini-swe-agent-{mode}",
+        expected_task_count=len(TASKS),
+        framework="mini-swe-agent",
+        agent_name="mini-SWE-agent DefaultAgent",
+        backend="deterministic" if mode == "deterministic" else "configured-model",
+        model=model_name or mode,
+        recorder=recorder,
+        environment={
+            "framework": "mini-swe-agent",
+            "backend": "deterministic" if mode == "deterministic" else "configured-model",
+            "serving_telemetry": False,
+        },
+    )
+    with experiment:
         for task in TASKS:
             task_dir = tasks_root / str(task["id"])
             _write_task_repo(task_dir, task)
+            started = time.perf_counter()
             with recorder.step(f"task-{task['id']}", metadata={"task_id": task["id"]}):
                 result = _run_one_task(
                     task,
@@ -183,8 +201,22 @@ def run(output_dir: Path, *, mode: str, model_name: str | None = None) -> None:
                     model_name=model_name,
                 )
             results.append(result)
+            passed = bool(result["passed"])
+            experiment.record_task_result(
+                task_id=str(result["task_id"]),
+                passed=passed,
+                quality_score=1.0 if passed else 0.0,
+                quality_metrics=[
+                    QualityMetric(name="test_pass", value=1.0 if passed else 0.0)
+                ],
+                evaluator="local-tests-pass",
+                client_latency_ms=(time.perf_counter() - started) * 1000,
+                status="COMPLETE",
+                metadata={"mode": mode},
+            )
 
-    run_data = recorder.finish()
+    artifact = experiment.finalize()
+    run_data = artifact.runs[0]
     report = analyze_run(run_data)
     recorder.write_json(output_dir / "agentperf_trace.json")
     (output_dir / "agentperf_report.txt").write_text(render_report(report), encoding="utf-8")
@@ -203,45 +235,6 @@ def run(output_dir: Path, *, mode: str, model_name: str | None = None) -> None:
         "task_results": results,
     }
     (output_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    ExperimentArtifact.from_analysis(
-        report,
-        artifact_id=f"m7-mini-swe-agent-{mode}",
-        workload_id=f"m7-mini-swe-agent-{mode}",
-        task_results=[
-            TaskResult(
-                task_id=str(item["task_id"]),
-                passed=bool(item["passed"]),
-                quality_score=1.0 if item["passed"] else 0.0,
-                evaluator="local-tests-pass",
-                agent_run_ids=[run_data.agent_run_id],
-                metadata={"mode": mode},
-            )
-            for item in results
-        ],
-        quality_metrics=[
-            QualityMetric(
-                name="pass_rate",
-                value=pass_rate,
-                aggregation="rate",
-            ),
-            QualityMetric(
-                name="mean_score",
-                value=pass_rate,
-                aggregation="mean_pass_indicator",
-            ),
-        ],
-        environment={
-            "framework": "mini-swe-agent",
-            "backend": "deterministic" if mode == "deterministic" else "configured-model",
-            "serving_telemetry": False,
-        },
-        summary=summary,
-        framework="mini-swe-agent",
-        agent_name="mini-SWE-agent DefaultAgent",
-        backend="deterministic" if mode == "deterministic" else "configured-model",
-        model=model_name or mode,
-        serving_telemetry=False,
-    ).save(output_dir / "agentperf_artifact")
     print(render_report(report))
 
 

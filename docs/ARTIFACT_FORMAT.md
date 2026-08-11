@@ -37,6 +37,7 @@ The current artifact schema version is `1`.
   "model": "agentperf-vllm-demo",
   "task_count": 10,
   "serving_telemetry": true,
+  "status": "COMPLETE",
   "locations": {
     "trace": "trace.json",
     "tasks": "tasks.json",
@@ -79,6 +80,9 @@ without changing the normalized trace schema.
       "input_tokens": 1234,
       "output_tokens": 120,
       "duration_ms": 2500.0,
+      "client_latency_ms": 2500.0,
+      "status": "COMPLETE",
+      "error": null,
       "agent_run_ids": ["task-1-run"],
       "metadata": {}
     }
@@ -90,6 +94,17 @@ Task rows may link to one or more `AgentRun` IDs. This is the preferred place
 for task success and task quality. Historical artifacts may only have aggregate
 quality metrics; AgentPerf records that limitation instead of inventing
 per-task rows.
+
+`client_latency_ms` is task/client-visible latency. It is separate from serving
+metrics such as queue time or scheduled-to-first-token latency. New experiment
+runners should store it when available so generic replay comparison can compute
+client-latency P50/P95.
+
+Task and artifact status values are:
+
+- `COMPLETE`: expected work finished and was recorded;
+- `PARTIAL`: fewer tasks were recorded than expected;
+- `FAILED`: a task or experiment-level exception was recorded.
 
 ## Quality
 
@@ -167,6 +182,9 @@ trace and quality files remain authoritative for analysis and comparison.
 
 Unknown newer artifact schema versions fail clearly. AgentPerf does not silently
 interpret a bundle with a schema version it does not understand.
+
+M10 adds optional task latency, task status, task error, and artifact status
+fields while keeping schema version `1`. Older v1 bundles remain valid.
 
 ## Portability
 
