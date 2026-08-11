@@ -1,0 +1,2464 @@
+{
+  "agent_run": {
+    "agent_run_id": "m5-openai-agents-support-triage-standard",
+    "ended_at": "2026-08-11T05:47:53.101738+00:00",
+    "metadata": {
+      "external_trace_ends": [
+        {
+          "group_id": null,
+          "id": "trace_dbc36e293c8e4c589f9644bef90808d6",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_23d1caf405624a03912f4582a556288b",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_1067aa75fa62498ea33b112db092d578",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_07bb41cb55af4d3ab729a7a3faee2db2",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_2508499205a0487fa5b119e795346987",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_84d1002cff674c80854eb336da654a30",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_71a2fe33837b40eba14a890863158a3b",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_93ada87864194cd488ba3eb975dcf6d0",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_166f9d54a1a9483bb98385f03bef0a7e",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_54505495a5c94ba3a545f36be4a2bf06",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        }
+      ],
+      "external_traces": [
+        {
+          "group_id": null,
+          "id": "trace_dbc36e293c8e4c589f9644bef90808d6",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_23d1caf405624a03912f4582a556288b",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_1067aa75fa62498ea33b112db092d578",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_07bb41cb55af4d3ab729a7a3faee2db2",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_2508499205a0487fa5b119e795346987",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_84d1002cff674c80854eb336da654a30",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_71a2fe33837b40eba14a890863158a3b",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_93ada87864194cd488ba3eb975dcf6d0",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_166f9d54a1a9483bb98385f03bef0a7e",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        },
+        {
+          "group_id": null,
+          "id": "trace_54505495a5c94ba3a545f36be4a2bf06",
+          "metadata": null,
+          "object": "trace",
+          "workflow_name": "Agent workflow"
+        }
+      ],
+      "framework": "openai-agents-python",
+      "instruction_style": "standard",
+      "openai_agents_spans": [
+        {
+          "ended_at": "2026-08-11T05:47:53.079682+00:00",
+          "error": null,
+          "id": "span_8b3b3dddfacb4a1685eaae0a",
+          "object": "trace.span",
+          "parent_id": "span_745a46aa988546e28058e542",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 51,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.077255+00:00",
+          "trace_id": "trace_dbc36e293c8e4c589f9644bef90808d6"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.081532+00:00",
+          "error": null,
+          "id": "span_53bbf45534794468ab5b7251",
+          "object": "trace.span",
+          "parent_id": "span_745a46aa988546e28058e542",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 113,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.079803+00:00",
+          "trace_id": "trace_dbc36e293c8e4c589f9644bef90808d6"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.081670+00:00",
+          "error": null,
+          "id": "span_745a46aa988546e28058e542",
+          "object": "trace.span",
+          "parent_id": "span_229bebdc4f604733a501fa4e",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.077229+00:00",
+          "trace_id": "trace_dbc36e293c8e4c589f9644bef90808d6"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.081687+00:00",
+          "error": null,
+          "id": "span_229bebdc4f604733a501fa4e",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 164,
+                "output_tokens": 16,
+                "requests": 0,
+                "total_tokens": 172
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.076826+00:00",
+          "trace_id": "trace_dbc36e293c8e4c589f9644bef90808d6"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.083100+00:00",
+          "error": null,
+          "id": "span_feb1d01d8b794131971af011",
+          "object": "trace.span",
+          "parent_id": "span_d9254dee30154812933a4fac",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 51,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.081987+00:00",
+          "trace_id": "trace_23d1caf405624a03912f4582a556288b"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.083903+00:00",
+          "error": null,
+          "id": "span_ce51f1deaab4494ca80134fc",
+          "object": "trace.span",
+          "parent_id": "span_d9254dee30154812933a4fac",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 105,
+                "output_tokens": 7
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.083214+00:00",
+          "trace_id": "trace_23d1caf405624a03912f4582a556288b"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.084017+00:00",
+          "error": null,
+          "id": "span_d9254dee30154812933a4fac",
+          "object": "trace.span",
+          "parent_id": "span_d73553bdfb174aaba7ba6782",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.081972+00:00",
+          "trace_id": "trace_23d1caf405624a03912f4582a556288b"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.084033+00:00",
+          "error": null,
+          "id": "span_d73553bdfb174aaba7ba6782",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 156,
+                "output_tokens": 15,
+                "requests": 0,
+                "total_tokens": 164
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.081793+00:00",
+          "trace_id": "trace_23d1caf405624a03912f4582a556288b"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.085356+00:00",
+          "error": null,
+          "id": "span_d2de8e55aa254a4d97cf43bd",
+          "object": "trace.span",
+          "parent_id": "span_07f1e7d1da764823bb488303",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 50,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.084309+00:00",
+          "trace_id": "trace_1067aa75fa62498ea33b112db092d578"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.086131+00:00",
+          "error": null,
+          "id": "span_bd9aa7359aaa4330b18f6348",
+          "object": "trace.span",
+          "parent_id": "span_07f1e7d1da764823bb488303",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 108,
+                "output_tokens": 7
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.085465+00:00",
+          "trace_id": "trace_1067aa75fa62498ea33b112db092d578"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.086243+00:00",
+          "error": null,
+          "id": "span_07f1e7d1da764823bb488303",
+          "object": "trace.span",
+          "parent_id": "span_a037077ba26f4109a8856be4",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.084295+00:00",
+          "trace_id": "trace_1067aa75fa62498ea33b112db092d578"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.086258+00:00",
+          "error": null,
+          "id": "span_a037077ba26f4109a8856be4",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 158,
+                "output_tokens": 15,
+                "requests": 0,
+                "total_tokens": 166
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.084123+00:00",
+          "trace_id": "trace_1067aa75fa62498ea33b112db092d578"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.087574+00:00",
+          "error": null,
+          "id": "span_bf73e44ed69d43e68fc083ad",
+          "object": "trace.span",
+          "parent_id": "span_18d5e98080434a1695f1158b",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 50,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.086536+00:00",
+          "trace_id": "trace_07bb41cb55af4d3ab729a7a3faee2db2"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.088336+00:00",
+          "error": null,
+          "id": "span_891ca0ce98b0431b8c298491",
+          "object": "trace.span",
+          "parent_id": "span_18d5e98080434a1695f1158b",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 104,
+                "output_tokens": 7
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.087684+00:00",
+          "trace_id": "trace_07bb41cb55af4d3ab729a7a3faee2db2"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.088437+00:00",
+          "error": null,
+          "id": "span_18d5e98080434a1695f1158b",
+          "object": "trace.span",
+          "parent_id": "span_53328bd067d543889fe4f6ef",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.086522+00:00",
+          "trace_id": "trace_07bb41cb55af4d3ab729a7a3faee2db2"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.088451+00:00",
+          "error": null,
+          "id": "span_53328bd067d543889fe4f6ef",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 154,
+                "output_tokens": 15,
+                "requests": 0,
+                "total_tokens": 162
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.086343+00:00",
+          "trace_id": "trace_07bb41cb55af4d3ab729a7a3faee2db2"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.089741+00:00",
+          "error": null,
+          "id": "span_a91fab2b3a9f4869abc576d7",
+          "object": "trace.span",
+          "parent_id": "span_6dd22115df8448e79b39af45",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 53,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.088705+00:00",
+          "trace_id": "trace_2508499205a0487fa5b119e795346987"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.090445+00:00",
+          "error": null,
+          "id": "span_06b24223f7c24f7a94760bc8",
+          "object": "trace.span",
+          "parent_id": "span_6dd22115df8448e79b39af45",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 115,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.089832+00:00",
+          "trace_id": "trace_2508499205a0487fa5b119e795346987"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.090536+00:00",
+          "error": null,
+          "id": "span_6dd22115df8448e79b39af45",
+          "object": "trace.span",
+          "parent_id": "span_2d5c40bd98e94e5899604a36",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.088691+00:00",
+          "trace_id": "trace_2508499205a0487fa5b119e795346987"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.090549+00:00",
+          "error": null,
+          "id": "span_2d5c40bd98e94e5899604a36",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 168,
+                "output_tokens": 16,
+                "requests": 0,
+                "total_tokens": 176
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.088527+00:00",
+          "trace_id": "trace_2508499205a0487fa5b119e795346987"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.091787+00:00",
+          "error": null,
+          "id": "span_951edf3bd0f444a48275785d",
+          "object": "trace.span",
+          "parent_id": "span_f8ccecc9697a44a9a4972e70",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 52,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.090789+00:00",
+          "trace_id": "trace_84d1002cff674c80854eb336da654a30"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.092512+00:00",
+          "error": null,
+          "id": "span_75629b6daa664c7db671eb77",
+          "object": "trace.span",
+          "parent_id": "span_f8ccecc9697a44a9a4972e70",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 106,
+                "output_tokens": 7
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.091887+00:00",
+          "trace_id": "trace_84d1002cff674c80854eb336da654a30"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.092615+00:00",
+          "error": null,
+          "id": "span_f8ccecc9697a44a9a4972e70",
+          "object": "trace.span",
+          "parent_id": "span_72fb6dd73a76459590ebc3dd",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.090777+00:00",
+          "trace_id": "trace_84d1002cff674c80854eb336da654a30"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.092628+00:00",
+          "error": null,
+          "id": "span_72fb6dd73a76459590ebc3dd",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 158,
+                "output_tokens": 15,
+                "requests": 0,
+                "total_tokens": 166
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.090618+00:00",
+          "trace_id": "trace_84d1002cff674c80854eb336da654a30"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.093967+00:00",
+          "error": null,
+          "id": "span_7981351816e14430bde442c8",
+          "object": "trace.span",
+          "parent_id": "span_83921beeaed64b03b79a472c",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 52,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.092890+00:00",
+          "trace_id": "trace_71a2fe33837b40eba14a890863158a3b"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.094765+00:00",
+          "error": null,
+          "id": "span_76baf06965a64d8cacc63dcb",
+          "object": "trace.span",
+          "parent_id": "span_83921beeaed64b03b79a472c",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 110,
+                "output_tokens": 7
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.094072+00:00",
+          "trace_id": "trace_71a2fe33837b40eba14a890863158a3b"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.094869+00:00",
+          "error": null,
+          "id": "span_83921beeaed64b03b79a472c",
+          "object": "trace.span",
+          "parent_id": "span_5b8eaa4803aa430f8e0ca1be",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.092877+00:00",
+          "trace_id": "trace_71a2fe33837b40eba14a890863158a3b"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.094881+00:00",
+          "error": null,
+          "id": "span_5b8eaa4803aa430f8e0ca1be",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 162,
+                "output_tokens": 15,
+                "requests": 0,
+                "total_tokens": 170
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.092705+00:00",
+          "trace_id": "trace_71a2fe33837b40eba14a890863158a3b"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.096268+00:00",
+          "error": null,
+          "id": "span_6eb3df788ad647a1bbac384f",
+          "object": "trace.span",
+          "parent_id": "span_4b67392fcedd441b9b133b27",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 52,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.095147+00:00",
+          "trace_id": "trace_93ada87864194cd488ba3eb975dcf6d0"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.097062+00:00",
+          "error": null,
+          "id": "span_bc454b85b94241429925b500",
+          "object": "trace.span",
+          "parent_id": "span_4b67392fcedd441b9b133b27",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 106,
+                "output_tokens": 7
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.096367+00:00",
+          "trace_id": "trace_93ada87864194cd488ba3eb975dcf6d0"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.097174+00:00",
+          "error": null,
+          "id": "span_4b67392fcedd441b9b133b27",
+          "object": "trace.span",
+          "parent_id": "span_c640361b70504ec4b4e09c3e",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.095130+00:00",
+          "trace_id": "trace_93ada87864194cd488ba3eb975dcf6d0"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.097186+00:00",
+          "error": null,
+          "id": "span_c640361b70504ec4b4e09c3e",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 158,
+                "output_tokens": 15,
+                "requests": 0,
+                "total_tokens": 166
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.094959+00:00",
+          "trace_id": "trace_93ada87864194cd488ba3eb975dcf6d0"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.098582+00:00",
+          "error": null,
+          "id": "span_9e410b1c11f44814aab6c7bb",
+          "object": "trace.span",
+          "parent_id": "span_02672a2e8ecf4adbaba37446",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 54,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.097462+00:00",
+          "trace_id": "trace_166f9d54a1a9483bb98385f03bef0a7e"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.099361+00:00",
+          "error": null,
+          "id": "span_586c6e2fa3414fdbaa7471cf",
+          "object": "trace.span",
+          "parent_id": "span_02672a2e8ecf4adbaba37446",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 116,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.098683+00:00",
+          "trace_id": "trace_166f9d54a1a9483bb98385f03bef0a7e"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.099465+00:00",
+          "error": null,
+          "id": "span_02672a2e8ecf4adbaba37446",
+          "object": "trace.span",
+          "parent_id": "span_80d09f3cd11e472f90f4cf4a",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.097449+00:00",
+          "trace_id": "trace_166f9d54a1a9483bb98385f03bef0a7e"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.099478+00:00",
+          "error": null,
+          "id": "span_80d09f3cd11e472f90f4cf4a",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 170,
+                "output_tokens": 16,
+                "requests": 0,
+                "total_tokens": 178
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.097282+00:00",
+          "trace_id": "trace_166f9d54a1a9483bb98385f03bef0a7e"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.100798+00:00",
+          "error": null,
+          "id": "span_5788ee3fd6054135ae6c618b",
+          "object": "trace.span",
+          "parent_id": "span_9e0362fee4994a70a6d2461c",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 1,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 51,
+                "output_tokens": 8
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.099747+00:00",
+          "trace_id": "trace_54505495a5c94ba3a545f36be4a2bf06"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.101581+00:00",
+          "error": null,
+          "id": "span_0a5316d78b6f450db1981a0b",
+          "object": "trace.span",
+          "parent_id": "span_9e0362fee4994a70a6d2461c",
+          "span_data": {
+            "data": {
+              "agent_name": "Support Triage Agent",
+              "sdk_span_type": "turn",
+              "turn": 2,
+              "type": "turn",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 105,
+                "output_tokens": 7
+              }
+            },
+            "name": "turn",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.100890+00:00",
+          "trace_id": "trace_54505495a5c94ba3a545f36be4a2bf06"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.101699+00:00",
+          "error": null,
+          "id": "span_9e0362fee4994a70a6d2461c",
+          "object": "trace.span",
+          "parent_id": "span_bcc7ac4ba46149b0b0cee96f",
+          "span_data": {
+            "handoffs": [],
+            "name": "Support Triage Agent",
+            "output_type": "str",
+            "tools": [
+              "lookup_policy"
+            ],
+            "type": "agent"
+          },
+          "started_at": "2026-08-11T05:47:53.099734+00:00",
+          "trace_id": "trace_54505495a5c94ba3a545f36be4a2bf06"
+        },
+        {
+          "ended_at": "2026-08-11T05:47:53.101712+00:00",
+          "error": null,
+          "id": "span_bcc7ac4ba46149b0b0cee96f",
+          "object": "trace.span",
+          "parent_id": null,
+          "span_data": {
+            "data": {
+              "name": "Agent workflow",
+              "sdk_span_type": "task",
+              "type": "task",
+              "usage": {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 0,
+                "input_tokens": 156,
+                "output_tokens": 15,
+                "requests": 0,
+                "total_tokens": 164
+              }
+            },
+            "name": "task",
+            "type": "custom"
+          },
+          "started_at": "2026-08-11T05:47:53.099563+00:00",
+          "trace_id": "trace_54505495a5c94ba3a545f36be4a2bf06"
+        }
+      ],
+      "serving_telemetry": "unavailable",
+      "task_count": 10,
+      "workload": "deterministic support triage"
+    },
+    "name": "OpenAI Agents SDK support triage",
+    "parent_span_id": null,
+    "span_id": null,
+    "started_at": "2026-08-11T05:47:53.045470+00:00",
+    "steps": [
+      {
+        "agent_step_id": "step-1-llm",
+        "ended_at": "2026-08-11T05:47:53.101738+00:00",
+        "llm_calls": [
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.078099+00:00",
+            "input_tokens": 51,
+            "llm_call_id": "openai-agents-llm-1",
+            "llm_request_id": "scripted-req-1",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.48870797036215663,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_1"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer asks for a refund for order A-100 within 20 days."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-ebb079377a3d",
+            "started_at": "2026-08-11T05:47:53.077620+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.081039+00:00",
+            "input_tokens": 113,
+            "llm_call_id": "openai-agents-llm-2",
+            "llm_request_id": "scripted-req-2",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.9629160049371421,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_2"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer asks for a refund for order A-100 within 20 days."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"refund\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_1_refund"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-21a016ab48a9",
+            "started_at": "2026-08-11T05:47:53.080096+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.082299+00:00",
+            "input_tokens": 51,
+            "llm_call_id": "openai-agents-llm-3",
+            "llm_request_id": "scripted-req-3",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.030292023438960314,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_3"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer says their account was taken over and sessions are suspicious."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-23602d533dc1",
+            "started_at": "2026-08-11T05:47:53.082274+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.083509+00:00",
+            "input_tokens": 105,
+            "llm_call_id": "openai-agents-llm-4",
+            "llm_request_id": "scripted-req-4",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.04333403194323182,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_4"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 7,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer says their account was taken over and sessions are suspicious."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"security\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_3_security"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-6f008d25219a",
+            "started_at": "2026-08-11T05:47:53.083481+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.084611+00:00",
+            "input_tokens": 50,
+            "llm_call_id": "openai-agents-llm-5",
+            "llm_request_id": "scripted-req-5",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.02620898885652423,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_5"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer reports two charges for the same invoice this morning."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-d30b66af6bf9",
+            "started_at": "2026-08-11T05:47:53.084589+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.085749+00:00",
+            "input_tokens": 108,
+            "llm_call_id": "openai-agents-llm-6",
+            "llm_request_id": "scripted-req-6",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.040375045500695705,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_6"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 7,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer reports two charges for the same invoice this morning."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"billing\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_5_billing"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-7f3e754c2570",
+            "started_at": "2026-08-11T05:47:53.085723+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.086843+00:00",
+            "input_tokens": 50,
+            "llm_call_id": "openai-agents-llm-7",
+            "llm_request_id": "scripted-req-7",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.027500034775584936,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_7"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer wants a higher API rate limit for workspace ws_123."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-6bcb9f571833",
+            "started_at": "2026-08-11T05:47:53.086820+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.087952+00:00",
+            "input_tokens": 104,
+            "llm_call_id": "openai-agents-llm-8",
+            "llm_request_id": "scripted-req-8",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.03545900108292699,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_8"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 7,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer wants a higher API rate limit for workspace ws_123."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"integration\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_7_integration"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-de9a57536c1b",
+            "started_at": "2026-08-11T05:47:53.087929+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.089031+00:00",
+            "input_tokens": 53,
+            "llm_call_id": "openai-agents-llm-9",
+            "llm_request_id": "scripted-req-9",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.026374997105449438,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_9"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "A license was purchased 12 days ago and the buyer requests money back."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-c1aa5dd6cd3e",
+            "started_at": "2026-08-11T05:47:53.089009+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.090098+00:00",
+            "input_tokens": 115,
+            "llm_call_id": "openai-agents-llm-10",
+            "llm_request_id": "scripted-req-10",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.033791991882026196,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_10"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "A license was purchased 12 days ago and the buyer requests money back."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"refund\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_9_refund"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-fc7f3f27487e",
+            "started_at": "2026-08-11T05:47:53.090076+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.091090+00:00",
+            "input_tokens": 52,
+            "llm_call_id": "openai-agents-llm-11",
+            "llm_request_id": "scripted-req-11",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.024957989808171988,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_11"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "User cannot explain recent login activity and asks to secure the account."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-8d7990234f2d",
+            "started_at": "2026-08-11T05:47:53.091070+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.092148+00:00",
+            "input_tokens": 106,
+            "llm_call_id": "openai-agents-llm-12",
+            "llm_request_id": "scripted-req-12",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.03470899537205696,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_12"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 7,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "User cannot explain recent login activity and asks to secure the account."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"security\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_11_security"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-0b69e383c504",
+            "started_at": "2026-08-11T05:47:53.092125+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.093230+00:00",
+            "input_tokens": 52,
+            "llm_call_id": "openai-agents-llm-13",
+            "llm_request_id": "scripted-req-13",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.027541012968868017,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_13"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "The same card appears to have been charged twice for invoice INV-77."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-6d33fda8d208",
+            "started_at": "2026-08-11T05:47:53.093207+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.094360+00:00",
+            "input_tokens": 110,
+            "llm_call_id": "openai-agents-llm-14",
+            "llm_request_id": "scripted-req-14",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.033833959605544806,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_14"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 7,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "The same card appears to have been charged twice for invoice INV-77."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"billing\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_13_billing"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-3f56938ed56a",
+            "started_at": "2026-08-11T05:47:53.094338+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.095518+00:00",
+            "input_tokens": 52,
+            "llm_call_id": "openai-agents-llm-15",
+            "llm_request_id": "scripted-req-15",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.030416005756706,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_15"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Partner integration is hitting the API quota and asks for an increase."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-d97c4e03ca6b",
+            "started_at": "2026-08-11T05:47:53.095492+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.096637+00:00",
+            "input_tokens": 106,
+            "llm_call_id": "openai-agents-llm-16",
+            "llm_request_id": "scripted-req-16",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.03549997927621007,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_16"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 7,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Partner integration is hitting the API quota and asks for an increase."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"integration\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_15_integration"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-054e78eda04c",
+            "started_at": "2026-08-11T05:47:53.096613+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.097823+00:00",
+            "input_tokens": 54,
+            "llm_call_id": "openai-agents-llm-17",
+            "llm_request_id": "scripted-req-17",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.027875008527189493,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_17"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Order B-901 is 18 days old and the customer asks whether refund is possible."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-91e64fb2364f",
+            "started_at": "2026-08-11T05:47:53.097800+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.098992+00:00",
+            "input_tokens": 116,
+            "llm_call_id": "openai-agents-llm-18",
+            "llm_request_id": "scripted-req-18",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.03566703526303172,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_18"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Order B-901 is 18 days old and the customer asks whether refund is possible."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"refund\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_17_refund"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-afd079a594bf",
+            "started_at": "2026-08-11T05:47:53.098969+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.100065+00:00",
+            "input_tokens": 51,
+            "llm_call_id": "openai-agents-llm-19",
+            "llm_request_id": "scripted-req-19",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.025457993615418673,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_19"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 8,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer reports password changed by someone else and active sessions remain."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-700e3d8be69a",
+            "started_at": "2026-08-11T05:47:53.100044+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          },
+          {
+            "agent_step_id": "step-1-llm",
+            "backend": null,
+            "ended_at": "2026-08-11T05:47:53.101190+00:00",
+            "input_tokens": 105,
+            "llm_call_id": "openai-agents-llm-20",
+            "llm_request_id": "scripted-req-20",
+            "metadata": {
+              "conversation_id": null,
+              "explicit_request_correlation": false,
+              "framework": "openai-agents-python",
+              "latency_ms": 0.03283401019871235,
+              "model_settings": "{\"context_management\": null, \"extra_args\": null, \"extra_body\": null, \"extra_headers\": null, \"extra_query\": null, \"frequency_penalty\": null, \"include_usage\": null, \"max_tokens\": null, \"metadata\": null, \"parallel_tool_calls\": null, \"presence_penalty\": null, \"prompt_cache_options\": null, \"prompt_cache_retention\": null, \"reasoning\": null, \"response_include\": null, \"retry\": null, \"store\": null, \"temperature\": null, \"tool_choice\": null, \"top_logprobs\": null, \"top_p\": null, \"truncation\": null, \"verbosity\": null}",
+              "previous_response_id": null,
+              "propagated_request_id": null,
+              "response_id": "resp_20"
+            },
+            "model": "scripted-support-model",
+            "output_token_ids": null,
+            "output_tokens": 7,
+            "parent_span_id": "span-1",
+            "prompt": [
+              {
+                "metadata": {},
+                "name": "system",
+                "text": "Classify the support request. Use lookup_policy before answering. Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+              },
+              {
+                "metadata": {
+                  "framework": "openai-agents-python",
+                  "representation": "tool_names"
+                },
+                "name": "tool_schema",
+                "text": "lookup_policy"
+              },
+              {
+                "metadata": {},
+                "name": "user",
+                "text": "Customer reports password changed by someone else and active sessions remain."
+              },
+              {
+                "metadata": {},
+                "name": "other",
+                "text": "{\"query\": \"security\"}"
+              },
+              {
+                "metadata": {
+                  "source_tool_call_ids": [
+                    "call_19_security"
+                  ]
+                },
+                "name": "tool_result",
+                "text": "POLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation."
+              }
+            ],
+            "prompt_token_ids": null,
+            "provider": "openai-agents-python",
+            "semantic_role": null,
+            "serving_request_id": null,
+            "span_id": "span-llm-3cd46ebc1a9a",
+            "started_at": "2026-08-11T05:47:53.101169+00:00",
+            "tokenization_mode": "APPROXIMATE",
+            "tpot_ms": null,
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598",
+            "ttft_ms": null
+          }
+        ],
+        "metadata": {
+          "name": "llm"
+        },
+        "parent_span_id": null,
+        "span_id": "span-1",
+        "started_at": "2026-08-11T05:47:53.078126+00:00",
+        "tool_calls": [
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-2d80bac08595",
+            "started_at": null,
+            "tool_call_id": "call_1_refund",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-c5f5ce468228",
+            "started_at": null,
+            "tool_call_id": "call_3_security",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-06c0db4cfd6d",
+            "started_at": null,
+            "tool_call_id": "call_5_billing",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-c85a841047b0",
+            "started_at": null,
+            "tool_call_id": "call_7_integration",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-b9fbb6a0d42b",
+            "started_at": null,
+            "tool_call_id": "call_9_refund",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-b4d0e37e2ec9",
+            "started_at": null,
+            "tool_call_id": "call_11_security",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-BILLING-2026: Duplicate charges should be routed to Billing Operations with invoice ID, charge date, and last four payment digits.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-5b064264724d",
+            "started_at": null,
+            "tool_call_id": "call_13_billing",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-INTEGRATION-2026: API rate-limit increases require the workspace ID, current quota, target quota, and a recent traffic sample.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-77ed7c24d32f",
+            "started_at": null,
+            "tool_call_id": "call_15_integration",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-REFUND-2026: Refunds are available within 30 days when the customer provides an order ID and the license has not been transferred.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-ba35beb59d8e",
+            "started_at": null,
+            "tool_call_id": "call_17_refund",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          },
+          {
+            "ended_at": null,
+            "input": null,
+            "latency_ms": null,
+            "metadata": {
+              "framework": "openai-agents-python",
+              "source": "model_input_tool_result"
+            },
+            "name": "function_tool",
+            "output": "POLICY-SECURITY-2026: Account takeover reports must be escalated to Security Operations and require password reset plus active-session revocation.",
+            "parent_span_id": "span-1",
+            "span_id": "span-tool-b2c166109352",
+            "started_at": null,
+            "tool_call_id": "call_19_security",
+            "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+          }
+        ],
+        "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+      }
+    ],
+    "trace_id": "trace-046eb1bb5b5047d3a1b90ff8d3046598"
+  },
+  "schema_version": null,
+  "serving_requests": [],
+  "synthetic": false
+}

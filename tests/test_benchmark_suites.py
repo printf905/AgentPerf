@@ -65,6 +65,18 @@ def test_m3_real_artifact_suite_check_passes() -> None:
     assert result.regression.status == "PASS"
 
 
+def test_openai_agents_dogfooding_suite_check_passes() -> None:
+    validation = validate_suite(Path("benchmarks/openai-agents-support-triage"))
+    result = check_suite(
+        Path("benchmarks/openai-agents-support-triage"),
+        Path("examples/dogfooding/openai_agents_support_triage_compact"),
+    )
+
+    assert validation.status == "PASS"
+    assert result.status == "PASS"
+    assert result.regression.status == "PASS"
+
+
 def test_synthetic_suite_passes_and_fingerprint_matches() -> None:
     suite = load_suite(Path("examples/benchmark_suites/synthetic_replay"))
     result = check_suite(suite.path, suite.path / "candidate")

@@ -403,6 +403,19 @@ Baseline updates are reviewable proposals, not automatic overwrites. See
 [docs/BENCHMARK_SUITES.md](docs/BENCHMARK_SUITES.md) and
 [docs/BASELINE_MANAGEMENT.md](docs/BASELINE_MANAGEMENT.md).
 
+The repository also includes one offline dogfooding suite:
+
+```bash
+agentperf suite validate benchmarks/openai-agents-support-triage
+agentperf suite check \
+  benchmarks/openai-agents-support-triage \
+  examples/dogfooding/openai_agents_support_triage_compact
+```
+
+That suite exercises the artifact -> policy -> suite-check workflow without
+API keys, GPU access, or network storage. See
+[docs/DOGFOODING_WORKFLOW.md](docs/DOGFOODING_WORKFLOW.md).
+
 SDK-first experiment recording:
 
 ```python

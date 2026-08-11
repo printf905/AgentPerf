@@ -1,0 +1,107 @@
+{
+  "findings": [
+    {
+      "affected_spans": [
+        "openai-agents-llm-1",
+        "openai-agents-llm-10",
+        "openai-agents-llm-11",
+        "openai-agents-llm-12",
+        "openai-agents-llm-13",
+        "openai-agents-llm-14",
+        "openai-agents-llm-15",
+        "openai-agents-llm-16",
+        "openai-agents-llm-17",
+        "openai-agents-llm-18",
+        "openai-agents-llm-19",
+        "openai-agents-llm-2",
+        "openai-agents-llm-20",
+        "openai-agents-llm-3",
+        "openai-agents-llm-4",
+        "openai-agents-llm-5",
+        "openai-agents-llm-6",
+        "openai-agents-llm-7",
+        "openai-agents-llm-8",
+        "openai-agents-llm-9"
+      ],
+      "confidence": "MEDIUM",
+      "evidence": {
+        "execution_scope_id": "step:step-1-llm",
+        "largest_common_prefix_ratio": 1.0,
+        "largest_common_prefix_tokens": 52,
+        "llm_calls_affected": 20,
+        "materiality": "OBSERVATION",
+        "repeated_context_ratio": 0.6297,
+        "repeated_context_tokens": 1010,
+        "repeated_non_prefix_tokens": 958,
+        "repeated_tokens_by_component": {
+          "other": 54,
+          "system": 646,
+          "tool_result": 159,
+          "tool_schema": 19,
+          "user": 132
+        },
+        "scope": "within_run_duplication",
+        "tokenization": "approximate",
+        "total_input_tokens": 1604
+      },
+      "id": "CONTEXT_DUPLICATION",
+      "provenance": {
+        "agent_span_ids": [],
+        "derived_metrics": {
+          "execution_scope_id": "step:step-1-llm",
+          "largest_common_prefix_tokens": 52,
+          "materiality": "OBSERVATION",
+          "repeated_context_ratio": 0.6296758104738155,
+          "repeated_context_tokens": 1010,
+          "repeated_tokens_by_component": {
+            "other": 54,
+            "system": 646,
+            "tool_result": 159,
+            "tool_schema": 19,
+            "user": 132
+          },
+          "scope": "within_run_duplication",
+          "total_input_tokens": 1604
+        },
+        "llm_call_ids": [
+          "openai-agents-llm-1",
+          "openai-agents-llm-10",
+          "openai-agents-llm-11",
+          "openai-agents-llm-12",
+          "openai-agents-llm-13",
+          "openai-agents-llm-14",
+          "openai-agents-llm-15",
+          "openai-agents-llm-16",
+          "openai-agents-llm-17",
+          "openai-agents-llm-18",
+          "openai-agents-llm-19",
+          "openai-agents-llm-2",
+          "openai-agents-llm-20",
+          "openai-agents-llm-3",
+          "openai-agents-llm-4",
+          "openai-agents-llm-5",
+          "openai-agents-llm-6",
+          "openai-agents-llm-7",
+          "openai-agents-llm-8",
+          "openai-agents-llm-9"
+        ],
+        "llm_request_ids": [],
+        "notes": [
+          "Repeated content is measured from normalized prompt components.",
+          "The detector does not infer that repeated content is unnecessary.",
+          "Low absolute repeated-token volume is treated as an observation."
+        ],
+        "raw_metrics": {},
+        "serving_request_ids": []
+      },
+      "recommendation": "Inspect whether repeated within-run context can be cached, summarized, deduplicated, or carried forward more selectively.",
+      "severity": "LOW",
+      "summary": "Multiple LLM calls in the same execution scope contain exact repeated prompt components. Repeated content may be necessary, but it is a cost and latency signal.",
+      "title": "Repeated prompt context within one execution scope",
+      "validation_plan": [
+        "Replay the same execution after any prompt-structure change.",
+        "Compare input tokens, task quality, and end-to-end latency."
+      ]
+    }
+  ]
+}

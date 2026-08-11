@@ -23,5 +23,16 @@ jobs:
         run: ruff check .
       - name: Mypy
         run: mypy agentperf tests scripts
+      - name: Dogfood suite regression check
+        run: |
+          agentperf suite validate benchmarks/openai-agents-support-triage
+          agentperf suite check \
+            benchmarks/openai-agents-support-triage \
+            examples/dogfooding/openai_agents_support_triage_compact \
+            --format markdown \
+            --output "$RUNNER_TEMP/agentperf-dogfood.md"
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            cat "$RUNNER_TEMP/agentperf-dogfood.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Build package
         run: python -m build

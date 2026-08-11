@@ -114,6 +114,15 @@ TASKS: list[dict[str, str]] = [
     },
 ]
 
+STANDARD_INSTRUCTIONS = (
+    "Classify the support request. Use lookup_policy before answering. "
+    "Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+)
+
+COMPACT_INSTRUCTIONS = (
+    "Use lookup_policy, then answer: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
+)
+
 
 @function_tool
 def lookup_policy(query: str) -> str:
@@ -198,16 +207,18 @@ class ScriptedSupportModel(Model):
         raise NotImplementedError("The deterministic M5 example uses non-streaming runs.")
 
 
-async def run(output_dir: Path) -> None:
+async def run(output_dir: Path, *, instruction_style: str = "standard") -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
+    instructions = _instructions_for_style(instruction_style)
     recorder = TraceRecorder(
-        agent_run_id="m5-openai-agents-support-triage",
+        agent_run_id=f"m5-openai-agents-support-triage-{instruction_style}",
         name="OpenAI Agents SDK support triage",
         metadata={
             "framework": "openai-agents-python",
             "workload": "deterministic support triage",
             "task_count": len(TASKS),
             "serving_telemetry": "unavailable",
+            "instruction_style": instruction_style,
         },
     )
     processor = OpenAIAgentsTraceProcessor(recorder, capture_function_spans=False)
@@ -219,17 +230,14 @@ async def run(output_dir: Path) -> None:
     )
     agent = Agent(
         name="Support Triage Agent",
-        instructions=(
-            "Classify the support request. Use lookup_policy before answering. "
-            "Final answer format: ROUTE=<route>; POLICY=<policy id>; ACTION=<short action>."
-        ),
+        instructions=instructions,
         tools=[lookup_policy],
         model=model,
     )
     results: list[dict[str, Any]] = []
     experiment = ExperimentSession(
         output_path=output_dir / "agentperf_artifact",
-        artifact_id="m5-openai-agents-support-triage",
+        artifact_id=f"m5-openai-agents-support-triage-{instruction_style}",
         workload_id="m5-openai-agents-support-triage",
         expected_task_count=len(TASKS),
         framework="openai-agents-python",
@@ -241,6 +249,7 @@ async def run(output_dir: Path) -> None:
             "framework": "openai-agents-python",
             "backend": "scripted",
             "serving_telemetry": False,
+            "instruction_style": instruction_style,
         },
     )
     with experiment:
@@ -284,6 +293,7 @@ async def run(output_dir: Path) -> None:
     summary = {
         "framework": "openai-agents-python",
         "agent": "Support Triage Agent",
+        "instruction_style": instruction_style,
         "tasks": len(TASKS),
         "llm_calls": len(run_data.llm_calls),
         "tool_calls": len(run_data.tool_calls),
@@ -307,6 +317,14 @@ def score_answer(answer: str, task: dict[str, str]) -> float:
     if f"route={route}" in normalized or route in normalized:
         score += 0.5
     return score
+
+
+def _instructions_for_style(style: str) -> str:
+    if style == "standard":
+        return STANDARD_INSTRUCTIONS
+    if style == "compact":
+        return COMPACT_INSTRUCTIONS
+    raise ValueError(f"unsupported instruction style: {style}")
 
 
 def _route_for(text: str) -> str:
@@ -390,8 +408,13 @@ def main() -> None:
         type=Path,
         default=Path("/tmp/agentperf_openai_agents_support_triage"),
     )
+    parser.add_argument(
+        "--instruction-style",
+        choices=["standard", "compact"],
+        default="standard",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.output_dir))
+    asyncio.run(run(args.output_dir, instruction_style=args.instruction_style))
 
 
 if __name__ == "__main__":
