@@ -49,10 +49,10 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Analyze a local fixture:
+Analyze a provided local artifact:
 
 ```bash
-agentperf analyze examples/traces/multi_problem_agent.json
+agentperf analyze examples/artifacts/m3_dedup_only
 ```
 
 Compare two self-contained artifacts:

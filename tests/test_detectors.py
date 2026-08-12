@@ -7,6 +7,7 @@ from agentperf.correlation.correlator import TraceCorrelator
 from agentperf.detectors.base import DetectorContext
 from agentperf.detectors.context_duplication import ContextDuplicationDetector
 from agentperf.detectors.prefix_cache import PrefixCacheOpportunityDetector
+from agentperf.metrics.latency import percentile
 from agentperf.schema.trace import AgentRun, parse_agentperf_trace
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,6 +53,69 @@ def test_cross_detector_interaction_on_multi_problem_trace() -> None:
         if finding.id == "CACHEABILITY_HEADROOM"
     )
     assert prefix.evidence["affected_requests"] == 3
+
+
+def test_multi_problem_trace_keeps_agent_and_serving_token_domains_distinct() -> None:
+    report = analyze_path(ROOT / "examples/traces/multi_problem_agent.json")
+    run = report.run
+
+    agent_inputs = [row.input_tokens for row in report.context_growth]
+    serving_inputs = [request.input_tokens for request in run.serving_requests]
+    serving_cached = [request.prefix_cache_hit_tokens for request in run.serving_requests]
+    serving_uncached = [
+        request.prefix_cache_miss_tokens for request in run.serving_requests
+    ]
+
+    assert agent_inputs == [80, 91, 99]
+    assert sum(agent_inputs) == 270
+    assert serving_inputs == [520, 560, 600]
+    assert serving_cached == [80, 90, 100]
+    assert serving_uncached == [440, 470, 500]
+
+
+def test_multi_problem_serving_percentiles_are_interpolated() -> None:
+    report = analyze_path(ROOT / "examples/traces/multi_problem_agent.json")
+    inputs = [float(request.input_tokens or 0) for request in report.run.serving_requests]
+    misses = [
+        float(request.prefix_cache_miss_tokens or 0)
+        for request in report.run.serving_requests
+    ]
+    ttfts = [float(request.ttft_ms or 0) for request in report.run.serving_requests]
+
+    assert percentile(inputs, 0.50) == 560.0
+    assert percentile(inputs, 0.95) == 596.0
+    assert percentile(misses, 0.95) == 497.0
+    assert percentile(ttfts, 0.95) == 1037.0
+
+
+def test_multi_problem_prefill_dominance_low_because_uncached_volume_is_low() -> None:
+    report = analyze_path(ROOT / "examples/traces/multi_problem_agent.json")
+    dominance = next(
+        finding for finding in report.findings if finding.id == "PREFILL_PATH_DOMINANCE"
+    )
+
+    assert dominance.severity == "LOW"
+    assert dominance.evidence["ttft_p95_ms"] == 1037.0
+    assert dominance.evidence["p95_input_tokens"] == 596
+    assert dominance.evidence["p95_uncached_input_tokens"] == 497
+    assert dominance.evidence["materiality_ttft_p95_met"] is True
+    assert dominance.evidence["materiality_uncached_input_p95_met"] is False
+    assert "both absolute TTFT and serving uncached-token volume" in dominance.summary
+    assert dominance.provenance.raw_metrics["prefill_latency_ms"] == [
+        710.0,
+        730.0,
+        760.0,
+    ]
+    assert dominance.provenance.raw_metrics["prefill_path_latency_ms"] == [
+        None,
+        None,
+        None,
+    ]
+    assert dominance.provenance.raw_metrics["selected_prefill_or_path_latency_ms"] == [
+        710.0,
+        730.0,
+        760.0,
+    ]
 
 
 def test_healthy_workload_produces_no_findings() -> None:

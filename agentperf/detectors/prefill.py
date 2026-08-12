@@ -69,6 +69,13 @@ class PrefillBottleneckDetector:
             and p95_uncached_input is not None
             and p95_uncached_input >= self.config.min_material_uncached_input_p95_tokens
         )
+        ttft_material = (
+            ttft_p95 is not None and ttft_p95 >= self.config.min_material_ttft_p95_ms
+        )
+        uncached_input_material = (
+            p95_uncached_input is not None
+            and p95_uncached_input >= self.config.min_material_uncached_input_p95_tokens
+        )
         finding_id = (
             "MATERIAL_PREFILL_BOTTLENECK" if material else "PREFILL_PATH_DOMINANCE"
         )
@@ -91,6 +98,8 @@ class PrefillBottleneckDetector:
             "materiality_threshold_uncached_input_p95_tokens": (
                 self.config.min_material_uncached_input_p95_tokens
             ),
+            "materiality_ttft_p95_met": ttft_material,
+            "materiality_uncached_input_p95_met": uncached_input_material,
         }
         if hit_ratio is not None:
             evidence["prefix_cache_hit_ratio"] = round(hit_ratio, 4)
@@ -110,7 +119,8 @@ class PrefillBottleneckDetector:
                     if material
                     else (
                         "Treat this as attribution, not a proven bottleneck. Prioritize it "
-                        "only if absolute TTFT or uncached input volume becomes material."
+                        "only when both absolute TTFT and serving uncached-token volume "
+                        "are material."
                     )
                 ),
                 confidence="HIGH" if material else "MEDIUM",
@@ -136,6 +146,9 @@ class PrefillBottleneckDetector:
                             request.prefill_latency_ms for request in affected
                         ],
                         "prefill_path_latency_ms": [
+                            request.prefill_path_latency_ms for request in affected
+                        ],
+                        "selected_prefill_or_path_latency_ms": [
                             prefill_or_path_latency_ms(request) for request in affected
                         ],
                         "queue_latency_ms": [
@@ -201,6 +214,7 @@ def _summary(material: bool) -> str:
         )
     return (
         "Serving telemetry attributes most time-to-first-token latency to the prefill "
-        "path, but absolute TTFT and uncached input volume do not yet justify labeling "
-        "it as an operational bottleneck."
+        "path, but AgentPerf only labels this as a material bottleneck when both "
+        "absolute TTFT and serving uncached-token volume cross their materiality "
+        "thresholds."
     )

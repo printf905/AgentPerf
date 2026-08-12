@@ -90,6 +90,13 @@ class PrefixCacheOpportunityDetector:
             and ttft_p95 >= self.config.material_ttft_p95_ms
             and uncached_p95 >= self.config.material_uncached_input_p95_tokens
         )
+        ttft_material = (
+            ttft_p95 is not None and ttft_p95 >= self.config.material_ttft_p95_ms
+        )
+        uncached_input_material = (
+            uncached_p95 is not None
+            and uncached_p95 >= self.config.material_uncached_input_p95_tokens
+        )
         finding_id = (
             "MATERIAL_PREFIX_CACHE_OPPORTUNITY"
             if is_material
@@ -102,8 +109,9 @@ class PrefixCacheOpportunityDetector:
             if is_material
             else (
                 "Treat this as cacheability headroom, not an urgent optimization. "
-                "Prioritize it only if TTFT, uncached input volume, or serving cost "
-                "becomes material."
+                "Prioritize it when both TTFT and serving uncached-token volume are "
+                "material, or when independent serving-cost evidence makes it "
+                "important."
             )
         )
         summary = (
@@ -112,8 +120,10 @@ class PrefixCacheOpportunityDetector:
             "prefill path contributes materially to TTFT."
             if is_material
             else (
-                "Correlated requests contain cacheable structure and low cache reuse, "
-                "but the observed TTFT and uncached-token volume are not yet material."
+                "Correlated requests contain cacheable agent-trace structure and low "
+                "serving prefix-cache reuse, but AgentPerf only labels this material "
+                "when both TTFT and serving uncached-token volume cross their "
+                "materiality thresholds."
             )
         )
 
@@ -145,6 +155,8 @@ class PrefixCacheOpportunityDetector:
                     "materiality_threshold_uncached_input_p95_tokens": (
                         self.config.material_uncached_input_p95_tokens
                     ),
+                    "materiality_ttft_p95_met": ttft_material,
+                    "materiality_uncached_input_p95_met": uncached_input_material,
                 },
                 affected_spans=group.call_ids + group.request_ids,
                 recommendation=recommendation,
@@ -177,6 +189,9 @@ class PrefixCacheOpportunityDetector:
                             request.prefill_latency_ms for request in group.requests
                         ],
                         "prefill_path_latency_ms": [
+                            request.prefill_path_latency_ms for request in group.requests
+                        ],
+                        "selected_prefill_or_path_latency_ms": [
                             prefill_or_path_latency_ms(request) for request in group.requests
                         ],
                         "ttft_ms": [request.ttft_ms for request in group.requests],
