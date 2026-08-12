@@ -21,6 +21,16 @@ def test_terminal_report_includes_synthetic_label_and_findings() -> None:
     assert "Data: synthetic trace fixture, not benchmark results" in output
     assert "[LOW] CACHEABILITY_HEADROOM" in output
     assert "Validation:" in output
+    assert "Agent trace input tokens" in output
+    assert "agent trace average input tokens" in output
+    assert "serving request input p95 tokens" in output
+    assert "serving uncached input p95 tokens" in output
+    assert "serving latency semantics" in output
+    assert "true prefill stage" in output
+    assert "materiality ttft p95 threshold met" in output
+    assert "yes" in output
+    assert "materiality serving uncached input threshold met" in output
+    assert "no" in output
 
 
 def test_cli_analyze_success(capsys) -> None:  # type: ignore[no-untyped-def]

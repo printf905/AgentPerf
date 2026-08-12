@@ -36,8 +36,14 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
             _row("Duration", _format_seconds(run.duration_ms)),
             _row("LLM calls", len(llm_calls)),
             _row("Tool calls", len(run.tool_calls)),
-            _row("Input tokens", sum(call_input_tokens(call) for call in llm_calls)),
-            _row("Output tokens", sum(call_output_tokens(call) for call in llm_calls)),
+            _row(
+                "Agent trace input tokens",
+                sum(call_input_tokens(call) for call in llm_calls),
+            ),
+            _row(
+                "Agent trace output tokens",
+                sum(call_output_tokens(call) for call in llm_calls),
+            ),
             _row("Correlated serving requests", len(report.correlation.llm_to_serving)),
             "",
         ]
@@ -82,7 +88,7 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
             [
                 "Token Attribution",
                 "-" * 60,
-                _row("Trace input tokens", attribution.trace_input_tokens),
+                _row("Agent trace input tokens", attribution.trace_input_tokens),
                 _row("Component processed tokens", attribution.total_processed_tokens),
                 _row("Component unique tokens", attribution.total_unique_tokens),
                 _row(
@@ -143,7 +149,7 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
             ]
         )
         for key, value in finding.evidence.items():
-            lines.append(_row(key.replace("_", " "), _format_value(value)))
+            lines.append(_row(_finding_evidence_label(key), _format_evidence_value(key, value)))
         lines.extend(["", "Recommendation:", f"  {finding.recommendation}", ""])
         if finding.validation_plan:
             lines.append("Validation:")
@@ -485,6 +491,57 @@ def _format_value(value: object) -> str:
             return f"{value * 100:.1f}%"
         return f"{value:.1f}"
     return str(value)
+
+
+_FINDING_EVIDENCE_LABELS = {
+    "total_input_tokens": "agent trace total input tokens",
+    "average_input_tokens": "agent trace average input tokens",
+    "shared_prefix_tokens": "agent trace shared prefix tokens",
+    "shared_prefix_ratio": "agent trace shared prefix ratio",
+    "largest_common_prefix_tokens": "agent trace largest common prefix tokens",
+    "largest_common_prefix_ratio": "agent trace largest common prefix ratio",
+    "repeated_non_prefix_tokens": "agent trace repeated non prefix tokens",
+    "repeated_non_prefix_ratio": "agent trace repeated non prefix ratio",
+    "actual_prefix_cache_hit_ratio": "serving prefix cache hit ratio",
+    "prefill_fraction_of_ttft": "serving prefill fraction of ttft",
+    "prefill_fraction_of_ttft_avg": "serving prefill fraction of ttft avg",
+    "prefill_path_proxy_fraction_of_ttft": "serving prefill path proxy fraction of ttft",
+    "prefill_path_proxy_fraction_of_ttft_avg": (
+        "serving prefill path proxy fraction of ttft avg"
+    ),
+    "latency_semantics": "serving latency semantics",
+    "ttft_p50_ms": "serving ttft p50 ms",
+    "ttft_p95_ms": "serving ttft p95 ms",
+    "p95_input_tokens": "serving request input p95 tokens",
+    "uncached_input_p95_tokens": "serving uncached input p95 tokens",
+    "p95_uncached_input_tokens": "serving uncached input p95 tokens",
+    "prefix_cache_hit_ratio": "serving prefix cache hit ratio",
+    "materiality_threshold_ttft_p95_ms": "materiality threshold ttft p95 ms",
+    "materiality_threshold_uncached_input_p95_tokens": (
+        "materiality threshold serving uncached input p95 tokens"
+    ),
+    "materiality_ttft_p95_met": "materiality ttft p95 threshold met",
+    "materiality_uncached_input_p95_met": (
+        "materiality serving uncached input threshold met"
+    ),
+}
+
+
+def _finding_evidence_label(key: str) -> str:
+    return _FINDING_EVIDENCE_LABELS.get(key, key.replace("_", " "))
+
+
+def _format_evidence_value(key: str, value: object) -> str:
+    if key == "latency_semantics":
+        if value == "prefill":
+            return "true prefill stage"
+        if value == "prefill_path_proxy":
+            return "prefill-path proxy"
+        if value == "unavailable":
+            return "unavailable"
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    return _format_value(value)
 
 
 def _format_seconds(ms: float | None) -> str:
