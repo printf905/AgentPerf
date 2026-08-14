@@ -59,6 +59,11 @@ For a guided first run that explains trace inspection, metric provenance,
 finding materiality, HTML reports, replay comparison, and CI checks, see
 [docs/FIRST_RUN.md](docs/FIRST_RUN.md).
 
+If you already have a Python agent, start with
+[docs/BRING_YOUR_OWN_AGENT.md](docs/BRING_YOUR_OWN_AGENT.md). It shows the
+minimal `ExperimentSession` / `trace_llm` / `trace_tool` path and how to run
+`agentperf doctor` to check capture completeness.
+
 Compare two self-contained artifacts:
 
 ```bash
@@ -311,6 +316,8 @@ Useful docs:
 Core concepts:
 
 - [docs/FIRST_RUN.md](docs/FIRST_RUN.md): guided local first-user workflow.
+- [docs/BRING_YOUR_OWN_AGENT.md](docs/BRING_YOUR_OWN_AGENT.md): instrument an
+  existing framework-free Python agent.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): architecture.
 - [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md): normalized trace schema.
 - [docs/TOKEN_ACCOUNTING.md](docs/TOKEN_ACCOUNTING.md): provider usage vs
@@ -321,6 +328,8 @@ Core concepts:
   report.
 - [docs/M18_PROFILER_CREDIBILITY.md](docs/M18_PROFILER_CREDIBILITY.md):
   metric provenance, materiality gates, and investigation chains.
+- [docs/M19_BRING_YOUR_OWN_AGENT.md](docs/M19_BRING_YOUR_OWN_AGENT.md):
+  instrumentation completeness, readiness checks, and BYOA dogfooding.
 
 Validation and backend evidence:
 

@@ -1,6 +1,6 @@
 # Instrumentation
 
-Status: M5 public instrumentation surface.
+Status: M19 public instrumentation surface.
 
 AgentPerf can now capture agent-only traces from hand-written agents and from
 one external framework adapter. Serving telemetry remains optional: agent-layer
@@ -10,34 +10,40 @@ correlated.
 
 ## Public API
 
-The core recorder lives in `agentperf.instrumentation`.
+For a framework-free Python agent, prefer the context-manager API:
 
 ```python
-from agentperf import trace_run
+from pathlib import Path
 
-with trace_run("support-triage") as recorder:
-    with recorder.step("planner"):
-        recorder.record_llm_call(
-            llm_call_id="llm-1",
+from agentperf import ExperimentSession, trace_llm, trace_run, trace_tool
+
+with ExperimentSession(output_path=Path("runs/raw"), workload_id="support-triage") as exp:
+    with trace_run(task_id="ticket-001"):
+        with trace_llm(
             model="my-model",
-            prompt_components={
+            components={
                 "system": "Use the policy lookup tool before answering.",
                 "user": "Customer asks for a refund.",
             },
-            input_tokens=21,
-            output_tokens=8,
-        )
-        recorder.record_tool_call(
-            tool_call_id="tool-1",
-            name="lookup_policy",
-            input={"query": "refund"},
-            output="POLICY-REFUND-2026: ...",
-        )
+        ) as call:
+            response = invoke_model(...)
+            call.record_response(
+                output=response.text,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                request_id=response.request_id,
+            )
 
-    recorder.write_json(Path("agentperf_trace.json"))
+        with trace_tool("lookup_policy", input={"query": "refund"}) as tool:
+            policy = lookup_policy("refund")
+            tool.record_output(policy)
+
+    exp.record_task_result(task_id="ticket-001", passed=True, quality_score=1.0)
 ```
 
-For simple tools, `trace_tool` can record calls when a current run exists:
+`TraceRecorder` remains available for adapters and lower-level integrations.
+For simple tools, `trace_tool` can also record calls as a decorator when a
+current run exists:
 
 ```python
 from agentperf import trace_tool
@@ -49,6 +55,16 @@ def lookup_policy(query: str) -> str:
 
 The decorator preserves the wrapped function signature and docstring so agent
 frameworks that inspect tools can still use the original callable metadata.
+
+After recording an artifact, run:
+
+```bash
+agentperf doctor runs/raw
+```
+
+`doctor` reports agent-level readiness separately from cross-layer readiness.
+Serving correlation is `NOT_APPLICABLE` when no serving telemetry is recorded,
+not a failure.
 
 ## Concepts Captured
 
@@ -82,25 +98,25 @@ It uses two mechanisms:
 Minimal integration shape:
 
 ```python
-from agents.tracing import set_trace_processors
-from agentperf.instrumentation import TraceRecorder
-from agentperf.integrations.openai_agents import (
-    AgentPerfModelWrapper,
-    OpenAIAgentsTraceProcessor,
+from agentperf.integrations.openai_agents import instrument
+
+instrumentation = instrument(
+    real_sdk_model,
+    model_name="my-model",
+    request_id_factory=lambda llm_call_id: f"agentperf-{llm_call_id}",
 )
 
-recorder = TraceRecorder(agent_run_id="support-triage")
-processor = OpenAIAgentsTraceProcessor(recorder)
-set_trace_processors([processor])
+agent = Agent(
+    name="Support Triage",
+    instructions=...,
+    tools=[lookup_policy],
+    model=instrumentation.model,
+)
 
-model = AgentPerfModelWrapper(real_sdk_model, recorder, model_name="my-model")
-agent = Agent(name="Support Triage", instructions=..., tools=[lookup_policy], model=model)
-
-with recorder.as_current():
+with instrumentation.recorder.as_current():
     result = await Runner.run(agent, user_task)
 
-recorder.write_json(Path("agentperf_trace.json"))
-processor.write_export(Path("openai_agents_export.json"))
+instrumentation.processor.write_export(Path("openai_agents_export.json"))
 ```
 
 The adapter does not patch OpenAI Agents SDK internals.

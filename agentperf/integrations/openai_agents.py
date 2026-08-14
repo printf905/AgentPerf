@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import AsyncIterator, Callable, Mapping, Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
@@ -51,6 +51,57 @@ class _ModelLike(Protocol):
         conversation_id: str | None,
         prompt: Any,
     ) -> AsyncIterator[Any]: ...
+
+
+@dataclass(frozen=True)
+class OpenAIAgentsInstrumentation:
+    recorder: TraceRecorder
+    processor: OpenAIAgentsTraceProcessor
+    model: AgentPerfModelWrapper
+
+
+def instrument(
+    model: _ModelLike,
+    *,
+    recorder: TraceRecorder | None = None,
+    model_name: str | None = None,
+    provider: str = "openai-agents-python",
+    request_id_factory: Callable[[str], str] | None = None,
+    install_trace_processor: bool = False,
+) -> OpenAIAgentsInstrumentation:
+    """Prepare public OpenAI Agents SDK instrumentation.
+
+    The returned ``model`` is passed to the user's normal SDK ``Agent``. The
+    returned ``processor`` can be installed through the SDK's public tracing API.
+    If ``install_trace_processor`` is true, AgentPerf imports
+    ``agents.tracing.set_trace_processors`` and installs the processor for the
+    current process.
+    """
+
+    resolved_recorder = recorder or TraceRecorder(
+        metadata={"framework": "openai-agents-python"}
+    )
+    processor = OpenAIAgentsTraceProcessor(resolved_recorder)
+    wrapped_model = AgentPerfModelWrapper(
+        model,
+        resolved_recorder,
+        model_name=model_name,
+        provider=provider,
+        request_id_factory=request_id_factory,
+    )
+    if install_trace_processor:
+        try:
+            from agents.tracing import set_trace_processors
+        except ImportError as exc:  # pragma: no cover - optional dependency boundary
+            raise RuntimeError(
+                "install_trace_processor=True requires the openai-agents extra"
+            ) from exc
+        cast(Any, set_trace_processors)([processor])
+    return OpenAIAgentsInstrumentation(
+        recorder=resolved_recorder,
+        processor=processor,
+        model=wrapped_model,
+    )
 
 
 class AgentPerfModelWrapper(_OpenAIAgentsModel):

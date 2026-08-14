@@ -50,6 +50,30 @@ def test_cli_analyze_success(capsys) -> None:  # type: ignore[no-untyped-def]
     assert "No high-confidence MVP findings." in captured.out
 
 
+def test_cli_doctor_reports_readiness(capsys) -> None:  # type: ignore[no-untyped-def]
+    code = main(["doctor", str(ROOT / "examples/artifacts/m3_raw_full")])
+
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "AgentPerf Integration Check" in captured.out
+    assert "Agent-level profiling" in captured.out
+    assert "Cross-layer profiling" in captured.out
+
+
+def test_cli_doctor_returns_one_for_not_profile_ready(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    trace = tmp_path / "no-llm.json"
+    trace.write_text(
+        '{"agent_run": {"agent_run_id": "empty", "steps": []}}',
+        encoding="utf-8",
+    )
+
+    code = main(["doctor", str(trace)])
+
+    captured = capsys.readouterr()
+    assert code == 1
+    assert "no LLM calls were captured" in captured.out
+
+
 def test_cli_reports_malformed_trace(tmp_path, capsys) -> None:  # type: ignore[no-untyped-def]
     trace = tmp_path / "bad.json"
     trace.write_text('{"agent_run": {"steps": []}}', encoding="utf-8")

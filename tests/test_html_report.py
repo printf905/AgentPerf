@@ -24,6 +24,8 @@ def test_html_report_from_artifact_includes_profiler_sections(tmp_path: Path) ->
     assert "<!doctype html>" in html
     assert "AgentPerf Local Profiler Report" in html
     assert "Execution Timeline" in html
+    assert "Instrumentation Completeness" in html
+    assert "Agent profiling" in html
     assert "Token Attribution" in html
     assert "Context Growth" in html
     assert "Tool-Output Carry-Forward" in html

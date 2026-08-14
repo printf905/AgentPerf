@@ -12,6 +12,7 @@ from agentperf.integrations.openai_agents import (
     AgentPerfModelWrapper,
     OpenAIAgentsTraceProcessor,
     agent_run_from_openai_agents_export,
+    instrument,
     prompt_components_from_openai_agents_input,
 )
 from agentperf.integrations.openai_compatible import (
@@ -75,6 +76,22 @@ def test_trace_processor_preserves_framework_spans_and_function_calls() -> None:
 
 def test_model_wrapper_injects_explicit_request_id_into_extra_body() -> None:
     asyncio.run(_assert_model_wrapper_injects_explicit_request_id_into_extra_body())
+
+
+def test_instrument_helper_returns_public_wrapper_and_processor() -> None:
+    class MinimalModel:
+        async def get_response(self, *args: Any, **kwargs: Any) -> object:
+            return object()
+
+        def stream_response(self, *args: Any, **kwargs: Any) -> Any:
+            raise NotImplementedError
+
+    recorder = TraceRecorder(agent_run_id="openai-helper")
+    result = instrument(MinimalModel(), recorder=recorder, model_name="fixture-model")
+
+    assert result.recorder is recorder
+    assert isinstance(result.processor, OpenAIAgentsTraceProcessor)
+    assert isinstance(result.model, AgentPerfModelWrapper)
 
 
 async def _assert_model_wrapper_injects_explicit_request_id_into_extra_body() -> None:

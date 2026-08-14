@@ -27,6 +27,12 @@ from agentperf.benchmark_suites import (
     validate_suite,
 )
 from agentperf.comparison import ComparisonError, compare_paths, comparison_to_json
+from agentperf.completeness import (
+    assess_path,
+    completeness_to_json,
+    doctor_exit_code,
+    render_doctor_report,
+)
 from agentperf.integrations.openai_agents import agent_run_from_openai_agents_export
 from agentperf.model_choice import analyze_model_choice_path
 from agentperf.regression import (
@@ -209,6 +215,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     inspect.add_argument("artifact_path", type=Path)
     inspect.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
+    doctor = subparsers.add_parser(
+        "doctor",
+        help="Check whether an AgentPerf trace/artifact has enough instrumentation",
+    )
+    doctor.add_argument("input_path", type=Path)
+    doctor.add_argument(
+        "--format",
+        choices=["terminal", "json"],
+        default="terminal",
+        help="Output format",
+    )
+    doctor.add_argument("--output", type=Path, help="Write doctor output to a file")
+    doctor.add_argument(
         "--log-level",
         default="WARNING",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -452,6 +475,15 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write(output)
         sys.stdout.write("\n")
         return 0
+    if args.command == "doctor":
+        doctor_report = assess_path(args.input_path)
+        output = (
+            completeness_to_json(doctor_report)
+            if args.format == "json"
+            else render_doctor_report(doctor_report)
+        )
+        _write_or_print(output, args.output)
+        return doctor_exit_code(doctor_report)
     if args.command == "report":
         try:
             write_html_report(args.input_path, args.output, title=args.title)

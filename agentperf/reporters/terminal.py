@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from agentperf.analyzer import AnalysisReport
+from agentperf.completeness import CompletenessReport, assess_report
 from agentperf.metrics.cache import prefix_cache_hit_ratio
 from agentperf.metrics.latency import (
     percentile,
@@ -48,6 +49,9 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
             "",
         ]
     )
+
+    completeness = assess_report(report)
+    lines.extend(_instrumentation_lines(completeness))
 
     queue_ms = _sum_optional(request.queue_latency_ms for request in serving)
     prefill_ms = _sum_optional(prefill_or_path_latency_ms(request) for request in serving)
@@ -630,6 +634,49 @@ def _materiality_evaluation_lines(value: dict[str, object]) -> list[str]:
     if reason is not None:
         lines.append(_row("reason", reason))
     return lines
+
+
+def _instrumentation_lines(report: CompletenessReport) -> list[str]:
+    lines = [
+        "Instrumentation",
+        "-" * 60,
+        _row(
+            "LLM calls with usage",
+            _coverage(report.llm_calls_with_provider_usage, report.llm_calls_observed),
+        ),
+        _row(
+            "LLM calls with components",
+            _coverage(report.llm_calls_with_component_attribution, report.llm_calls_observed),
+        ),
+        _row(
+            "Stable request IDs",
+            _coverage(report.llm_calls_with_request_ids, report.llm_calls_observed),
+        ),
+        _row(
+            "Exact serving correlations",
+            _coverage(
+                report.exact_serving_correlations,
+                report.eligible_serving_correlations,
+            )
+            if report.cross_layer_readiness != "NOT_APPLICABLE"
+            else "not applicable",
+        ),
+        _row("Agent profiling readiness", report.agent_profiling_readiness),
+        _row("Cross-layer readiness", report.cross_layer_readiness),
+    ]
+    if report.limitations:
+        lines.append("Limitations:")
+        lines.extend(f"  - {item}" for item in report.limitations[:4])
+        if len(report.limitations) > 4:
+            lines.append(f"  - ... {len(report.limitations) - 4} more")
+    lines.append("")
+    return lines
+
+
+def _coverage(covered: int, eligible: int) -> str:
+    if eligible <= 0:
+        return "0 / n/a"
+    return f"{covered} / {eligible}"
 
 
 def _format_metric_provenance_value(value: object) -> str:
