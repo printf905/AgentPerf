@@ -26,6 +26,9 @@ component-level accounting, deterministic detectors, and replay evidence.
 ## What You Can Do
 
 - Analyze normalized agent traces and self-contained experiment artifacts.
+- Bring your own Python agent with framework-free `ExperimentSession`,
+  `trace_run`, `trace_llm`, and `trace_tool` instrumentation.
+- Check whether an integration captured enough evidence with `agentperf doctor`.
 - Attribute processed tokens to system, user, history, tool schema, tool
   result, retrieved/file context, and other components.
 - Compare baseline and candidate runs with quality-aware ACCEPT / REJECT /
@@ -97,10 +100,26 @@ Record future experiments with `ExperimentSession`:
 ```python
 from pathlib import Path
 
-from agentperf import ExperimentSession
+from agentperf import ExperimentSession, trace_llm, trace_run, trace_tool
 
 with ExperimentSession(output_path=Path("runs/baseline"), workload_id="my-workload") as exp:
-    # Run your agent, then record task-level quality and success.
+    with trace_run(task_id="task-1"):
+        with trace_llm(
+            model="my-model",
+            components={"system": system_prompt, "user": user_prompt},
+        ) as call:
+            response = invoke_model(...)
+            call.record_response(
+                output=response.text,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                request_id=response.request_id,
+            )
+
+        with trace_tool("lookup_policy") as tool:
+            policy = lookup_policy(...)
+            tool.record_output(policy)
+
     exp.record_task_result(task_id="task-1", passed=True, quality_score=1.0)
 ```
 
@@ -353,13 +372,15 @@ Validation and backend evidence:
 - [docs/REAL_WORLD_GENERALIZATION_RESULTS.md](docs/REAL_WORLD_GENERALIZATION_RESULTS.md):
   mini-SWE-agent profiling result.
 - [docs/M20_REAL_WORLD_GENERALIZATION.md](docs/M20_REAL_WORLD_GENERALIZATION.md):
-  heterogeneous external-agent workload review and finding-usefulness taxonomy.
+  heterogeneous workload review and finding-usefulness taxonomy.
 - [docs/DOGFOODING_WORKFLOW.md](docs/DOGFOODING_WORKFLOW.md): end-to-end
   workflow dogfooding.
 
 Release and positioning:
 
 - [CHANGELOG.md](CHANGELOG.md): release history.
+- [docs/RELEASE_NOTES_v0.4.0.md](docs/RELEASE_NOTES_v0.4.0.md): v0.4.0 release
+  notes.
 - [docs/RELEASE_NOTES_v0.3.0.md](docs/RELEASE_NOTES_v0.3.0.md): v0.3.0 release
   notes.
 - [docs/PROJECT_STORY.md](docs/PROJECT_STORY.md): conservative project and
