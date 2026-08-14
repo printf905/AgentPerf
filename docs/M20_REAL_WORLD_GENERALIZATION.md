@@ -298,7 +298,7 @@ M20 did not manufacture exotic failures solely to increase coverage.
 
 ## What AgentPerf Can Currently Claim
 
-Across three small heterogeneous external-agent workloads, AgentPerf captured
+Across three small heterogeneous local workload classes, AgentPerf captured
 varied agent execution structures, computed readiness consistently, and produced
 technically valid findings that could be manually separated into actionable,
 valid-but-non-actionable, and expected-structural categories.

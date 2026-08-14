@@ -1,5 +1,59 @@
 # Changelog
 
+## v0.4.0
+
+### Added
+
+- Added framework-free Bring Your Own Agent instrumentation with public
+  `ExperimentSession`, `trace_run`, `trace_llm`, and context-manager
+  `trace_tool` usage for custom Python agents.
+- Added `agentperf doctor` integration-readiness diagnostics with separate
+  agent-level and cross-layer readiness semantics.
+- Added instrumentation completeness reporting for task outcomes, LLM timing,
+  provider usage, component attribution, request IDs, tool calls, and serving
+  correlations.
+- Added a deterministic framework-free BYOA example and a deterministic
+  tool-heavy validation workload.
+- Added machine-readable M20 finding-review data and a local aggregation script
+  for heterogeneous workload validation.
+
+### Improved
+
+- Improved report credibility by labeling ambiguous metric provenance across
+  agent trace, provider usage, component attribution, serving backend, and
+  derived metrics.
+- Improved materiality explanations so threshold gates and conservative LOW /
+  OBSERVATION classifications are explicit.
+- Improved finding presentation with deterministic investigation chains that
+  group related evidence without claiming causality.
+- Improved framework-free experiment ergonomics and error handling for failed
+  LLM/tool calls while preserving user exceptions.
+- Corrected artifact comparison task-coverage reporting for one-run artifacts
+  that contain multiple task results.
+- Improved docs for first-run inspection, BYOA instrumentation, readiness
+  checks, and finding interpretation.
+
+### Validation
+
+- Validated BYOA instrumentation on a deterministic local support-agent
+  workflow with quality-preserving replay.
+- Validated finding interpretation across three heterogeneous local workloads:
+  mini-SWE-agent's existing coding loop, OpenAI Agents SDK support triage, and
+  a framework-free deterministic tool-heavy workload.
+- Reviewed representative findings as actionable, valid non-actionable, or
+  expected structural behavior. This review set is small and manually
+  classified; it is not a detector-accuracy benchmark.
+
+### Compatibility
+
+- Existing raw trace, artifact, `compare`, `check`, `suite`, `report`, vLLM,
+  and SGLang workflows remain supported.
+- Artifact schema version remains `1`; AgentPerf package version,
+  artifact-schema version, benchmark-suite schema version, and regression-policy
+  schema version remain intentionally separate.
+- Optional integrations remain optional; importing AgentPerf does not require
+  vLLM, SGLang, OpenAI Agents SDK, or mini-SWE-agent.
+
 ## v0.3.0
 
 ### Added

@@ -194,6 +194,20 @@ def test_cli_analyze_inspect_and_compare_artifacts(
     assert "ACCEPT" in compare_output.out
 
 
+def test_compare_artifacts_reports_task_result_coverage_for_single_run_workloads(
+    tmp_path: Path,
+) -> None:
+    baseline = _artifact_path(tmp_path / "baseline", task_count=3)
+    candidate = _artifact_path(tmp_path / "candidate", task_count=3, tool_reinjections=1)
+
+    comparison = compare_paths(baseline, candidate)
+
+    assert comparison.matched_tasks == ["task-1", "task-2", "task-3"]
+    assert comparison.unmatched_baseline_tasks == []
+    assert comparison.unmatched_candidate_tasks == []
+    assert comparison.metadata["matched_run_keys"] == ["shared-workload"]
+
+
 def test_raw_trace_compare_backward_compatibility(tmp_path: Path) -> None:
     baseline = tmp_path / "baseline.json"
     candidate = tmp_path / "candidate.json"

@@ -118,7 +118,8 @@ tokens but unacceptable quality should fail.
 
 ## Next
 
-- Add AgentPerf to your own agent: [INSTRUMENTATION.md](INSTRUMENTATION.md)
+- Add AgentPerf to your own agent:
+  [BRING_YOUR_OWN_AGENT.md](BRING_YOUR_OWN_AGENT.md)
 - Understand token semantics:
   [TOKEN_ACCOUNTING.md](TOKEN_ACCOUNTING.md)
 - Understand HTML report sections:

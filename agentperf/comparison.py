@@ -149,10 +149,10 @@ def _compare_loaded_workloads(
     )
     baseline_by_task = _runs_by_task_id(baseline_runs)
     candidate_by_task = _runs_by_task_id(candidate_runs)
-    matched_tasks = sorted(set(baseline_by_task) & set(candidate_by_task))
+    matched_run_keys = sorted(set(baseline_by_task) & set(candidate_by_task))
 
     if (
-        not matched_tasks
+        not matched_run_keys
         and len(baseline_runs) == 1
         and len(candidate_runs) == 1
         and not _has_explicit_task_id(baseline_runs[0])
@@ -160,7 +160,7 @@ def _compare_loaded_workloads(
     ):
         baseline_key = next(iter(baseline_by_task))
         candidate_key = next(iter(candidate_by_task))
-        matched_tasks = ["single-run"]
+        matched_run_keys = ["single-run"]
         baseline_by_task = {"single-run": baseline_by_task[baseline_key]}
         candidate_by_task = {"single-run": candidate_by_task[candidate_key]}
         warnings.append(
@@ -168,15 +168,25 @@ def _compare_loaded_workloads(
             "provide task_id/workload_item_id metadata for stronger matching."
         )
 
-    unmatched_baseline = sorted(set(baseline_by_task) - set(matched_tasks))
-    unmatched_candidate = sorted(set(candidate_by_task) - set(matched_tasks))
-    if unmatched_baseline or unmatched_candidate:
+    unmatched_baseline_runs = sorted(set(baseline_by_task) - set(matched_run_keys))
+    unmatched_candidate_runs = sorted(set(candidate_by_task) - set(matched_run_keys))
+    if unmatched_baseline_runs or unmatched_candidate_runs:
         warnings.append("Some tasks could not be matched and were excluded from deltas.")
-    if not matched_tasks:
+    if not matched_run_keys:
         warnings.append("No confidently matched tasks; comparison is inconclusive.")
 
-    baseline_reports = [analyze_run(baseline_by_task[key]) for key in matched_tasks]
-    candidate_reports = [analyze_run(candidate_by_task[key]) for key in matched_tasks]
+    baseline_reports = [analyze_run(baseline_by_task[key]) for key in matched_run_keys]
+    candidate_reports = [analyze_run(candidate_by_task[key]) for key in matched_run_keys]
+    coverage_matched_tasks = matched_run_keys
+    coverage_unmatched_baseline = unmatched_baseline_runs
+    coverage_unmatched_candidate = unmatched_candidate_runs
+    if baseline.artifact and candidate.artifact:
+        baseline_task_ids = _artifact_task_ids(baseline.artifact)
+        candidate_task_ids = _artifact_task_ids(candidate.artifact)
+        if baseline_task_ids and candidate_task_ids:
+            coverage_matched_tasks = sorted(baseline_task_ids & candidate_task_ids)
+            coverage_unmatched_baseline = sorted(baseline_task_ids - candidate_task_ids)
+            coverage_unmatched_candidate = sorted(candidate_task_ids - baseline_task_ids)
 
     token_deltas = _token_deltas(baseline_reports, candidate_reports)
     context_delta = _context_growth_delta(baseline_reports, candidate_reports)
@@ -185,8 +195,8 @@ def _compare_loaded_workloads(
     quality_deltas = _quality_deltas(
         baseline,
         candidate,
-        [baseline_by_task[key] for key in matched_tasks],
-        [candidate_by_task[key] for key in matched_tasks],
+        [baseline_by_task[key] for key in matched_run_keys],
+        [candidate_by_task[key] for key in matched_run_keys],
         mean_score_tolerance=mean_score_tolerance,
         pass_rate_tolerance=pass_rate_tolerance,
     )
@@ -197,9 +207,9 @@ def _compare_loaded_workloads(
         token_deltas,
         latency_deltas,
         quality_deltas,
-        matched_tasks=matched_tasks,
-        unmatched_baseline=unmatched_baseline,
-        unmatched_candidate=unmatched_candidate,
+        matched_tasks=matched_run_keys,
+        unmatched_baseline=unmatched_baseline_runs,
+        unmatched_candidate=unmatched_candidate_runs,
         min_material_improvement=min_material_improvement,
     )
     if artifact_incomplete and acceptance.verdict == "ACCEPT":
@@ -217,9 +227,9 @@ def _compare_loaded_workloads(
     return RunComparison(
         baseline_id=_workload_id(baseline_runs, baseline.artifact),
         candidate_id=_workload_id(candidate_runs, candidate.artifact),
-        matched_tasks=matched_tasks,
-        unmatched_baseline_tasks=unmatched_baseline,
-        unmatched_candidate_tasks=unmatched_candidate,
+        matched_tasks=coverage_matched_tasks,
+        unmatched_baseline_tasks=coverage_unmatched_baseline,
+        unmatched_candidate_tasks=coverage_unmatched_candidate,
         token_deltas=token_deltas,
         context_growth_delta=context_delta,
         latency_deltas=latency_deltas,
@@ -231,6 +241,9 @@ def _compare_loaded_workloads(
         metadata={
             "baseline_runs": len(baseline_runs),
             "candidate_runs": len(candidate_runs),
+            "matched_run_keys": matched_run_keys,
+            "unmatched_baseline_run_keys": unmatched_baseline_runs,
+            "unmatched_candidate_run_keys": unmatched_candidate_runs,
             "min_material_improvement": min_material_improvement,
             "baseline_artifact": baseline.artifact.manifest.artifact_id
             if baseline.artifact
