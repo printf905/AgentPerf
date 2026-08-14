@@ -1,0 +1,18 @@
+schema_version: 1
+quality:
+  mean_score:
+    max_drop: 0.0
+  pass_rate:
+    max_drop: 0.0
+performance:
+  component.total.processed_tokens:
+    max_increase_percent: 5
+  component.tool_result.processed_tokens:
+    max_increase_percent: 5
+  component.retrieved_context.processed_tokens:
+    max_increase_percent: 5
+findings:
+  fail_on_new_material_findings: true
+task_coverage:
+  require_same_tasks: false
+  allow_partial: false

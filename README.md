@@ -227,6 +227,11 @@ headline or marketing claims:
 The external-agent validations demonstrate integration and profiling
 generalization. They should not be read as broad benchmark results.
 
+The M20 generalization review extends this across three local workload classes
+and classifies findings as actionable, valid-but-non-actionable, expected
+structural behavior, insufficient evidence, or false positive:
+[docs/M20_REAL_WORLD_GENERALIZATION.md](docs/M20_REAL_WORLD_GENERALIZATION.md).
+
 ### Model-Choice Profiling
 
 M4 Phase A validated role-level counterfactual replay for planner, reviewer,
@@ -347,6 +352,8 @@ Validation and backend evidence:
   OpenAI Agents SDK plus vLLM validation.
 - [docs/REAL_WORLD_GENERALIZATION_RESULTS.md](docs/REAL_WORLD_GENERALIZATION_RESULTS.md):
   mini-SWE-agent profiling result.
+- [docs/M20_REAL_WORLD_GENERALIZATION.md](docs/M20_REAL_WORLD_GENERALIZATION.md):
+  heterogeneous external-agent workload review and finding-usefulness taxonomy.
 - [docs/DOGFOODING_WORKFLOW.md](docs/DOGFOODING_WORKFLOW.md): end-to-end
   workflow dogfooding.
 

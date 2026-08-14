@@ -1,7 +1,8 @@
 # Real-World Generalization Results
 
 Status: M7 local agent-layer profile completed; M7.1 materiality correction
-applied.
+applied. M20 extends this with a heterogeneous three-workload generalization
+review in [M20_REAL_WORLD_GENERALIZATION.md](M20_REAL_WORLD_GENERALIZATION.md).
 
 ## Summary
 
