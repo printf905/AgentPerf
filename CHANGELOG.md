@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added deterministic M21 scale fixture generation and a reproducible
+  benchmark harness for instrumentation overhead, artifact growth, analysis,
+  doctor, HTML report, compare, and check scaling.
+- Added compact M21 benchmark result data and an engineering note documenting
+  tested local operating ranges and limitations.
+
+### Improved
+
+- Reduced framework-free tracing overhead by avoiding repeated full-run
+  reconstruction during default LLM/tool ID assignment.
+- Made `agentperf doctor` use correlation-only completeness assessment instead
+  of running full detectors.
+- Reduced common-prefix analysis cost with sorted-prefix and trie-based
+  computations while preserving detector semantics.
+
 ## v0.4.0
 
 ### Added

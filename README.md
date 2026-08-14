@@ -23,6 +23,11 @@ AgentPerf is not a hosted dashboard, an automatic optimizer, a scheduler, or an
 LLM-based trace summarizer. Findings come from normalized telemetry,
 component-level accounting, deterministic detectors, and replay evidence.
 
+AgentPerf's own instrumentation and local analysis overhead has been
+characterized on deterministic scale fixtures. See
+[docs/M21_OVERHEAD_AND_SCALE.md](docs/M21_OVERHEAD_AND_SCALE.md) for measured
+local operating ranges, benchmark methodology, and current limits.
+
 ## What You Can Do
 
 - Analyze normalized agent traces and self-contained experiment artifacts.

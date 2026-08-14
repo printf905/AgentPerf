@@ -85,22 +85,32 @@ def compute_duplication_metrics(calls: list[LLMCall]) -> DuplicationMetrics:
                 count - 1
             )
 
-    sequences = [approximate_tokens(call.prompt_text()) for call in calls]
+    sequences = [
+        (call.llm_call_id, approximate_tokens(call.prompt_text()))
+        for call in calls
+    ]
     largest_common_prefix = 0
     largest_ratio = 0.0
     affected: set[str] = set()
-    for index in range(len(sequences)):
-        for other_index in range(index + 1, len(sequences)):
-            prefix = common_prefix_len(sequences[index], sequences[other_index])
+    by_first_token: defaultdict[str, list[tuple[str, list[str]]]] = defaultdict(list)
+    for call_id, sequence in sequences:
+        if sequence:
+            by_first_token[sequence[0]].append((call_id, sequence))
+
+    for group in by_first_token.values():
+        if len(group) < 2:
+            continue
+        affected.update(call_id for call_id, _ in group)
+        ordered = sorted(group, key=lambda item: item[1])
+        for (_, sequence), (_, other_sequence) in zip(ordered, ordered[1:], strict=False):
+            prefix = common_prefix_len(sequence, other_sequence)
             if prefix <= 0:
                 continue
-            denominator = max(1, min(len(sequences[index]), len(sequences[other_index])))
+            denominator = max(1, min(len(sequence), len(other_sequence)))
             ratio = prefix / denominator
             if prefix > largest_common_prefix:
                 largest_common_prefix = prefix
                 largest_ratio = ratio
-            affected.add(calls[index].llm_call_id)
-            affected.add(calls[other_index].llm_call_id)
 
     repeated_non_prefix = max(0, repeated_context_tokens - largest_common_prefix)
     ratio = repeated_context_tokens / total_input if total_input else 0.0
