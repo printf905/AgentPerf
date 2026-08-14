@@ -8,6 +8,7 @@ from typing import Any
 
 from agentperf.analyzer import AnalysisReport, analyze_run
 from agentperf.artifacts import ExperimentArtifact, load_artifact
+from agentperf.completeness import CompletenessReport, assess_runs
 from agentperf.metrics.attribution import (
     ComponentTokenAttribution,
     ContextGrowthRow,
@@ -41,6 +42,7 @@ class HtmlReportInput:
     environment: dict[str, Any]
     manifest: dict[str, Any]
     summary: dict[str, Any]
+    completeness: CompletenessReport
 
 
 def load_html_report_input(path: Path, *, title: str | None = None) -> HtmlReportInput:
@@ -50,6 +52,13 @@ def load_html_report_input(path: Path, *, title: str | None = None) -> HtmlRepor
     data = json.loads(path.read_text(encoding="utf-8"))
     runs = _parse_raw_runs(data)
     reports = [analyze_run(run) for run in runs]
+    completeness = assess_runs(
+        reports,
+        task_results=[],
+        manifest=None,
+        source_type="raw_trace",
+        source_path=str(path),
+    )
     return HtmlReportInput(
         title=title or _default_title(path),
         source_type="raw trace",
@@ -62,6 +71,7 @@ def load_html_report_input(path: Path, *, title: str | None = None) -> HtmlRepor
         environment={},
         manifest={},
         summary={},
+        completeness=completeness,
     )
 
 
@@ -82,11 +92,14 @@ def render_html_report(report_input: HtmlReportInput) -> str:
     )
     sections = [
         _overview(report_input, aggregate),
+        _instrumentation(report_input),
         _tasks(report_input),
         _timeline(report_input),
         _token_attribution(report_input),
         _context_growth(report_input),
         _tool_reinjections(report_input),
+        _metric_provenance(report_input),
+        _investigations(report_input),
         _findings(report_input),
         _serving(report_input),
         _environment(report_input),
@@ -131,6 +144,13 @@ def _from_artifact(
 ) -> HtmlReportInput:
     runs = artifact.runs_for_comparison()
     reports = [analyze_run(run) for run in runs]
+    completeness = assess_runs(
+        reports,
+        task_results=artifact.task_results,
+        manifest=artifact.manifest,
+        source_type="artifact",
+        source_path=str(path),
+    )
     persisted_findings = artifact.findings or [
         finding for report in reports for finding in report.findings
     ]
@@ -161,6 +181,7 @@ def _from_artifact(
         environment=artifact.environment,
         manifest=manifest,
         summary=artifact.summary,
+        completeness=completeness,
     )
 
 
@@ -241,6 +262,56 @@ def _tasks(report_input: HtmlReportInput) -> str:
             rows,
         ),
     )
+
+
+def _instrumentation(report_input: HtmlReportInput) -> str:
+    report = report_input.completeness
+    cards = [
+        ("Agent profiling", report.agent_profiling_readiness),
+        ("Cross-layer", report.cross_layer_readiness),
+        (
+            "LLM usage",
+            _ratio(report.llm_calls_with_provider_usage, report.llm_calls_observed),
+        ),
+        (
+            "Component attribution",
+            _ratio(report.llm_calls_with_component_attribution, report.llm_calls_observed),
+        ),
+        (
+            "Request IDs",
+            _ratio(report.llm_calls_with_request_ids, report.llm_calls_observed),
+        ),
+        (
+            "Serving correlations",
+            (
+                _ratio(report.exact_serving_correlations, report.eligible_serving_correlations)
+                if report.cross_layer_readiness != "NOT_APPLICABLE"
+                else "not applicable"
+            ),
+        ),
+    ]
+    rows = [
+        "<tr>"
+        f"<td>{_h(metric.name.replace('_', ' '))}</td>"
+        f"<td>{_h(metric.status)}</td>"
+        f"<td>{_h(_ratio(metric.covered, metric.eligible))}</td>"
+        f"<td>{_h(metric.detail)}</td>"
+        "</tr>"
+        for metric in report.metrics
+    ]
+    limitations = "".join(f"<li>{_h(item)}</li>" for item in report.limitations)
+    body = (
+        '<p class="note">Profiling conclusions are only as strong as instrumentation '
+        "coverage. Missing evidence is reported as unavailable or partial, not as a "
+        "negative result.</p>"
+        '<div class="metric-grid compact">'
+        + "".join(_metric_card(label, value) for label, value in cards)
+        + "</div>"
+        + _table(["Metric", "Status", "Coverage", "Meaning"], rows)
+    )
+    if limitations:
+        body += f"<details><summary>Limitations</summary><ul>{limitations}</ul></details>"
+    return _section("Instrumentation Completeness", body)
 
 
 def _timeline(report_input: HtmlReportInput) -> str:
@@ -488,6 +559,99 @@ def _tool_reinjections(report_input: HtmlReportInput) -> str:
     return _section("Tool-Output Carry-Forward", intro + body)
 
 
+def _metric_provenance(report_input: HtmlReportInput) -> str:
+    rows = []
+    for report in report_input.reports:
+        for item in report.metric_provenance:
+            rows.append(
+                "<tr>"
+                f"<td>{_h(item.name.replace('_', ' '))}</td>"
+                f"<td>{_h(_safe_value(item.value))}</td>"
+                f"<td>{_h(item.unit)}</td>"
+                f"<td>{_h(item.source_layer)}</td>"
+                f"<td>{_h(item.source_field)}</td>"
+                f"<td>{_h(item.aggregation)}</td>"
+                f"<td>{_h(item.semantic_meaning)}</td>"
+                f"<td>{_h(item.availability)}</td>"
+                "</tr>"
+            )
+    if not rows:
+        return _section("Metric Provenance", '<p class="empty">No metric provenance recorded.</p>')
+    intro = (
+        '<p class="note">These rows explain which layer produced commonly confused '
+        "numbers. Agent trace tokens, component attribution, provider usage, and "
+        "serving telemetry may legitimately differ.</p>"
+    )
+    return _section(
+        "Metric Provenance",
+        intro
+        + _table(
+            [
+                "Metric",
+                "Value",
+                "Unit",
+                "Source layer",
+                "Source field",
+                "Aggregation",
+                "Meaning",
+                "Availability",
+            ],
+            rows,
+        ),
+    )
+
+
+def _investigations(report_input: HtmlReportInput) -> str:
+    investigations = [
+        investigation
+        for report in report_input.reports
+        for investigation in report.investigations
+    ]
+    if not investigations:
+        return _section(
+            "Investigations",
+            '<p class="empty">No related finding investigation chains recorded.</p>',
+        )
+    cards = []
+    for investigation in investigations:
+        facts = "".join(
+            "<tr>"
+            f"<td>{_h(fact.relationship)}</td>"
+            f"<td>{_h(fact.label)}</td>"
+            f"<td>{_h(fact.value)}</td>"
+            f"<td>{_h(fact.strength)}</td>"
+            "</tr>"
+            for fact in investigation.facts
+        )
+        interpretation = "".join(
+            f"<li>{_h(item)}</li>" for item in investigation.interpretation
+        )
+        experiment = "".join(
+            f"<li>{_h(item)}</li>" for item in investigation.recommended_experiment
+        )
+        related = ", ".join(investigation.related_finding_ids)
+        cards.append(
+            '<article class="investigation">'
+            f"<h3>{_h(investigation.title)}</h3>"
+            f"<p>{_h(investigation.summary)}</p>"
+            f"<p><strong>Related findings:</strong> {_h(related)}</p>"
+            "<h4>Facts</h4>"
+            + _table(["Relationship", "Evidence", "Value", "Strength"], [facts] if facts else [])
+            + "<h4>Interpretation</h4>"
+            f"<ul>{interpretation}</ul>"
+            "<h4>Assessment</h4>"
+            f"<p>{_h(investigation.assessment)}</p>"
+            "<h4>Recommended experiment</h4>"
+            f"<ul>{experiment}</ul>"
+            "</article>"
+        )
+    note = (
+        '<p class="note">Investigation chains group related evidence. They do not claim '
+        "causality unless the individual findings and replay evidence support it.</p>"
+    )
+    return _section("Investigations", note + "".join(cards))
+
+
 def _findings(report_input: HtmlReportInput) -> str:
     if not report_input.findings:
         return _section("Findings", '<p class="empty">No AgentPerf findings recorded.</p>')
@@ -495,7 +659,14 @@ def _findings(report_input: HtmlReportInput) -> str:
     cards = []
     for finding in findings:
         provenance_links = _provenance_links(finding)
-        evidence = _safe_metadata(finding.evidence)
+        evidence = _safe_metadata(
+            {
+                key: value
+                for key, value in finding.evidence.items()
+                if key != "materiality_evaluation"
+            }
+        )
+        materiality = _finding_materiality_evaluation(finding)
         validation = "".join(f"<li>{_h(item)}</li>" for item in finding.validation_plan)
         cards.append(
             '<article class="finding">'
@@ -507,6 +678,7 @@ def _findings(report_input: HtmlReportInput) -> str:
             f"<p><strong>Scope:</strong> {_h(str(finding.evidence.get('scope', 'trace')))}</p>"
             f"<p><strong>Affected:</strong> {_affected_html(finding, provenance_links)}</p>"
             f"<p><strong>Evidence:</strong> <code>{_h(evidence)}</code></p>"
+            f"{materiality}"
             f"<p><strong>Recommendation:</strong> {_h(finding.recommendation)}</p>"
             "<details><summary>Validation plan</summary>"
             f"<ul>{validation or '<li>none recorded</li>'}</ul></details>"
@@ -646,6 +818,12 @@ def _coverage(attribution: ComponentTokenAttribution) -> float:
         return 0.0
     other = attribution.processed_tokens_by_component.get("other", 0)
     return (total - other) / total
+
+
+def _ratio(covered: int, eligible: int) -> str:
+    if eligible <= 0:
+        return f"{covered} / n/a"
+    return f"{covered} / {eligible}"
 
 
 def _tasks_by_run(tasks: list[TaskResult]) -> dict[str, TaskResult]:
@@ -797,6 +975,39 @@ def _affected_html(finding: Finding, provenance_links: str) -> str:
     if provenance_links:
         return provenance_links
     return _h(", ".join(finding.affected_spans) or "none recorded")
+
+
+def _finding_materiality_evaluation(finding: Finding) -> str:
+    value = finding.evidence.get("materiality_evaluation")
+    if not isinstance(value, dict):
+        return ""
+    rows = []
+    gates = value.get("gates")
+    if isinstance(gates, list):
+        for gate in gates:
+            if not isinstance(gate, dict):
+                continue
+            rows.append(
+                "<tr>"
+                f"<td>{_h(gate.get('name', 'gate'))}</td>"
+                f"<td>{_h(gate.get('observed', 'unknown'))} {_h(gate.get('unit', ''))}</td>"
+                f"<td>{_h(gate.get('threshold', 'unknown'))} {_h(gate.get('unit', ''))}</td>"
+                f"<td>{_h(gate.get('result', 'unknown'))}</td>"
+                f"<td>{_h(gate.get('source_layer', 'unknown'))}</td>"
+                "</tr>"
+            )
+    reason = value.get("reason", "")
+    rule = value.get("rule", "")
+    overall = value.get("overall", "")
+    return (
+        "<details class=\"materiality-detail\" open>"
+        "<summary>Materiality evaluation</summary>"
+        f"<p><strong>Overall:</strong> {_h(overall)}</p>"
+        f"<p><strong>Rule:</strong> {_h(rule)}</p>"
+        + _table(["Gate", "Observed", "Threshold", "Result", "Source"], rows)
+        + f"<p><strong>Reason:</strong> {_h(reason)}</p>"
+        "</details>"
+    )
 
 
 def _metric_card(label: str, value: str) -> str:

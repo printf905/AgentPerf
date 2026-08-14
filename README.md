@@ -55,6 +55,15 @@ Analyze a provided local artifact:
 agentperf analyze examples/artifacts/m3_dedup_only
 ```
 
+For a guided first run that explains trace inspection, metric provenance,
+finding materiality, HTML reports, replay comparison, and CI checks, see
+[docs/FIRST_RUN.md](docs/FIRST_RUN.md).
+
+If you already have a Python agent, start with
+[docs/BRING_YOUR_OWN_AGENT.md](docs/BRING_YOUR_OWN_AGENT.md). It shows the
+minimal `ExperimentSession` / `trace_llm` / `trace_tool` path and how to run
+`agentperf doctor` to check capture completeness.
+
 Compare two self-contained artifacts:
 
 ```bash
@@ -218,6 +227,11 @@ headline or marketing claims:
 The external-agent validations demonstrate integration and profiling
 generalization. They should not be read as broad benchmark results.
 
+The M20 generalization review extends this across three local workload classes
+and classifies findings as actionable, valid-but-non-actionable, expected
+structural behavior, insufficient evidence, or false positive:
+[docs/M20_REAL_WORLD_GENERALIZATION.md](docs/M20_REAL_WORLD_GENERALIZATION.md).
+
 ### Model-Choice Profiling
 
 M4 Phase A validated role-level counterfactual replay for planner, reviewer,
@@ -306,6 +320,9 @@ Useful docs:
 
 Core concepts:
 
+- [docs/FIRST_RUN.md](docs/FIRST_RUN.md): guided local first-user workflow.
+- [docs/BRING_YOUR_OWN_AGENT.md](docs/BRING_YOUR_OWN_AGENT.md): instrument an
+  existing framework-free Python agent.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): architecture.
 - [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md): normalized trace schema.
 - [docs/TOKEN_ACCOUNTING.md](docs/TOKEN_ACCOUNTING.md): provider usage vs
@@ -314,6 +331,10 @@ Core concepts:
   run-boundary-aware duplication semantics.
 - [docs/HTML_REPORT.md](docs/HTML_REPORT.md): standalone offline profiler
   report.
+- [docs/M18_PROFILER_CREDIBILITY.md](docs/M18_PROFILER_CREDIBILITY.md):
+  metric provenance, materiality gates, and investigation chains.
+- [docs/M19_BRING_YOUR_OWN_AGENT.md](docs/M19_BRING_YOUR_OWN_AGENT.md):
+  instrumentation completeness, readiness checks, and BYOA dogfooding.
 
 Validation and backend evidence:
 
@@ -331,6 +352,8 @@ Validation and backend evidence:
   OpenAI Agents SDK plus vLLM validation.
 - [docs/REAL_WORLD_GENERALIZATION_RESULTS.md](docs/REAL_WORLD_GENERALIZATION_RESULTS.md):
   mini-SWE-agent profiling result.
+- [docs/M20_REAL_WORLD_GENERALIZATION.md](docs/M20_REAL_WORLD_GENERALIZATION.md):
+  heterogeneous external-agent workload review and finding-usefulness taxonomy.
 - [docs/DOGFOODING_WORKFLOW.md](docs/DOGFOODING_WORKFLOW.md): end-to-end
   workflow dogfooding.
 

@@ -31,6 +31,14 @@ def test_terminal_report_includes_synthetic_label_and_findings() -> None:
     assert "yes" in output
     assert "materiality serving uncached input threshold met" in output
     assert "no" in output
+    assert "Metric Provenance" in output
+    assert "serving request input p95 tokens" in output
+    assert "serving_backend" in output
+    assert "Investigations" in output
+    assert "Repeated static context and cacheability" in output
+    assert "Materiality evaluation:" in output
+    assert "TTFT gate" in output
+    assert "Serving uncached prompt-volume gate" in output
 
 
 def test_cli_analyze_success(capsys) -> None:  # type: ignore[no-untyped-def]
@@ -40,6 +48,30 @@ def test_cli_analyze_success(capsys) -> None:  # type: ignore[no-untyped-def]
     assert code == 0
     assert "AgentPerf Report" in captured.out
     assert "No high-confidence MVP findings." in captured.out
+
+
+def test_cli_doctor_reports_readiness(capsys) -> None:  # type: ignore[no-untyped-def]
+    code = main(["doctor", str(ROOT / "examples/artifacts/m3_raw_full")])
+
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "AgentPerf Integration Check" in captured.out
+    assert "Agent-level profiling" in captured.out
+    assert "Cross-layer profiling" in captured.out
+
+
+def test_cli_doctor_returns_one_for_not_profile_ready(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    trace = tmp_path / "no-llm.json"
+    trace.write_text(
+        '{"agent_run": {"agent_run_id": "empty", "steps": []}}',
+        encoding="utf-8",
+    )
+
+    code = main(["doctor", str(trace)])
+
+    captured = capsys.readouterr()
+    assert code == 1
+    assert "no LLM calls were captured" in captured.out
 
 
 def test_cli_reports_malformed_trace(tmp_path, capsys) -> None:  # type: ignore[no-untyped-def]

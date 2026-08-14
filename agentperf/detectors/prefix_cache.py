@@ -157,6 +157,44 @@ class PrefixCacheOpportunityDetector:
                     ),
                     "materiality_ttft_p95_met": ttft_material,
                     "materiality_uncached_input_p95_met": uncached_input_material,
+                    "materiality_evaluation": {
+                        "overall": "MATERIAL" if is_material else "HEADROOM",
+                        "rule": (
+                            "material when low cache reuse is accompanied by TTFT P95 "
+                            "and serving uncached prompt P95 crossing configured thresholds"
+                        ),
+                        "gates": [
+                            {
+                                "name": "TTFT gate",
+                                "observed": round(ttft_p95, 1) if ttft_p95 is not None else None,
+                                "threshold": self.config.material_ttft_p95_ms,
+                                "unit": "ms",
+                                "result": "EXCEEDED" if ttft_material else "NOT_EXCEEDED",
+                                "source_layer": "serving_backend",
+                            },
+                            {
+                                "name": "Serving uncached prompt-volume gate",
+                                "observed": (
+                                    int(round(uncached_p95))
+                                    if uncached_p95 is not None
+                                    else None
+                                ),
+                                "threshold": self.config.material_uncached_input_p95_tokens,
+                                "unit": "tokens",
+                                "result": (
+                                    "EXCEEDED" if uncached_input_material else "NOT_EXCEEDED"
+                                ),
+                                "source_layer": "serving_backend",
+                            },
+                        ],
+                        "reason": (
+                            "Cacheability headroom is present, but available evidence "
+                            "does not establish material serving cost under the configured "
+                            "TTFT and uncached-token rule."
+                            if not is_material
+                            else "Both materiality gates are exceeded."
+                        ),
+                    },
                 },
                 affected_spans=group.call_ids + group.request_ids,
                 recommendation=recommendation,

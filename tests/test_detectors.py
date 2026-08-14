@@ -71,6 +71,13 @@ def test_multi_problem_trace_keeps_agent_and_serving_token_domains_distinct() ->
     assert serving_inputs == [520, 560, 600]
     assert serving_cached == [80, 90, 100]
     assert serving_uncached == [440, 470, 500]
+    provenance = {item.name: item for item in report.metric_provenance}
+    assert provenance["agent_trace_input_tokens"].value == 270
+    assert provenance["agent_trace_input_tokens"].source_layer == "agent_trace"
+    assert provenance["serving_request_input_p95_tokens"].value == 596.0
+    assert provenance["serving_request_input_p95_tokens"].source_layer == "serving_backend"
+    assert provenance["serving_uncached_prompt_p95_tokens"].value == 497.0
+    assert provenance["serving_uncached_prompt_p95_tokens"].source_layer == "serving_backend"
 
 
 def test_multi_problem_serving_percentiles_are_interpolated() -> None:
@@ -100,7 +107,13 @@ def test_multi_problem_prefill_dominance_low_because_uncached_volume_is_low() ->
     assert dominance.evidence["p95_uncached_input_tokens"] == 497
     assert dominance.evidence["materiality_ttft_p95_met"] is True
     assert dominance.evidence["materiality_uncached_input_p95_met"] is False
+    evaluation = dominance.evidence["materiality_evaluation"]
+    assert evaluation["overall"] == "OBSERVATION"
+    assert evaluation["gates"][0]["result"] == "EXCEEDED"
+    assert evaluation["gates"][1]["result"] == "NOT_EXCEEDED"
+    assert "does not establish material context-driven prefill cost" in evaluation["reason"]
     assert "both absolute TTFT and serving uncached-token volume" in dominance.summary
+    assert "only when both absolute TTFT" in dominance.recommendation
     assert dominance.provenance.raw_metrics["prefill_latency_ms"] == [
         710.0,
         730.0,
@@ -116,6 +129,22 @@ def test_multi_problem_prefill_dominance_low_because_uncached_volume_is_low() ->
         730.0,
         760.0,
     ]
+
+
+def test_multi_problem_related_findings_form_non_causal_investigation() -> None:
+    report = analyze_path(ROOT / "examples/traces/multi_problem_agent.json")
+
+    assert len(report.investigations) == 1
+    investigation = report.investigations[0]
+    assert investigation.id == "repeated_context_cacheability"
+    assert investigation.related_finding_ids == [
+        "CONTEXT_DUPLICATION",
+        "CACHEABILITY_HEADROOM",
+        "PREFILL_PATH_DOMINANCE",
+    ]
+    assert "not a causal proof" in " ".join(investigation.interpretation)
+    assert "not proven" in investigation.assessment
+    assert any("Replay the same workload" in item for item in investigation.recommended_experiment)
 
 
 def test_healthy_workload_produces_no_findings() -> None:

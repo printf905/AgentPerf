@@ -20,6 +20,7 @@ dist/
 artifacts/
 !examples/artifacts/
 !examples/artifacts/**
+examples/bring_your_own_agent/runs/
 models/
 weights/
 checkpoints/

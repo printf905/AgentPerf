@@ -169,6 +169,12 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
         status: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> TaskResult:
+        if any(
+            task.task_id == task_id and task.execution_id == execution_id
+            for task in self._task_results
+        ):
+            suffix = f" execution_id={execution_id}" if execution_id is not None else ""
+            raise ValueError(f"duplicate task result for task_id={task_id}{suffix}")
         result = TaskResult(
             task_id=task_id,
             execution_id=execution_id,

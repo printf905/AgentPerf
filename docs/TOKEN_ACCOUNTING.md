@@ -70,6 +70,31 @@ Component attribution answers: which parts of the agent context caused prompt
 processing? This is why it can expose a prompt-scaffold change even when a
 provider-style `input_tokens` field is unchanged.
 
+## Serving Tokens And Metric Provenance
+
+Serving telemetry can report another token domain, for example:
+
+- `ServingRequest.input_tokens`
+- `ServingRequest.prefix_cache_hit_tokens`
+- `ServingRequest.prefix_cache_miss_tokens`
+
+These are backend/request telemetry fields. They may differ from agent-trace
+prompt-component counts, especially in synthetic fixtures, backend-specific
+tokenizers, or instrumentation paths that estimate agent prompt components.
+
+AgentPerf reports now expose metric provenance for commonly confused values:
+
+- source layer;
+- source field;
+- aggregation;
+- unit;
+- semantic meaning.
+
+For example, `agent trace input tokens = 270` and
+`serving request input P95 tokens = 596` can both be correct if the first comes
+from normalized prompt components and the second comes from serving request
+telemetry.
+
 ## Unique Content
 
 Unique content counts a component text once conceptually. If the same tool

@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from functools import wraps
 from pathlib import Path
-from typing import Any, ParamSpec, TypeVar, cast
+from types import TracebackType
+from typing import Any, Literal, ParamSpec, TypeVar, cast
 from uuid import uuid4
 
 from agentperf.metrics.tokens import token_count
@@ -126,7 +127,7 @@ class TraceRecorder:
     def record_llm_call(
         self,
         *,
-        prompt_components: list[PromptComponent] | dict[str, str] | None = None,
+        prompt_components: list[PromptComponent] | Mapping[str, object] | None = None,
         model: str | None = None,
         provider: str | None = None,
         backend: str | None = None,
@@ -169,6 +170,56 @@ class TraceRecorder:
         )
         step.llm_calls.append(call)
         return call
+
+    def trace_llm(
+        self,
+        *,
+        prompt_components: list[PromptComponent] | Mapping[str, object] | None = None,
+        components: list[PromptComponent] | Mapping[str, object] | None = None,
+        model: str | None = None,
+        provider: str | None = None,
+        backend: str | None = None,
+        semantic_role: str | None = None,
+        llm_call_id: str | None = None,
+        tokenization_mode: TokenizationMode = "APPROXIMATE",
+        metadata: dict[str, Any] | None = None,
+    ) -> LLMCallTrace:
+        """Create a context manager that records one LLM call.
+
+        The call is appended when the context exits so timing, response usage,
+        request IDs, and failures can be captured together. Unknown provider
+        usage or request IDs should be left unset rather than fabricated.
+        """
+
+        return LLMCallTrace(
+            self,
+            prompt_components=prompt_components if prompt_components is not None else components,
+            model=model,
+            provider=provider,
+            backend=backend,
+            semantic_role=semantic_role,
+            llm_call_id=llm_call_id,
+            tokenization_mode=tokenization_mode,
+            metadata=metadata,
+        )
+
+    def trace_tool(
+        self,
+        *,
+        name: str,
+        tool_call_id: str | None = None,
+        input: Any | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> ToolCallTrace:
+        """Create a context manager that records one tool call."""
+
+        return ToolCallTrace(
+            self,
+            name=name,
+            tool_call_id=tool_call_id,
+            input=input,
+            metadata=metadata,
+        )
 
     def record_tool_call(
         self,
@@ -262,17 +313,36 @@ class TraceRecorder:
 
 @contextmanager
 def trace_run(
-    name: str,
+    name: str | None = None,
     *,
+    task_id: str | None = None,
+    execution_id: str | None = None,
     agent_run_id: str | None = None,
     trace_id: str | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> Iterator[TraceRecorder]:
+    active = current_recorder()
+    run_name = name or task_id or "agent-run"
+    if active is not None and agent_run_id is None and trace_id is None:
+        step_metadata = {
+            "instrumentation": "agentperf.trace_run",
+            **({"task_id": task_id} if task_id is not None else {}),
+            **({"execution_id": execution_id} if execution_id is not None else {}),
+            **(metadata or {}),
+        }
+        with active.step(run_name, metadata=step_metadata):
+            yield active
+        return
+
     recorder = TraceRecorder(
         agent_run_id=agent_run_id,
-        name=name,
+        name=run_name,
         trace_id=trace_id,
-        metadata=metadata,
+        metadata={
+            **({"task_id": task_id} if task_id is not None else {}),
+            **({"execution_id": execution_id} if execution_id is not None else {}),
+            **(metadata or {}),
+        },
     )
     with recorder.as_current():
         try:
@@ -285,43 +355,302 @@ def current_recorder() -> TraceRecorder | None:
     return _CURRENT_RECORDER.get()
 
 
-def trace_tool(name: str | None = None) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    def decorator(func: Callable[P, R]) -> Callable[P, R]:
+class LLMCallTrace:
+    """Context manager for recording one framework-free LLM call."""
+
+    def __init__(
+        self,
+        recorder: TraceRecorder,
+        *,
+        prompt_components: list[PromptComponent] | Mapping[str, object] | None = None,
+        model: str | None = None,
+        provider: str | None = None,
+        backend: str | None = None,
+        semantic_role: str | None = None,
+        llm_call_id: str | None = None,
+        tokenization_mode: TokenizationMode = "APPROXIMATE",
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        self._recorder = recorder
+        self._prompt_components = prompt_components
+        self._model = model
+        self._provider = provider
+        self._backend = backend
+        self._semantic_role = semantic_role
+        self._llm_call_id = llm_call_id
+        self._tokenization_mode = tokenization_mode
+        self._metadata = metadata or {}
+        self._started_at: str | None = None
+        self._start_perf: float | None = None
+        self._input_tokens: int | None = None
+        self._output_tokens: int | None = None
+        self._llm_request_id: str | None = None
+        self._serving_request_id: str | None = None
+        self._ttft_ms: float | None = None
+        self._tpot_ms: float | None = None
+        self.call: LLMCall | None = None
+
+    def __enter__(self) -> LLMCallTrace:
+        self._started_at = _now_iso()
+        self._start_perf = time.perf_counter()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> Literal[False]:
+        ended_at = _now_iso()
+        latency_ms = (
+            (time.perf_counter() - self._start_perf) * 1000
+            if self._start_perf is not None
+            else None
+        )
+        metadata = {
+            "instrumentation": "agentperf.trace_llm",
+            "status": "FAILED" if exc is not None else "COMPLETE",
+            **self._metadata,
+        }
+        if exc is not None:
+            metadata["error"] = f"{type(exc).__name__}: {exc}"
+        if self._ttft_ms is not None:
+            metadata["client_ttft_ms"] = self._ttft_ms
+        if self._tpot_ms is not None:
+            metadata["client_tpot_ms"] = self._tpot_ms
+        self.call = self._recorder.record_llm_call(
+            prompt_components=self._prompt_components,
+            model=self._model,
+            provider=self._provider,
+            backend=self._backend,
+            semantic_role=self._semantic_role,
+            input_tokens=self._input_tokens,
+            output_tokens=self._output_tokens,
+            llm_call_id=self._llm_call_id,
+            llm_request_id=self._llm_request_id,
+            serving_request_id=self._serving_request_id,
+            started_at=self._started_at,
+            ended_at=ended_at,
+            latency_ms=latency_ms,
+            tokenization_mode=self._tokenization_mode,
+            metadata=metadata,
+        )
+        return False
+
+    def record_response(
+        self,
+        *,
+        output: str | None = None,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+        request_id: str | None = None,
+        llm_request_id: str | None = None,
+        serving_request_id: str | None = None,
+        ttft_ms: float | None = None,
+        tpot_ms: float | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        """Attach provider response evidence to the current LLM call."""
+
+        self._input_tokens = input_tokens
+        self._output_tokens = output_tokens
+        self._llm_request_id = llm_request_id or request_id
+        self._serving_request_id = serving_request_id
+        self._ttft_ms = ttft_ms
+        self._tpot_ms = tpot_ms
+        if output is not None:
+            self._metadata["output_preview_chars"] = min(len(output), 200)
+        if metadata:
+            self._metadata.update(metadata)
+
+
+class ToolCallTrace:
+    """Context manager for recording one framework-free tool call."""
+
+    def __init__(
+        self,
+        recorder: TraceRecorder,
+        *,
+        name: str,
+        tool_call_id: str | None = None,
+        input: Any | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        self._recorder = recorder
+        self._name = name
+        self._tool_call_id = tool_call_id
+        self._input = input
+        self._metadata = metadata or {}
+        self._started_at: str | None = None
+        self._start_perf: float | None = None
+        self.output: Any | None = None
+        self.call: ToolCall | None = None
+
+    def __enter__(self) -> ToolCallTrace:
+        self._started_at = _now_iso()
+        self._start_perf = time.perf_counter()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> Literal[False]:
+        metadata = {
+            "instrumentation": "agentperf.trace_tool",
+            "status": "FAILED" if exc is not None else "COMPLETE",
+            **self._metadata,
+        }
+        if exc is not None:
+            metadata["error"] = f"{type(exc).__name__}: {exc}"
+        self.call = self._recorder.record_tool_call(
+            name=self._name,
+            tool_call_id=self._tool_call_id,
+            input=self._input,
+            output=self.output,
+            started_at=self._started_at,
+            ended_at=_now_iso(),
+            latency_ms=(
+                (time.perf_counter() - self._start_perf) * 1000
+                if self._start_perf is not None
+                else None
+            ),
+            metadata=metadata,
+        )
+        return False
+
+    def record_output(self, output: Any) -> None:
+        """Attach a redaction-friendly tool result value to the recorded call."""
+
+        self.output = output
+
+
+class _ToolDecoratorContext:
+    def __init__(
+        self,
+        name: str | None = None,
+        *,
+        tool_call_id: str | None = None,
+        input: Any | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        self._name = name
+        self._tool_call_id = tool_call_id
+        self._input = input
+        self._metadata = metadata or {}
+        self._context: ToolCallTrace | None = None
+
+    def __call__(self, func: Callable[P, R]) -> Callable[P, R]:
         @wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             recorder = current_recorder()
-            start = time.perf_counter()
-            started_at = _now_iso()
-            output: R | None = None
-            try:
+            if recorder is None:
+                return func(*args, **kwargs)
+            tool_name = self._name or cast(str, getattr(func, "__name__", "tool"))
+            with recorder.trace_tool(
+                name=tool_name,
+                input={"args": args, "kwargs": kwargs},
+                metadata={**self._metadata, "decorator": True},
+            ) as call:
                 output = func(*args, **kwargs)
+                call.record_output(output)
                 return output
-            finally:
-                if recorder is not None:
-                    tool_name = name or cast(str, getattr(func, "__name__", "tool"))
-                    recorder.record_tool_call(
-                        name=tool_name,
-                        input={"args": args, "kwargs": kwargs},
-                        output=output,
-                        started_at=started_at,
-                        ended_at=_now_iso(),
-                        latency_ms=(time.perf_counter() - start) * 1000,
-                        metadata={"instrumentation": "agentperf.trace_tool"},
-                    )
 
         return wrapper
 
-    return decorator
+    def __enter__(self) -> ToolCallTrace:
+        recorder = _require_current_recorder("trace_tool")
+        self._context = recorder.trace_tool(
+            name=self._name or "tool",
+            tool_call_id=self._tool_call_id,
+            input=self._input,
+            metadata=self._metadata,
+        )
+        return self._context.__enter__()
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
+        if self._context is None:
+            return False
+        return self._context.__exit__(exc_type, exc, traceback)
+
+
+def trace_llm(
+    *,
+    prompt_components: list[PromptComponent] | Mapping[str, object] | None = None,
+    components: list[PromptComponent] | Mapping[str, object] | None = None,
+    model: str | None = None,
+    provider: str | None = None,
+    backend: str | None = None,
+    semantic_role: str | None = None,
+    llm_call_id: str | None = None,
+    tokenization_mode: TokenizationMode = "APPROXIMATE",
+    metadata: dict[str, Any] | None = None,
+) -> LLMCallTrace:
+    """Record a framework-free LLM call in the current AgentPerf run/session."""
+
+    return _require_current_recorder("trace_llm").trace_llm(
+        prompt_components=prompt_components,
+        components=components,
+        model=model,
+        provider=provider,
+        backend=backend,
+        semantic_role=semantic_role,
+        llm_call_id=llm_call_id,
+        tokenization_mode=tokenization_mode,
+        metadata=metadata,
+    )
+
+
+def trace_tool(
+    name: str | None = None,
+    *,
+    tool_call_id: str | None = None,
+    input: Any | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> _ToolDecoratorContext:
+    """Record a tool call as either a decorator or context manager."""
+
+    return _ToolDecoratorContext(
+        name,
+        tool_call_id=tool_call_id,
+        input=input,
+        metadata=metadata,
+    )
+
+
+def _require_current_recorder(api_name: str) -> TraceRecorder:
+    recorder = current_recorder()
+    if recorder is None:
+        raise RuntimeError(f"{api_name} requires an active trace_run or ExperimentSession")
+    return recorder
 
 
 def _normalize_components(
-    components: list[PromptComponent] | dict[str, str] | None,
+    components: list[PromptComponent] | Mapping[str, object] | None,
 ) -> list[PromptComponent]:
     if components is None:
         return []
-    if isinstance(components, dict):
-        return [PromptComponent(name=name, text=text) for name, text in components.items()]
+    if isinstance(components, Mapping):
+        return [
+            PromptComponent(name=str(name), text=_component_text(value))
+            for name, value in components.items()
+            if value is not None
+        ]
     return components
+
+
+def _component_text(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Sequence) and not isinstance(value, bytes):
+        return "\n".join(str(item) for item in value)
+    return str(value)
 
 
 def _safe_id(value: str) -> str:

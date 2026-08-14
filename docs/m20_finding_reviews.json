@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "taxonomy": [
+    "ACTIONABLE",
+    "VALID_NON_ACTIONABLE",
+    "EXPECTED_STRUCTURAL",
+    "INSUFFICIENT_EVIDENCE",
+    "FALSE_POSITIVE"
+  ],
+  "workloads": [
+    {
+      "workload_id": "coding_agent_mini_swe",
+      "workload_class": "coding/repository-repair agent",
+      "artifact": "/tmp/agentperf-m20-mini-swe/agentperf_artifact",
+      "artifact_generated_by": "HOME=/tmp/agentperf-mini-home python examples/real_world_agents/mini_swe_agent_repo_repair.py --output-dir /tmp/agentperf-m20-mini-swe --mode deterministic",
+      "tasks": 5,
+      "runs": 1,
+      "llm_calls": 30,
+      "tool_calls": 30,
+      "task_ids": [
+        "calc-add",
+        "strings-slug",
+        "inventory-total",
+        "dates-window",
+        "parser-empty"
+      ],
+      "finding_ids": [
+        "CROSS_RUN_SHARED_SCAFFOLD"
+      ],
+      "capabilities": {
+        "tasks_captured": "YES",
+        "run_structure": "YES",
+        "llm_timing": "FULL",
+        "tool_timing": "FULL",
+        "provider_usage": "FULL",
+        "component_attribution": "FULL",
+        "task_quality": "YES",
+        "serving_correlation": "NOT_APPLICABLE",
+        "context_findings": "YES",
+        "replay_validation": "NOT_PERFORMED"
+      },
+      "readiness": {
+        "agent": "READY",
+        "cross_layer": "NOT_APPLICABLE"
+      },
+      "reviews": [
+        {
+          "finding_id": "CROSS_RUN_SHARED_SCAFFOLD",
+          "task_id": null,
+          "classification": "EXPECTED_STRUCTURAL",
+          "rationale": "The repeated scaffold is shared across five independent mini-SWE repair tasks and is explicitly scoped as cross-run repetition, not removable within-task waste.",
+          "reviewer": "engineering_review"
+        }
+      ]
+    },
+    {
+      "workload_id": "tool_heavy_research_support",
+      "workload_class": "tool-heavy multi-step framework-free agent",
+      "artifact": "/tmp/agentperf-m20-tool-heavy/raw",
+      "candidate_artifact": "/tmp/agentperf-m20-tool-heavy/optimized",
+      "artifact_generated_by": "python examples/m20_tool_heavy_agent/run.py --variant raw --output-root /tmp/agentperf-m20-tool-heavy",
+      "candidate_generated_by": "python examples/m20_tool_heavy_agent/run.py --variant optimized --output-root /tmp/agentperf-m20-tool-heavy",
+      "tasks": 4,
+      "runs": 1,
+      "llm_calls": 12,
+      "tool_calls": 11,
+      "task_ids": [
+        "research-refund-large-policy",
+        "research-security-audit",
+        "research-integration-quota",
+        "research-billing-duplicate"
+      ],
+      "finding_ids": [
+        "TOOL_OUTPUT_BLOAT"
+      ],
+      "capabilities": {
+        "tasks_captured": "YES",
+        "run_structure": "YES",
+        "llm_timing": "FULL",
+        "tool_timing": "FULL",
+        "provider_usage": "FULL",
+        "component_attribution": "FULL",
+        "task_quality": "YES",
+        "serving_correlation": "NOT_APPLICABLE",
+        "context_findings": "YES",
+        "replay_validation": "YES"
+      },
+      "readiness": {
+        "agent": "READY",
+        "cross_layer": "NOT_APPLICABLE"
+      },
+      "replay": {
+        "result": "ACCEPT",
+        "policy_check": "PASS",
+        "quality": "PASS",
+        "finding_lifecycle": "TOOL_OUTPUT_BLOAT MEDIUM -> absent",
+        "provider_input_tokens": "11973 -> 1541",
+        "component_processed_tokens": "11973 -> 1541",
+        "tool_result_tokens": "4694 -> 924",
+        "retrieved_context_tokens": "6802 -> 140"
+      },
+      "reviews": [
+        {
+          "finding_id": "TOOL_OUTPUT_BLOAT",
+          "task_id": "research-refund-large-policy",
+          "classification": "ACTIONABLE",
+          "rationale": "The raw run repeatedly carried a large retrieved/policy evidence payload into reviewer and final prompts. The optimized replay compacted reducible evidence, preserved task quality, reduced processed context, and resolved the finding.",
+          "reviewer": "engineering_review",
+          "linked_replay": "tool_heavy_research_support.replay"
+        }
+      ]
+    },
+    {
+      "workload_id": "openai_agents_support_triage",
+      "workload_class": "OpenAI Agents SDK framework agent",
+      "artifact": "/tmp/agentperf-m20-openai-standard/agentperf_artifact",
+      "candidate_artifact": "/tmp/agentperf-m20-openai-compact/agentperf_artifact",
+      "artifact_generated_by": "python examples/external_agents/openai_agents_support_triage.py --output-dir /tmp/agentperf-m20-openai-standard --instruction-style standard",
+      "candidate_generated_by": "python examples/external_agents/openai_agents_support_triage.py --output-dir /tmp/agentperf-m20-openai-compact --instruction-style compact",
+      "tasks": 10,
+      "runs": 1,
+      "llm_calls": 20,
+      "tool_calls": 10,
+      "task_ids": [
+        "task-refund-1",
+        "task-security-1",
+        "task-billing-1",
+        "task-integration-1",
+        "task-refund-2",
+        "task-security-2",
+        "task-billing-2",
+        "task-integration-2",
+        "task-refund-3",
+        "task-security-3"
+      ],
+      "finding_ids": [
+        "CONTEXT_DUPLICATION"
+      ],
+      "capabilities": {
+        "tasks_captured": "YES",
+        "run_structure": "YES",
+        "llm_timing": "FULL",
+        "tool_timing": "FULL",
+        "provider_usage": "FULL",
+        "component_attribution": "FULL",
+        "task_quality": "YES",
+        "serving_correlation": "NOT_APPLICABLE",
+        "context_findings": "YES",
+        "replay_validation": "PARTIAL"
+      },
+      "readiness": {
+        "agent": "READY",
+        "cross_layer": "NOT_APPLICABLE"
+      },
+      "replay": {
+        "result": "NO_MATERIAL_CHANGE",
+        "quality": "PASS",
+        "finding_lifecycle": "CONTEXT_DUPLICATION LOW -> LOW",
+        "provider_input_tokens": "1604 -> 1604",
+        "component_processed_tokens": "1320 -> 1160",
+        "system_component_tokens": "680 -> 520"
+      },
+      "reviews": [
+        {
+          "finding_id": "CONTEXT_DUPLICATION",
+          "task_id": null,
+          "classification": "VALID_NON_ACTIONABLE",
+          "rationale": "The detector correctly observes repeated framework prompt structure and task/tool context, but the absolute workload is tiny, has no serving telemetry, and replay only showed component-level movement rather than a material end-to-end improvement.",
+          "reviewer": "engineering_review",
+          "linked_replay": "openai_agents_support_triage.replay"
+        }
+      ]
+    }
+  ]
+}
