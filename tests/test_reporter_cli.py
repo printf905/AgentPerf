@@ -31,6 +31,14 @@ def test_terminal_report_includes_synthetic_label_and_findings() -> None:
     assert "yes" in output
     assert "materiality serving uncached input threshold met" in output
     assert "no" in output
+    assert "Metric Provenance" in output
+    assert "serving request input p95 tokens" in output
+    assert "serving_backend" in output
+    assert "Investigations" in output
+    assert "Repeated static context and cacheability" in output
+    assert "Materiality evaluation:" in output
+    assert "TTFT gate" in output
+    assert "Serving uncached prompt-volume gate" in output
 
 
 def test_cli_analyze_success(capsys) -> None:  # type: ignore[no-untyped-def]

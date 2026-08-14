@@ -100,6 +100,50 @@ class PrefillBottleneckDetector:
             ),
             "materiality_ttft_p95_met": ttft_material,
             "materiality_uncached_input_p95_met": uncached_input_material,
+            "materiality_evaluation": {
+                "overall": "MATERIAL" if material else "OBSERVATION",
+                "rule": (
+                    "material when TTFT P95 and serving uncached prompt P95 both "
+                    "cross configured thresholds"
+                ),
+                "gates": [
+                    {
+                        "name": "TTFT gate",
+                        "observed": round(ttft_p95, 1) if ttft_p95 is not None else None,
+                        "threshold": self.config.min_material_ttft_p95_ms,
+                        "unit": "ms",
+                        "result": "EXCEEDED" if ttft_material else "NOT_EXCEEDED",
+                        "source_layer": "serving_backend",
+                    },
+                    {
+                        "name": "Serving uncached prompt-volume gate",
+                        "observed": (
+                            int(round(p95_uncached_input))
+                            if p95_uncached_input is not None
+                            else None
+                        ),
+                        "threshold": self.config.min_material_uncached_input_p95_tokens,
+                        "unit": "tokens",
+                        "result": "EXCEEDED" if uncached_input_material else "NOT_EXCEEDED",
+                        "source_layer": "serving_backend",
+                    },
+                ],
+                "reason": (
+                    "High latency is present, but available evidence does not establish "
+                    "material context-driven prefill cost under the configured rule."
+                    if ttft_material and not uncached_input_material
+                    else (
+                        "Serving uncached-token volume is high, but TTFT does not cross "
+                        "the material latency threshold."
+                        if uncached_input_material and not ttft_material
+                        else (
+                            "Both materiality gates are exceeded."
+                            if material
+                            else "Materiality requires both gates; at least one is not exceeded."
+                        )
+                    )
+                ),
+            },
         }
         if hit_ratio is not None:
             evidence["prefix_cache_hit_ratio"] = round(hit_ratio, 4)

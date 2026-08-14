@@ -10,6 +10,8 @@ from agentperf.detectors.context_duplication import ContextDuplicationDetector
 from agentperf.detectors.prefill import PrefillBottleneckDetector
 from agentperf.detectors.prefix_cache import PrefixCacheOpportunityDetector
 from agentperf.detectors.tool_output_bloat import ToolOutputBloatDetector
+from agentperf.investigations import Investigation, build_investigations
+from agentperf.metric_provenance import MetricProvenance, metric_provenance_rows
 from agentperf.metrics.attribution import (
     ComponentTokenAttribution,
     ContextGrowthRow,
@@ -30,6 +32,8 @@ class AnalysisReport:
     token_attribution: ComponentTokenAttribution | None = None
     context_growth: list[ContextGrowthRow] = field(default_factory=list)
     tool_reinjections: list[ToolReinjection] = field(default_factory=list)
+    metric_provenance: list[MetricProvenance] = field(default_factory=list)
+    investigations: list[Investigation] = field(default_factory=list)
 
 
 def analyze_path(path: Path) -> AnalysisReport:
@@ -53,11 +57,20 @@ def analyze_run(run: AgentRun) -> AnalysisReport:
     findings: list[Finding] = []
     for detector in detectors:
         findings.extend(detector.detect(context))
+    attribution = component_token_attribution(run)
+    growth = context_growth_rows(run)
     return AnalysisReport(
         run=run,
         correlation=correlation,
         findings=findings,
-        token_attribution=component_token_attribution(run),
-        context_growth=context_growth_rows(run),
+        token_attribution=attribution,
+        context_growth=growth,
         tool_reinjections=tool_reinjections(run),
+        metric_provenance=metric_provenance_rows(
+            run,
+            attribution=attribution,
+            context_growth=growth,
+            findings=findings,
+        ),
+        investigations=build_investigations(findings),
     )

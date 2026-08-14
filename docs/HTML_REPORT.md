@@ -44,8 +44,12 @@ The report includes:
 - context growth: prompt size across LLM steps;
 - tool-output carry-forward: unique tool output versus cumulative downstream
   processed contribution where provenance exists;
+- metric provenance: source layer, source field, aggregation, and meaning for
+  commonly confused metrics;
+- investigations: deterministic grouping of related findings into a conservative
+  evidence story;
 - findings: severity, materiality, scope, evidence, recommendation, validation
-  plan, and provenance links;
+  plan, materiality gates, and provenance links;
 - serving telemetry: queue time, scheduled-to-first, generation time, cache
   counts, and exact request correlation where recorded;
 - environment: collapsible reproducibility metadata.
@@ -97,14 +101,19 @@ unless server-stage trace telemetry is explicitly recorded.
 
 Findings are ordered by materiality and severity. A finding card includes the
 detector ID, severity, materiality/scope evidence where available, affected
-spans, structured evidence, recommendation, validation plan, and provenance
-links to LLM calls when possible.
+spans, structured evidence, recommendation, validation plan, materiality-gate
+details, and provenance links to LLM calls when possible.
+
+The report also includes an `Investigations` section when multiple findings are
+part of the same profiler question. These groupings are deterministic and
+conservative. They connect related evidence without claiming causality.
 
 The report preserves current AgentPerf materiality principles:
 
 - dominant does not necessarily mean material;
 - repeated does not automatically mean removable;
 - headroom is not automatically an actionable bottleneck.
+- related observations do not prove causality without replay evidence.
 
 ## Security / Redaction
 

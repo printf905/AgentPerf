@@ -55,6 +55,10 @@ Analyze a provided local artifact:
 agentperf analyze examples/artifacts/m3_dedup_only
 ```
 
+For a guided first run that explains trace inspection, metric provenance,
+finding materiality, HTML reports, replay comparison, and CI checks, see
+[docs/FIRST_RUN.md](docs/FIRST_RUN.md).
+
 Compare two self-contained artifacts:
 
 ```bash
@@ -306,6 +310,7 @@ Useful docs:
 
 Core concepts:
 
+- [docs/FIRST_RUN.md](docs/FIRST_RUN.md): guided local first-user workflow.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): architecture.
 - [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md): normalized trace schema.
 - [docs/TOKEN_ACCOUNTING.md](docs/TOKEN_ACCOUNTING.md): provider usage vs
@@ -314,6 +319,8 @@ Core concepts:
   run-boundary-aware duplication semantics.
 - [docs/HTML_REPORT.md](docs/HTML_REPORT.md): standalone offline profiler
   report.
+- [docs/M18_PROFILER_CREDIBILITY.md](docs/M18_PROFILER_CREDIBILITY.md):
+  metric provenance, materiality gates, and investigation chains.
 
 Validation and backend evidence:
 

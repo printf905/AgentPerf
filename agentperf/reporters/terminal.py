@@ -131,6 +131,47 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
             )
         lines.append("")
 
+    if report.metric_provenance:
+        lines.extend(["Metric Provenance", "-" * 60])
+        lines.append(_row("Metric", "Value  Source  Aggregation"))
+        for provenance in report.metric_provenance:
+            lines.append(
+                _row(
+                    provenance.name.replace("_", " "),
+                    (
+                        f"{_format_metric_provenance_value(provenance.value)} "
+                        f"{provenance.unit}  {provenance.source_layer}  "
+                        f"{provenance.aggregation}"
+                    ),
+                )
+            )
+        lines.append("")
+
+    if report.investigations:
+        lines.extend(["Investigations", "-" * 60])
+        for investigation in report.investigations:
+            lines.extend(
+                [
+                    investigation.title,
+                    investigation.summary,
+                    "",
+                    "Facts:",
+                ]
+            )
+            for fact in investigation.facts:
+                lines.append(
+                    _row(
+                        f"{fact.relationship}: {fact.label}",
+                        f"{fact.value} ({fact.strength})",
+                    )
+                )
+            lines.extend(["", "Assessment:", f"  {investigation.assessment}", ""])
+            if investigation.recommended_experiment:
+                lines.append("Recommended experiment:")
+                for item in investigation.recommended_experiment:
+                    lines.append(f"  - {item}")
+            lines.append("")
+
     lines.extend(["Findings", "-" * 60])
 
     if not report.findings:
@@ -149,7 +190,12 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
             ]
         )
         for key, value in finding.evidence.items():
-            lines.append(_row(_finding_evidence_label(key), _format_evidence_value(key, value)))
+            if key == "materiality_evaluation" and isinstance(value, dict):
+                lines.extend(_materiality_evaluation_lines(value))
+            else:
+                lines.append(
+                    _row(_finding_evidence_label(key), _format_evidence_value(key, value))
+                )
         lines.extend(["", "Recommendation:", f"  {finding.recommendation}", ""])
         if finding.validation_plan:
             lines.append("Validation:")
@@ -157,22 +203,30 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
                 lines.append(f"  - {item}")
         if show_provenance:
             lines.extend(["", "Provenance:"])
-            provenance = finding.provenance
-            if provenance.llm_call_ids:
-                lines.append(_row("llm call ids", ", ".join(provenance.llm_call_ids)))
-            if provenance.llm_request_ids:
-                lines.append(_row("llm request ids", ", ".join(provenance.llm_request_ids)))
-            if provenance.serving_request_ids:
+            finding_provenance = finding.provenance
+            if finding_provenance.llm_call_ids:
+                lines.append(_row("llm call ids", ", ".join(finding_provenance.llm_call_ids)))
+            if finding_provenance.llm_request_ids:
                 lines.append(
-                    _row("serving request ids", ", ".join(provenance.serving_request_ids))
+                    _row("llm request ids", ", ".join(finding_provenance.llm_request_ids))
                 )
-            if provenance.raw_metrics:
-                lines.append(_row("raw metrics", _compact_dict(provenance.raw_metrics)))
-            if provenance.derived_metrics:
+            if finding_provenance.serving_request_ids:
                 lines.append(
-                    _row("derived metrics", _compact_dict(provenance.derived_metrics))
+                    _row(
+                        "serving request ids",
+                        ", ".join(finding_provenance.serving_request_ids),
+                    )
                 )
-            for note in provenance.notes:
+            if finding_provenance.raw_metrics:
+                lines.append(_row("raw metrics", _compact_dict(finding_provenance.raw_metrics)))
+            if finding_provenance.derived_metrics:
+                lines.append(
+                    _row(
+                        "derived metrics",
+                        _compact_dict(finding_provenance.derived_metrics),
+                    )
+                )
+            for note in finding_provenance.notes:
                 lines.append(f"  - {note}")
     return "\n".join(lines)
 
@@ -541,6 +595,48 @@ def _format_evidence_value(key: str, value: object) -> str:
             return "unavailable"
     if isinstance(value, bool):
         return "yes" if value else "no"
+    return _format_value(value)
+
+
+def _materiality_evaluation_lines(value: dict[str, object]) -> list[str]:
+    lines = ["", "Materiality evaluation:"]
+    overall = value.get("overall")
+    rule = value.get("rule")
+    reason = value.get("reason")
+    if overall is not None:
+        lines.append(_row("overall", overall))
+    if rule is not None:
+        lines.append(_row("rule", rule))
+    gates = value.get("gates")
+    if isinstance(gates, list):
+        for gate in gates:
+            if not isinstance(gate, dict):
+                continue
+            name = str(gate.get("name", "gate"))
+            observed = gate.get("observed")
+            threshold = gate.get("threshold")
+            unit = str(gate.get("unit", ""))
+            result = gate.get("result")
+            source = gate.get("source_layer")
+            lines.append(
+                _row(
+                    name,
+                    (
+                        f"observed={observed} {unit}; threshold={threshold} {unit}; "
+                        f"result={result}; source={source}"
+                    ),
+                )
+            )
+    if reason is not None:
+        lines.append(_row("reason", reason))
+    return lines
+
+
+def _format_metric_provenance_value(value: object) -> str:
+    if isinstance(value, list):
+        return "[" + ", ".join(str(item) for item in value[:8]) + (
+            f", ... {len(value) - 8} more]" if len(value) > 8 else "]"
+        )
     return _format_value(value)
 
 

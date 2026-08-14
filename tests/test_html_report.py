@@ -68,6 +68,23 @@ def test_html_report_shows_cross_layer_correlation() -> None:
     assert "not pure GPU prefill kernel time" in html
 
 
+def test_html_report_shows_metric_provenance_materiality_and_investigation() -> None:
+    html = render_html_report(
+        load_html_report_input(ROOT / "examples/traces/multi_problem_agent.json")
+    )
+
+    assert "Metric Provenance" in html
+    assert "serving request input p95 tokens" in html
+    assert "serving_backend" in html
+    assert "Investigations" in html
+    assert "Repeated static context and cacheability" in html
+    assert "not a causal proof" in html
+    assert "Materiality evaluation" in html
+    assert "TTFT gate" in html
+    assert "Serving uncached prompt-volume gate" in html
+    assert "NOT_EXCEEDED" in html
+
+
 def test_html_report_handles_partial_artifact_and_failed_task(tmp_path: Path) -> None:
     artifact_path = _artifact(tmp_path / "partial", status="PARTIAL", passed=False)
     html = render_html_report(load_html_report_input(artifact_path))
