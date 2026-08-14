@@ -51,13 +51,31 @@ AgentPerf does not require a GPU for local inspection, tests, synthetic traces,
 recorded telemetry fixtures, artifact comparison, regression checks, benchmark
 suites, or HTML reports.
 
+Once AgentPerf is published on PyPI, the first-run path is:
+
+```bash
+pip install agentperf
+agentperf demo
+```
+
+`agentperf demo` runs a deterministic local support-agent workload, writes
+baseline and candidate artifacts, compares them, and generates a standalone HTML
+report. It does not require an API key, model download, serving backend, or
+source checkout.
+
+Until the first PyPI upload, install from a source checkout:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+agentperf demo
 ```
 
-Analyze a provided local artifact:
+For package-first onboarding, see
+[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
+
+Analyze a provided local artifact from a source checkout:
 
 ```bash
 agentperf analyze examples/artifacts/m3_dedup_only
@@ -71,6 +89,10 @@ If you already have a Python agent, start with
 [docs/BRING_YOUR_OWN_AGENT.md](docs/BRING_YOUR_OWN_AGENT.md). It shows the
 minimal `ExperimentSession` / `trace_llm` / `trace_tool` path and how to run
 `agentperf doctor` to check capture completeness.
+
+LangGraph users can install the optional integration with
+`pip install "agentperf[langgraph]"` after package publication. See
+[docs/LANGGRAPH_INTEGRATION.md](docs/LANGGRAPH_INTEGRATION.md).
 
 Compare two self-contained artifacts:
 

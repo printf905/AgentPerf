@@ -4,6 +4,18 @@
 
 ### Added
 
+- Added `agentperf demo`, a source-tree-independent deterministic onboarding
+  command that creates baseline/candidate artifacts, an HTML report, a
+  comparison verdict, and a regression policy without API keys, GPU, or model
+  downloads.
+- Added package-first getting-started documentation and a PyPI release
+  checklist for future package-index publication.
+- Added a copyable GitHub Actions regression-check example and CI integration
+  guide.
+- Added an optional LangGraph integration and deterministic local LangGraph
+  example using the existing AgentPerf run/LLM/tool instrumentation model.
+- Added a wheel-based M22 distribution smoke script that validates CLI startup,
+  demo, doctor, report, compare, and check outside the source checkout.
 - Added deterministic M21 scale fixture generation and a reproducible
   benchmark harness for instrumentation overhead, artifact growth, analysis,
   doctor, HTML report, compare, and check scaling.
@@ -12,6 +24,9 @@
 
 ### Improved
 
+- Improved README first-run onboarding so users can see the future package
+  install path, immediate demo command, BYOA path, and optional LangGraph path
+  without reading implementation docs first.
 - Reduced framework-free tracing overhead by avoiding repeated full-run
   reconstruction during default LLM/tool ID assignment.
 - Made `agentperf doctor` use correlation-only completeness assessment instead

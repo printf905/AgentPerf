@@ -33,6 +33,7 @@ from agentperf.completeness import (
     doctor_exit_code,
     render_doctor_report,
 )
+from agentperf.demo import render_demo_result, run_demo
 from agentperf.integrations.openai_agents import agent_run_from_openai_agents_export
 from agentperf.model_choice import analyze_model_choice_path
 from agentperf.regression import (
@@ -58,6 +59,32 @@ LOGGER = logging.getLogger("agentperf")
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="agentperf")
     subparsers = parser.add_subparsers(dest="command", required=True)
+    demo = subparsers.add_parser(
+        "demo",
+        help="Run a deterministic local first-run demo and write artifacts",
+    )
+    demo.add_argument(
+        "--output",
+        type=Path,
+        default=Path("agentperf-demo"),
+        help="Directory for demo artifacts and report (default: ./agentperf-demo)",
+    )
+    demo.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace an existing demo output directory",
+    )
+    demo.add_argument(
+        "--format",
+        choices=["terminal", "json"],
+        default="terminal",
+        help="Output format",
+    )
+    demo.add_argument(
+        "--log-level",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
     analyze = subparsers.add_parser(
         "analyze",
         help="Analyze a normalized AgentPerf trace JSON file or artifact directory",
@@ -336,6 +363,16 @@ def main(argv: list[str] | None = None) -> int:
         format="%(levelname)s %(name)s: %(message)s",
     )
 
+    if args.command == "demo":
+        try:
+            demo_result = run_demo(args.output, force=args.force)
+        except (OSError, ValueError) as exc:
+            LOGGER.error("%s", exc)
+            sys.stderr.write(f"{exc}\n")
+            return 2
+        sys.stdout.write(render_demo_result(demo_result, output_format=args.format))
+        sys.stdout.write("\n")
+        return 0
     if args.command == "analyze":
         try:
             if is_artifact_path(args.trace_path):

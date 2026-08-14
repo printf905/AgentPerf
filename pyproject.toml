@@ -21,10 +21,25 @@ classifiers = [
 ]
 dependencies = []
 
+[project.urls]
+Homepage = "https://github.com/printf905/AgentPerf"
+Repository = "https://github.com/printf905/AgentPerf"
+Issues = "https://github.com/printf905/AgentPerf/issues"
+Releases = "https://github.com/printf905/AgentPerf/releases"
+
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10", "build>=1", "openai-agents>=0.19,<0.20"]
+dev = [
+    "pytest>=8",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "build>=1",
+    "twine>=5",
+    "openai-agents>=0.19,<0.20",
+    "langgraph>=1,<2",
+]
 openai-agents = ["openai-agents>=0.19,<0.20"]
 mini-swe-agent = ["mini-swe-agent>=2,<3"]
+langgraph = ["langgraph>=1,<2"]
 
 [project.scripts]
 agentperf = "agentperf.cli:main"

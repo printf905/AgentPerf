@@ -1,0 +1,9 @@
+include LICENSE
+include README.md
+include CHANGELOG.md
+include pyproject.toml
+recursive-include docs *.md *.json
+recursive-include examples *.py *.json *.yaml *.yml
+recursive-include scripts *.py
+recursive-include tests *.py
+global-exclude __pycache__ *.py[cod] .DS_Store *.html *.log *.jsonl

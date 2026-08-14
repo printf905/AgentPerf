@@ -1,0 +1,52 @@
+name: AgentPerf regression check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  agentperf:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install AgentPerf
+        run: |
+          python -m pip install --upgrade pip
+          pip install agentperf
+
+      - name: Generate deterministic AgentPerf demo artifacts
+        run: agentperf demo --output agentperf-demo --force
+
+      - name: Check candidate instrumentation
+        run: agentperf doctor agentperf-demo/candidate
+
+      - name: Enforce regression policy
+        run: |
+          agentperf check \
+            agentperf-demo/baseline \
+            agentperf-demo/candidate \
+            --policy agentperf-demo/agentperf-regression.yaml
+
+      - name: Generate profiler report
+        if: always()
+        run: |
+          agentperf report \
+            agentperf-demo/candidate \
+            --output agentperf-report.html
+
+      - name: Upload AgentPerf artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentperf-results
+          path: |
+            agentperf-demo/
+            agentperf-report.html
