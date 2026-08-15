@@ -37,7 +37,7 @@ local operating ranges, benchmark methodology, and current limits.
 - Attribute processed tokens to system, user, history, tool schema, tool
   result, retrieved/file context, and other components.
 - Compare baseline and candidate runs with quality-aware ACCEPT / REJECT /
-  INCONCLUSIVE verdicts.
+  INCONCLUSIVE verdicts, including standalone HTML comparison reports.
 - Run offline CI regression checks with explicit quality, performance, finding,
   and task-coverage policies.
 - Manage benchmark suites with reviewed baseline artifacts.
@@ -98,6 +98,16 @@ Compare two self-contained artifacts:
 
 ```bash
 agentperf compare examples/artifacts/m3_raw_full examples/artifacts/m3_dedup_only
+```
+
+Generate a standalone visual replay comparison:
+
+```bash
+agentperf compare \
+  examples/artifacts/m3_raw_full \
+  examples/artifacts/m3_dedup_only \
+  --format html \
+  --output agentperf-comparison.html
 ```
 
 Run an offline regression check:
@@ -165,6 +175,12 @@ identity, task/run structure, LLM and tool steps, context growth, component toke
 attribution, findings and provenance, serving telemetry when present, and exact
 agent-to-serving request correlation when available. It works offline and does
 not embed large raw prompts or tool outputs by default.
+
+For baseline-vs-candidate replay verification, use
+`agentperf compare --format html --output comparison.html`. The comparison HTML
+shows the final verdict, quality gate, token/component deltas, finding
+lifecycle, task coverage, context growth, and serving evidence where available.
+See [docs/COMPARISON_HTML.md](docs/COMPARISON_HTML.md).
 
 ## Why It Is Cross-Layer
 

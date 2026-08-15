@@ -30,7 +30,8 @@ agentperf demo
 - a candidate that carries compact policy evidence;
 - deterministic task quality for both runs;
 - `agentperf compare` over the resulting artifacts;
-- a local standalone HTML profiler report.
+- a local standalone HTML profiler report;
+- a local standalone HTML replay-comparison report.
 
 The default output directory is:
 
@@ -43,6 +44,9 @@ Useful follow-up commands:
 ```bash
 agentperf doctor agentperf-demo/baseline
 agentperf report agentperf-demo/baseline --output agentperf-demo/report.html
+agentperf compare agentperf-demo/baseline agentperf-demo/candidate \
+  --format html \
+  --output agentperf-demo/comparison.html
 agentperf compare agentperf-demo/baseline agentperf-demo/candidate
 agentperf check \
   agentperf-demo/baseline \

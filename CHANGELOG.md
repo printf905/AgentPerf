@@ -4,6 +4,10 @@
 
 ### Added
 
+- Added standalone visual replay comparison reports with
+  `agentperf compare --format html --output comparison.html`.
+- Added policy-aware HTML output for `agentperf check --format html`, reusing
+  existing regression-policy verdicts and checks.
 - Added `agentperf demo`, a source-tree-independent deterministic onboarding
   command that creates baseline/candidate artifacts, an HTML report, a
   comparison verdict, and a regression policy without API keys, GPU, or model
@@ -24,6 +28,8 @@
 
 ### Improved
 
+- `agentperf demo` now also writes a local `comparison.html` replay-verification
+  report alongside its baseline profiler report.
 - Improved README first-run onboarding so users can see the future package
   install path, immediate demo command, BYOA path, and optional LangGraph path
   without reading implementation docs first.

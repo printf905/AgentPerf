@@ -43,6 +43,10 @@ from agentperf.regression import (
     regression_exit_code,
     regression_result_to_json,
 )
+from agentperf.reporters.comparison_html import (
+    build_comparison_html_input,
+    render_comparison_html,
+)
 from agentperf.reporters.html import write_html_report
 from agentperf.reporters.terminal import (
     render_comparison_report,
@@ -186,7 +190,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     compare.add_argument(
         "--format",
-        choices=["terminal", "json"],
+        choices=["terminal", "json", "html"],
         default="terminal",
         help="Output format",
     )
@@ -220,7 +224,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check.add_argument(
         "--format",
-        choices=["terminal", "json", "markdown"],
+        choices=["terminal", "json", "markdown", "html"],
         default="terminal",
         help="Output format",
     )
@@ -453,11 +457,18 @@ def main(argv: list[str] | None = None) -> int:
             LOGGER.error("%s", exc)
             sys.stderr.write(f"{exc}\n")
             return 2
-        output = (
-            comparison_to_json(comparison)
-            if args.format == "json"
-            else render_comparison_report(comparison, show_provenance=args.show_provenance)
-        )
+        if args.format == "json":
+            output = comparison_to_json(comparison)
+        elif args.format == "html":
+            output = render_comparison_html(
+                build_comparison_html_input(
+                    comparison,
+                    args.baseline_path,
+                    args.candidate_path,
+                )
+            )
+        else:
+            output = render_comparison_report(comparison, show_provenance=args.show_provenance)
         if args.output:
             args.output.write_text(output + "\n", encoding="utf-8")
         else:
@@ -492,6 +503,16 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         if args.format == "json":
             output = regression_result_to_json(result)
+        elif args.format == "html":
+            output = render_comparison_html(
+                build_comparison_html_input(
+                    comparison,
+                    args.baseline_path,
+                    args.candidate_path,
+                    regression_result=result,
+                    title="AgentPerf Regression Check",
+                )
+            )
         elif args.format == "markdown":
             output = render_regression_markdown(result)
         else:
