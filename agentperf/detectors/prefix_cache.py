@@ -13,7 +13,6 @@ from agentperf.metrics.latency import (
 )
 from agentperf.metrics.tokens import (
     approximate_tokens,
-    common_prefix_len,
     compute_duplication_metrics,
 )
 from agentperf.schema.findings import Finding, FindingProvenance, Severity
@@ -42,6 +41,20 @@ class PrefixGroup:
     repeated_non_prefix_ratio: float
     avg_input_tokens: float
     requests: list[ServingRequest]
+
+
+@dataclass
+class _PrefixNode:
+    children: dict[str, _PrefixNode]
+    count: int = 0
+    min_length: int | None = None
+
+    def child(self, token: str) -> _PrefixNode:
+        node = self.children.get(token)
+        if node is None:
+            node = _PrefixNode(children={})
+            self.children[token] = node
+        return node
 
 
 class PrefixCacheOpportunityDetector:
@@ -276,50 +289,7 @@ class PrefixCacheOpportunityDetector:
         if len(pairs) < self.config.min_affected_requests:
             return None
 
-        best: PrefixGroup | None = None
-        for index, (call, request, sequence) in enumerate(pairs):
-            group_calls = [call]
-            group_requests = [request]
-            shared_prefix = len(sequence)
-            for other_call, other_request, other_sequence in pairs[index + 1 :]:
-                prefix = common_prefix_len(sequence, other_sequence)
-                denominator = max(1, min(len(sequence), len(other_sequence)))
-                ratio = prefix / denominator
-                if (
-                    prefix >= self.config.min_shared_prefix_tokens
-                    and ratio >= self.config.min_shared_prefix_ratio
-                ):
-                    group_calls.append(other_call)
-                    group_requests.append(other_request)
-                    shared_prefix = min(shared_prefix, prefix)
-
-            if len(group_calls) < self.config.min_affected_requests:
-                continue
-
-            input_lengths = [len(approximate_tokens(call.prompt_text())) for call in group_calls]
-            avg_input = mean(input_lengths)
-            ratio = shared_prefix / max(1, min(input_lengths))
-            if ratio < self.config.min_shared_prefix_ratio:
-                continue
-
-            candidate = PrefixGroup(
-                call_ids=[call.llm_call_id for call in group_calls],
-                request_ids=[request.serving_request_id for request in group_requests],
-                shared_prefix_tokens=shared_prefix,
-                shared_prefix_ratio=ratio,
-                repeated_non_prefix_tokens=0,
-                repeated_non_prefix_ratio=0.0,
-                avg_input_tokens=avg_input,
-                requests=group_requests,
-            )
-            if best is None or (
-                len(candidate.call_ids),
-                candidate.shared_prefix_tokens,
-            ) > (
-                len(best.call_ids),
-                best.shared_prefix_tokens,
-            ):
-                best = candidate
+        best = self._best_prefix_group(pairs)
 
         non_prefix_candidate = self._non_prefix_group(pairs)
         if non_prefix_candidate is not None and (
@@ -358,6 +328,78 @@ class PrefixCacheOpportunityDetector:
             avg_input_tokens=mean(input_lengths),
             requests=requests,
         )
+
+    def _best_prefix_group(
+        self,
+        pairs: list[tuple[LLMCall, ServingRequest, list[str]]],
+    ) -> PrefixGroup | None:
+        candidate = self._best_prefix_candidate_from_trie(pairs)
+        if candidate is None:
+            return None
+        prefix_tokens, shared_prefix, ratio = candidate
+        group = [
+            (call, request, sequence)
+            for call, request, sequence in pairs
+            if sequence[:shared_prefix] == prefix_tokens
+        ]
+        if len(group) < self.config.min_affected_requests:
+            return None
+        return PrefixGroup(
+            call_ids=[call.llm_call_id for call, _, _ in group],
+            request_ids=[request.serving_request_id for _, request, _ in group],
+            shared_prefix_tokens=shared_prefix,
+            shared_prefix_ratio=ratio,
+            repeated_non_prefix_tokens=0,
+            repeated_non_prefix_ratio=0.0,
+            avg_input_tokens=mean(len(sequence) for _, _, sequence in group),
+            requests=[request for _, request, _ in group],
+        )
+
+    def _best_prefix_candidate_from_trie(
+        self,
+        pairs: list[tuple[LLMCall, ServingRequest, list[str]]],
+    ) -> tuple[list[str], int, float] | None:
+        root = _PrefixNode(children={})
+        for _, _, sequence in pairs:
+            node = root
+            sequence_len = len(sequence)
+            for token in sequence:
+                node = node.child(token)
+                node.count += 1
+                node.min_length = (
+                    sequence_len
+                    if node.min_length is None
+                    else min(node.min_length, sequence_len)
+                )
+
+        best_tokens: list[str] | None = None
+        best_count = 0
+        best_prefix_len = 0
+        best_ratio = 0.0
+        stack: list[tuple[_PrefixNode, list[str]]] = [
+            (child, [token]) for token, child in root.children.items()
+        ]
+        while stack:
+            node, tokens = stack.pop()
+            prefix_len = len(tokens)
+            min_length = node.min_length or 0
+            ratio = prefix_len / max(1, min_length)
+            if (
+                node.count >= self.config.min_affected_requests
+                and prefix_len >= self.config.min_shared_prefix_tokens
+                and ratio >= self.config.min_shared_prefix_ratio
+                and (node.count, prefix_len) > (best_count, best_prefix_len)
+            ):
+                best_tokens = tokens
+                best_count = node.count
+                best_prefix_len = prefix_len
+                best_ratio = ratio
+            for token, child in node.children.items():
+                stack.append((child, [*tokens, token]))
+
+        if best_tokens is None:
+            return None
+        return best_tokens, best_prefix_len, best_ratio
 
 
 def _title(group: PrefixGroup) -> str:

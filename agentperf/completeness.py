@@ -5,10 +5,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from agentperf.analyzer import AnalysisReport, analyze_path, analyze_run
+from agentperf.analyzer import AnalysisReport
 from agentperf.artifacts import ArtifactError, is_artifact_path, load_artifact
+from agentperf.correlation.correlator import TraceCorrelator
 from agentperf.schema.artifacts import ArtifactManifest, TaskResult
-from agentperf.schema.trace import LLMCall, TraceParseError
+from agentperf.schema.trace import AgentRun, LLMCall, TraceParseError, parse_agentperf_trace
 
 ReadinessStatus = Literal["READY", "PARTIAL", "NOT_READY", "NOT_APPLICABLE"]
 
@@ -74,7 +75,9 @@ def assess_path(path: Path) -> CompletenessReport:
     try:
         if is_artifact_path(path):
             artifact = load_artifact(path)
-            reports = [analyze_run(run) for run in artifact.runs_for_comparison()]
+            reports = [
+                _minimal_analysis_report(run) for run in artifact.runs_for_comparison()
+            ]
             return assess_runs(
                 reports,
                 task_results=artifact.task_results,
@@ -82,8 +85,9 @@ def assess_path(path: Path) -> CompletenessReport:
                 source_type="artifact",
                 source_path=str(path),
             )
+        data = json.loads(path.read_text(encoding="utf-8"))
         return assess_runs(
-            [analyze_path(path)],
+            [_minimal_analysis_report(parse_agentperf_trace(data))],
             task_results=[],
             manifest=None,
             source_type="raw_trace",
@@ -115,6 +119,10 @@ def assess_path(path: Path) -> CompletenessReport:
             cross_layer_readiness="NOT_APPLICABLE",
             errors=[str(exc)],
         )
+
+
+def _minimal_analysis_report(run: AgentRun) -> AnalysisReport:
+    return AnalysisReport(run=run, correlation=TraceCorrelator().correlate(run))
 
 
 def assess_report(

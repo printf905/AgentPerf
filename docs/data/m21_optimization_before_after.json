@@ -1,0 +1,251 @@
+{
+  "after": [
+    {
+      "artifact_bytes": null,
+      "case": "instrumentation_minimal",
+      "component_bytes": 0,
+      "cpu_ms_median": 5.845,
+      "llm_calls": 200,
+      "metadata": {
+        "per_span_wall_us": 22.551538461538463,
+        "spans": 260
+      },
+      "peak_memory_mb_median": 0.2132,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 20,
+      "tool_calls": 40,
+      "wall_ms_median": 5.8634,
+      "wall_ms_p95": 6.4084
+    },
+    {
+      "artifact_bytes": null,
+      "case": "instrumentation_full",
+      "component_bytes": 0,
+      "cpu_ms_median": 7.617,
+      "llm_calls": 200,
+      "metadata": {
+        "per_span_wall_us": 29.412307692307692,
+        "spans": 260
+      },
+      "peak_memory_mb_median": 0.322,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 20,
+      "tool_calls": 40,
+      "wall_ms_median": 7.6472,
+      "wall_ms_p95": 8.2639
+    },
+    {
+      "artifact_bytes": null,
+      "case": "instrumentation_full_with_artifact",
+      "component_bytes": 0,
+      "cpu_ms_median": 58.536,
+      "llm_calls": 200,
+      "metadata": {
+        "per_span_wall_us": 242.6546153846154,
+        "spans": 260
+      },
+      "peak_memory_mb_median": 1.5418,
+      "repetitions": 3,
+      "report_bytes": null,
+      "tasks": 20,
+      "tool_calls": 40,
+      "wall_ms_median": 63.0902,
+      "wall_ms_p95": 66.7608
+    },
+    {
+      "artifact_bytes": 5951952,
+      "case": "analyze",
+      "component_bytes": 2765500,
+      "cpu_ms_median": 1266.096,
+      "llm_calls": 1000,
+      "metadata": {},
+      "peak_memory_mb_median": 32.8969,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 100,
+      "tool_calls": 200,
+      "wall_ms_median": 1281.7281,
+      "wall_ms_p95": 2274.9244
+    },
+    {
+      "artifact_bytes": 5951952,
+      "case": "doctor",
+      "component_bytes": 2765500,
+      "cpu_ms_median": 128.372,
+      "llm_calls": 1000,
+      "metadata": {},
+      "peak_memory_mb_median": 14.3468,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 100,
+      "tool_calls": 200,
+      "wall_ms_median": 191.4877,
+      "wall_ms_p95": 213.993
+    },
+    {
+      "artifact_bytes": 5951952,
+      "case": "html_report",
+      "component_bytes": 2765500,
+      "cpu_ms_median": 1858.037,
+      "llm_calls": 1000,
+      "metadata": {},
+      "peak_memory_mb_median": 39.9568,
+      "repetitions": 3,
+      "report_bytes": 2266350,
+      "tasks": 100,
+      "tool_calls": 200,
+      "wall_ms_median": 1942.6816,
+      "wall_ms_p95": 1965.3513
+    },
+    {
+      "artifact_bytes": 5951952,
+      "case": "phase_detector_PrefixCacheOpportunityDetector",
+      "component_bytes": 2765500,
+      "cpu_ms_median": 748.566,
+      "llm_calls": 1000,
+      "metadata": {},
+      "peak_memory_mb_median": 32.8486,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 100,
+      "tool_calls": 200,
+      "wall_ms_median": 749.3919,
+      "wall_ms_p95": 755.3035
+    }
+  ],
+  "after_environment": {
+    "agentperf_version": "0.4.0",
+    "commit": "1f1002ede596d63e0e945e43c2bb416b3e787139",
+    "machine": "arm64",
+    "platform": "macOS-14.4.1-arm64-arm-64bit-Mach-O",
+    "processor": "arm",
+    "python": "3.14.6"
+  },
+  "before": [
+    {
+      "artifact_bytes": null,
+      "case": "instrumentation_minimal",
+      "component_bytes": 0,
+      "cpu_ms_median": 18.661,
+      "llm_calls": 200,
+      "metadata": {
+        "per_span_wall_us": 71.85269230769231,
+        "spans": 260
+      },
+      "peak_memory_mb_median": 0.2274,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 20,
+      "tool_calls": 40,
+      "wall_ms_median": 18.6817,
+      "wall_ms_p95": 18.9228
+    },
+    {
+      "artifact_bytes": null,
+      "case": "instrumentation_full",
+      "component_bytes": 0,
+      "cpu_ms_median": 20.574,
+      "llm_calls": 200,
+      "metadata": {
+        "per_span_wall_us": 79.20769230769231,
+        "spans": 260
+      },
+      "peak_memory_mb_median": 0.3396,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 20,
+      "tool_calls": 40,
+      "wall_ms_median": 20.594,
+      "wall_ms_p95": 21.2193
+    },
+    {
+      "artifact_bytes": null,
+      "case": "instrumentation_full_with_artifact",
+      "component_bytes": 0,
+      "cpu_ms_median": 67.853,
+      "llm_calls": 200,
+      "metadata": {
+        "per_span_wall_us": 273.6261538461538,
+        "spans": 260
+      },
+      "peak_memory_mb_median": 1.5401,
+      "repetitions": 3,
+      "report_bytes": null,
+      "tasks": 20,
+      "tool_calls": 40,
+      "wall_ms_median": 71.1428,
+      "wall_ms_p95": 71.8065
+    },
+    {
+      "artifact_bytes": 5951952,
+      "case": "analyze",
+      "component_bytes": 2765500,
+      "cpu_ms_median": 3581.456,
+      "llm_calls": 1000,
+      "metadata": {},
+      "peak_memory_mb_median": 22.3491,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 100,
+      "tool_calls": 200,
+      "wall_ms_median": 3586.2721,
+      "wall_ms_p95": 3663.0455
+    },
+    {
+      "artifact_bytes": 5951952,
+      "case": "doctor",
+      "component_bytes": 2765500,
+      "cpu_ms_median": 3714.197,
+      "llm_calls": 1000,
+      "metadata": {},
+      "peak_memory_mb_median": 29.409,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 100,
+      "tool_calls": 200,
+      "wall_ms_median": 3719.5207,
+      "wall_ms_p95": 4371.5395
+    },
+    {
+      "artifact_bytes": 5951952,
+      "case": "html_report",
+      "component_bytes": 2765500,
+      "cpu_ms_median": 4311.174,
+      "llm_calls": 1000,
+      "metadata": {},
+      "peak_memory_mb_median": 29.409,
+      "repetitions": 3,
+      "report_bytes": 2266350,
+      "tasks": 100,
+      "tool_calls": 200,
+      "wall_ms_median": 4514.1193,
+      "wall_ms_p95": 4607.294
+    },
+    {
+      "artifact_bytes": 5951952,
+      "case": "phase_detector_PrefixCacheOpportunityDetector",
+      "component_bytes": 2765500,
+      "cpu_ms_median": 2537.983,
+      "llm_calls": 1000,
+      "metadata": {},
+      "peak_memory_mb_median": 22.2973,
+      "repetitions": 5,
+      "report_bytes": null,
+      "tasks": 100,
+      "tool_calls": 200,
+      "wall_ms_median": 2539.1004,
+      "wall_ms_p95": 2633.0167
+    }
+  ],
+  "before_environment": {
+    "agentperf_version": "0.4.0",
+    "commit": "1f1002ede596d63e0e945e43c2bb416b3e787139",
+    "machine": "arm64",
+    "platform": "macOS-14.4.1-arm64-arm-64bit-Mach-O",
+    "processor": "arm",
+    "python": "3.14.6"
+  },
+  "methodology": "before/after measured with scripts/m21_scale_benchmark.py; before is v0.4.0 baseline plus benchmark harness, after includes M21 optimizations"
+}

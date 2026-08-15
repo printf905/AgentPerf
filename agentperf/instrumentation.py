@@ -62,9 +62,13 @@ class TraceRecorder:
         self.ended_at: str | None = None
         self.metadata = metadata or {}
         self._steps: list[_StepBuilder] = []
+        self._steps_by_id: dict[str, _StepBuilder] = {}
         self._span_stack: list[str] = []
         self._counter = 0
+        self._llm_call_count = 0
+        self._tool_call_count = 0
         self._tool_call_ids: set[str] = set()
+        self._tool_calls_by_id: dict[str, ToolCall] = {}
 
     @contextmanager
     def as_current(self) -> Iterator[TraceRecorder]:
@@ -113,6 +117,7 @@ class TraceRecorder:
             metadata={"name": name, **(metadata or {})},
         )
         self._steps.append(step)
+        self._steps_by_id[step.step_id] = step
         self._span_stack.append(actual_span_id)
         return step
 
@@ -148,8 +153,9 @@ class TraceRecorder:
         observed_input_tokens = input_tokens
         if observed_input_tokens is None and components:
             observed_input_tokens = sum(token_count(component.text) for component in components)
+        self._llm_call_count += 1
         call = LLMCall(
-            llm_call_id=llm_call_id or f"llm-{len(self.to_agent_run().llm_calls) + 1}",
+            llm_call_id=llm_call_id or f"llm-{self._llm_call_count}",
             trace_id=self.trace_id,
             span_id=f"span-llm-{uuid4().hex[:12]}",
             parent_span_id=step.span_id,
@@ -233,7 +239,8 @@ class TraceRecorder:
         latency_ms: float | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> ToolCall:
-        actual_id = tool_call_id or f"tool-{len(self.to_agent_run().tool_calls) + 1}"
+        self._tool_call_count += 1
+        actual_id = tool_call_id or f"tool-{self._tool_call_count}"
         if actual_id in self._tool_call_ids:
             existing = self._find_tool_call(actual_id)
             if existing is not None:
@@ -254,6 +261,7 @@ class TraceRecorder:
         )
         step.tool_calls.append(call)
         self._tool_call_ids.add(actual_id)
+        self._tool_calls_by_id[actual_id] = call
         return call
 
     def finish(self) -> AgentRun:
@@ -301,14 +309,10 @@ class TraceRecorder:
         return self.start_step(name)
 
     def _find_step(self, step_id: str) -> _StepBuilder | None:
-        return next((step for step in self._steps if step.step_id == step_id), None)
+        return self._steps_by_id.get(step_id)
 
     def _find_tool_call(self, tool_call_id: str) -> ToolCall | None:
-        for step in self._steps:
-            for call in step.tool_calls:
-                if call.tool_call_id == tool_call_id:
-                    return call
-        return None
+        return self._tool_calls_by_id.get(tool_call_id)
 
 
 @contextmanager
