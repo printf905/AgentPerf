@@ -7,11 +7,13 @@ or perform a PyPI/TestPyPI upload.
 
 ## Current State
 
+- Latest GitHub Release at this audit: `v0.4.0`
 - Package name in `pyproject.toml`: `agentperf`
 - Current package version: `0.4.0`
+- Artifact schema version: `1`
 - Required Python: `>=3.11`
 - Locally validated clean wheel installs: Python 3.11 and Python 3.12 in this
-  hardening pass.
+  distribution-readiness pass.
 - Base runtime dependencies: none
 - Optional extras:
   - `dev`
@@ -28,8 +30,9 @@ Read-only PyPI check:
 https://pypi.org/pypi/agentperf/json -> 404
 ```
 
-As of this audit, `agentperf` is not published on PyPI. Availability can change
-and must be rechecked immediately before any upload.
+As of 2026-08-16, `agentperf` is not published on PyPI. This does not reserve
+the project name; availability can change and must be rechecked immediately
+before any upload.
 
 ## Metadata Readiness
 
@@ -44,6 +47,9 @@ The project has package metadata for:
 - project URLs;
 - optional extras;
 - console entry point.
+
+The project URLs include Homepage, Repository, Issues, Documentation, Changelog,
+and Releases.
 
 Before upload, run:
 
@@ -90,25 +96,32 @@ environments outside the source tree. Base import, `agentperf --help`,
 
 Human/repository-owner steps still required:
 
-1. Confirm PyPI project ownership or create the project during the first upload.
-2. Decide whether to use PyPI Trusted Publishing or an API token.
-3. If using Trusted Publishing, configure the PyPI project publisher with:
-   - repository owner/name;
-   - workflow filename;
-   - release environment if used;
-   - branch/tag trigger policy.
-4. Add or review a release-only GitHub Actions publishing workflow.
-5. Verify that the workflow cannot publish from arbitrary PRs.
-6. Perform one explicit release authorization before upload.
-7. After upload, verify installation from PyPI in a fresh environment.
+1. Confirm or create the PyPI owner account with required account security.
+2. Configure a pending PyPI Trusted Publisher for `agentperf`, or configure a
+   trusted publisher on the existing project if the first upload has already
+   happened.
+3. Use:
+   - GitHub owner: `printf905`;
+   - repository: `AgentPerf`;
+   - workflow filename: `publish-pypi.yml`;
+   - environment: `pypi`.
+4. Configure the GitHub `pypi` environment with human approval.
+5. Review `.github/workflows/publish-pypi.yml` before any release publication.
+6. Recheck package-name availability immediately before the first upload.
+7. Perform one explicit release authorization before upload.
+8. After upload, verify installation from PyPI in a fresh environment.
 
 ## Recommended Safe Workflow
 
-Use a release-triggered workflow, for example `workflow_dispatch` or a tag
-pattern, rather than publishing on every push to `main`.
+Use `.github/workflows/publish-pypi.yml`, which runs only for a published
+GitHub Release and publishes through PyPI Trusted Publishing. The publish job
+uses job-level `id-token: write` and no long-lived PyPI token.
 
-Publishing should remain manual-owner controlled until the project has a stable
-release process.
+Publishing should remain manual-owner controlled through GitHub Release review
+and the `pypi` environment approval gate.
+
+See [PYPI_TRUSTED_PUBLISHING.md](PYPI_TRUSTED_PUBLISHING.md) for the detailed
+plan and post-publish verification commands.
 
 ## Non-Goals
 
@@ -127,3 +140,8 @@ This readiness pass does not:
 Technical packaging is close to ready. The remaining blocker is release-owner
 configuration and explicit publication authorization, not another AgentPerf
 feature.
+
+Because main contains substantial post-v0.4 development while the package
+version remains `0.4.0`, a future package-index release should include an
+explicit version decision and version bump before upload. This readiness pass
+does not change the version.

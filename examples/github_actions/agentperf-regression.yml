@@ -20,7 +20,9 @@ jobs:
       - name: Install AgentPerf
         run: |
           python -m pip install --upgrade pip
-          pip install agentperf
+          pip install "git+https://github.com/printf905/AgentPerf.git"
+          # After AgentPerf is published on PyPI, use:
+          # pip install agentperf
 
       - name: Generate deterministic AgentPerf demo artifacts
         run: agentperf demo --output agentperf-demo --force

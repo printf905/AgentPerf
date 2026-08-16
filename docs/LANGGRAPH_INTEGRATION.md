@@ -4,7 +4,7 @@ AgentPerf's LangGraph support is an optional integration. It adapts LangGraph
 graph invocations into AgentPerf's existing run/task model and uses the same
 LLM/tool instrumentation semantics as Bring Your Own Agent.
 
-Install the optional dependency:
+Once AgentPerf is published on PyPI, install the optional dependency:
 
 ```bash
 pip install "agentperf[langgraph]"

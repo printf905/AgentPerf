@@ -25,7 +25,7 @@ component-level accounting, deterministic detectors, and replay evidence.
 
 AgentPerf's own instrumentation and local analysis overhead has been
 characterized on deterministic scale fixtures. See
-[docs/M21_OVERHEAD_AND_SCALE.md](docs/M21_OVERHEAD_AND_SCALE.md) for measured
+[docs/M21_OVERHEAD_AND_SCALE.md](https://github.com/printf905/AgentPerf/blob/main/docs/M21_OVERHEAD_AND_SCALE.md) for measured
 local operating ranges, benchmark methodology, and current limits.
 
 ## What You Can Do
@@ -65,7 +65,14 @@ baseline and candidate artifacts, compares them, and generates a standalone HTML
 report. It does not require an API key, model download, serving backend, or
 source checkout.
 
-Until the first PyPI upload, install from a source checkout:
+Until the first PyPI upload, install from the GitHub source package:
+
+```bash
+pip install "git+https://github.com/printf905/AgentPerf.git"
+agentperf demo
+```
+
+For local development, use an editable source checkout:
 
 ```bash
 python -m venv .venv
@@ -75,7 +82,7 @@ agentperf demo
 ```
 
 For package-first onboarding, see
-[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
+[docs/GETTING_STARTED.md](https://github.com/printf905/AgentPerf/blob/main/docs/GETTING_STARTED.md).
 
 Analyze a provided local artifact from a source checkout:
 
@@ -85,16 +92,16 @@ agentperf analyze examples/artifacts/m3_dedup_only
 
 For a guided first run that explains trace inspection, metric provenance,
 finding materiality, HTML reports, replay comparison, and CI checks, see
-[docs/FIRST_RUN.md](docs/FIRST_RUN.md).
+[docs/FIRST_RUN.md](https://github.com/printf905/AgentPerf/blob/main/docs/FIRST_RUN.md).
 
 If you already have a Python agent, start with
-[docs/BRING_YOUR_OWN_AGENT.md](docs/BRING_YOUR_OWN_AGENT.md). It shows the
+[docs/BRING_YOUR_OWN_AGENT.md](https://github.com/printf905/AgentPerf/blob/main/docs/BRING_YOUR_OWN_AGENT.md). It shows the
 minimal `ExperimentSession` / `trace_llm` / `trace_tool` path and how to run
 `agentperf doctor` to check capture completeness.
 
 LangGraph users can install the optional integration with
 `pip install "agentperf[langgraph]"` after package publication. See
-[docs/LANGGRAPH_INTEGRATION.md](docs/LANGGRAPH_INTEGRATION.md).
+[docs/LANGGRAPH_INTEGRATION.md](https://github.com/printf905/AgentPerf/blob/main/docs/LANGGRAPH_INTEGRATION.md).
 
 Compare two self-contained artifacts:
 
@@ -115,7 +122,7 @@ agentperf compare \
 Findings include structured recommendation contracts for supported detector
 families. They describe plausible intervention classes, expected metric
 movement, quality risks, and replay evidence needed for verification. See
-[docs/RECOMMENDATIONS.md](docs/RECOMMENDATIONS.md).
+[docs/RECOMMENDATIONS.md](https://github.com/printf905/AgentPerf/blob/main/docs/RECOMMENDATIONS.md).
 
 Run an offline regression check:
 
@@ -187,7 +194,7 @@ For baseline-vs-candidate replay verification, use
 `agentperf compare --format html --output comparison.html`. The comparison HTML
 shows the final verdict, quality gate, token/component deltas, finding
 lifecycle, task coverage, context growth, and serving evidence where available.
-See [docs/COMPARISON_HTML.md](docs/COMPARISON_HTML.md).
+See [docs/COMPARISON_HTML.md](https://github.com/printf905/AgentPerf/blob/main/docs/COMPARISON_HTML.md).
 
 ## Why It Is Cross-Layer
 
@@ -231,7 +238,7 @@ with quality unchanged at `1.000 -> 1.000`. That example is evidence that
 component-level attribution can expose agent-context changes that aggregate
 provider usage alone may miss. It is not a latency-improvement claim.
 
-See [docs/TOKEN_ACCOUNTING.md](docs/TOKEN_ACCOUNTING.md).
+See [docs/TOKEN_ACCOUNTING.md](https://github.com/printf905/AgentPerf/blob/main/docs/TOKEN_ACCOUNTING.md).
 
 ## Real Validation
 
@@ -268,7 +275,7 @@ the preserved historical client P95 fell by about 22.4%, while quality stayed
 inside the predefined tolerance.
 
 Details:
-[docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md](docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md).
+[docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md](https://github.com/printf905/AgentPerf/blob/main/docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md).
 
 ### Prefix-Cache Mechanism Validation
 
@@ -280,8 +287,8 @@ configuration, sampling settings, and semantic content fixed.
 This is treated as serving mechanism/correctness validation. Exact M2
 request-level numbers remain in detailed reproducibility docs, not as release
 headline or marketing claims:
-[docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md) and
-[docs/VLLM_PREFIX_CACHE_SEMANTICS.md](docs/VLLM_PREFIX_CACHE_SEMANTICS.md).
+[docs/REAL_VLLM_RESULTS.md](https://github.com/printf905/AgentPerf/blob/main/docs/REAL_VLLM_RESULTS.md) and
+[docs/VLLM_PREFIX_CACHE_SEMANTICS.md](https://github.com/printf905/AgentPerf/blob/main/docs/VLLM_PREFIX_CACHE_SEMANTICS.md).
 
 ### External Agents And Serving Correlation
 
@@ -299,7 +306,7 @@ generalization. They should not be read as broad benchmark results.
 The M20 generalization review extends this across three local workload classes
 and classifies findings as actionable, valid-but-non-actionable, expected
 structural behavior, insufficient evidence, or false positive:
-[docs/M20_REAL_WORLD_GENERALIZATION.md](docs/M20_REAL_WORLD_GENERALIZATION.md).
+[docs/M20_REAL_WORLD_GENERALIZATION.md](https://github.com/printf905/AgentPerf/blob/main/docs/M20_REAL_WORLD_GENERALIZATION.md).
 
 ### Model-Choice Profiling
 
@@ -311,9 +318,9 @@ but the candidate must still pass a full end-to-end replay before it is accepted
 No new real mixed-routing quality, latency, or cost improvement is claimed.
 
 Details:
-[docs/M25_MODEL_CAPACITY_REPLAY.md](docs/M25_MODEL_CAPACITY_REPLAY.md),
-[docs/MODEL_CHOICE_PROFILING.md](docs/MODEL_CHOICE_PROFILING.md), and
-[docs/MODEL_CHOICE_RESULTS.md](docs/MODEL_CHOICE_RESULTS.md).
+[docs/M25_MODEL_CAPACITY_REPLAY.md](https://github.com/printf905/AgentPerf/blob/main/docs/M25_MODEL_CAPACITY_REPLAY.md),
+[docs/MODEL_CHOICE_PROFILING.md](https://github.com/printf905/AgentPerf/blob/main/docs/MODEL_CHOICE_PROFILING.md), and
+[docs/MODEL_CHOICE_RESULTS.md](https://github.com/printf905/AgentPerf/blob/main/docs/MODEL_CHOICE_RESULTS.md).
 
 ## Supported Integrations
 
@@ -338,8 +345,8 @@ SGLang ordinary OpenAI-compatible responses in M17 did not expose per-request
 queue latency, server-stage first-token timing, or generation/decode latency.
 Those fields remain unavailable rather than being inferred.
 
-See [docs/SERVING_BACKENDS.md](docs/SERVING_BACKENDS.md) and
-[docs/SGLANG_TELEMETRY.md](docs/SGLANG_TELEMETRY.md).
+See [docs/SERVING_BACKENDS.md](https://github.com/printf905/AgentPerf/blob/main/docs/SERVING_BACKENDS.md) and
+[docs/SGLANG_TELEMETRY.md](https://github.com/printf905/AgentPerf/blob/main/docs/SGLANG_TELEMETRY.md).
 
 ## Detector Semantics
 
@@ -379,83 +386,83 @@ ExperimentSession
 
 Useful docs:
 
-- [docs/ARTIFACT_FORMAT.md](docs/ARTIFACT_FORMAT.md)
-- [docs/EXPERIMENT_SESSION.md](docs/EXPERIMENT_SESSION.md)
-- [docs/REPLAY_COMPARISON.md](docs/REPLAY_COMPARISON.md)
-- [docs/REPLAY_VERIFICATION.md](docs/REPLAY_VERIFICATION.md)
-- [docs/RECOMMENDATIONS.md](docs/RECOMMENDATIONS.md): structured
+- [docs/ARTIFACT_FORMAT.md](https://github.com/printf905/AgentPerf/blob/main/docs/ARTIFACT_FORMAT.md)
+- [docs/EXPERIMENT_SESSION.md](https://github.com/printf905/AgentPerf/blob/main/docs/EXPERIMENT_SESSION.md)
+- [docs/REPLAY_COMPARISON.md](https://github.com/printf905/AgentPerf/blob/main/docs/REPLAY_COMPARISON.md)
+- [docs/REPLAY_VERIFICATION.md](https://github.com/printf905/AgentPerf/blob/main/docs/REPLAY_VERIFICATION.md)
+- [docs/RECOMMENDATIONS.md](https://github.com/printf905/AgentPerf/blob/main/docs/RECOMMENDATIONS.md): structured
   recommendation and replay-verification contracts.
-- [docs/CI_REGRESSION.md](docs/CI_REGRESSION.md)
-- [docs/CI_REPORTING.md](docs/CI_REPORTING.md)
-- [docs/BENCHMARK_SUITES.md](docs/BENCHMARK_SUITES.md)
-- [docs/BASELINE_MANAGEMENT.md](docs/BASELINE_MANAGEMENT.md)
+- [docs/CI_REGRESSION.md](https://github.com/printf905/AgentPerf/blob/main/docs/CI_REGRESSION.md)
+- [docs/CI_REPORTING.md](https://github.com/printf905/AgentPerf/blob/main/docs/CI_REPORTING.md)
+- [docs/BENCHMARK_SUITES.md](https://github.com/printf905/AgentPerf/blob/main/docs/BENCHMARK_SUITES.md)
+- [docs/BASELINE_MANAGEMENT.md](https://github.com/printf905/AgentPerf/blob/main/docs/BASELINE_MANAGEMENT.md)
 
 ## Documentation Index
 
 Core concepts:
 
-- [docs/FIRST_RUN.md](docs/FIRST_RUN.md): guided local first-user workflow.
-- [docs/BRING_YOUR_OWN_AGENT.md](docs/BRING_YOUR_OWN_AGENT.md): instrument an
+- [docs/FIRST_RUN.md](https://github.com/printf905/AgentPerf/blob/main/docs/FIRST_RUN.md): guided local first-user workflow.
+- [docs/BRING_YOUR_OWN_AGENT.md](https://github.com/printf905/AgentPerf/blob/main/docs/BRING_YOUR_OWN_AGENT.md): instrument an
   existing framework-free Python agent.
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): architecture.
-- [docs/TRACE_SCHEMA.md](docs/TRACE_SCHEMA.md): normalized trace schema.
-- [docs/TOKEN_ACCOUNTING.md](docs/TOKEN_ACCOUNTING.md): provider usage vs
+- [docs/ARCHITECTURE.md](https://github.com/printf905/AgentPerf/blob/main/docs/ARCHITECTURE.md): architecture.
+- [docs/TRACE_SCHEMA.md](https://github.com/printf905/AgentPerf/blob/main/docs/TRACE_SCHEMA.md): normalized trace schema.
+- [docs/TOKEN_ACCOUNTING.md](https://github.com/printf905/AgentPerf/blob/main/docs/TOKEN_ACCOUNTING.md): provider usage vs
   component-attributed token semantics.
-- [docs/DUPLICATION_SEMANTICS.md](docs/DUPLICATION_SEMANTICS.md):
+- [docs/DUPLICATION_SEMANTICS.md](https://github.com/printf905/AgentPerf/blob/main/docs/DUPLICATION_SEMANTICS.md):
   run-boundary-aware duplication semantics.
-- [docs/HTML_REPORT.md](docs/HTML_REPORT.md): standalone offline profiler
+- [docs/HTML_REPORT.md](https://github.com/printf905/AgentPerf/blob/main/docs/HTML_REPORT.md): standalone offline profiler
   report.
-- [docs/M18_PROFILER_CREDIBILITY.md](docs/M18_PROFILER_CREDIBILITY.md):
+- [docs/M18_PROFILER_CREDIBILITY.md](https://github.com/printf905/AgentPerf/blob/main/docs/M18_PROFILER_CREDIBILITY.md):
   metric provenance, materiality gates, and investigation chains.
-- [docs/M19_BRING_YOUR_OWN_AGENT.md](docs/M19_BRING_YOUR_OWN_AGENT.md):
+- [docs/M19_BRING_YOUR_OWN_AGENT.md](https://github.com/printf905/AgentPerf/blob/main/docs/M19_BRING_YOUR_OWN_AGENT.md):
   instrumentation completeness, readiness checks, and BYOA dogfooding.
 
 Validation and backend evidence:
 
-- [docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md](docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md):
+- [docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md](https://github.com/printf905/AgentPerf/blob/main/docs/REAL_AGENT_CONTEXT_WASTE_RESULTS.md):
   M3 research-agent context-waste replay.
-- [docs/REAL_VLLM_RESULTS.md](docs/REAL_VLLM_RESULTS.md): M2 detailed vLLM
+- [docs/REAL_VLLM_RESULTS.md](https://github.com/printf905/AgentPerf/blob/main/docs/REAL_VLLM_RESULTS.md): M2 detailed vLLM
   prefix-cache mechanism validation.
-- [docs/VLLM_PREFIX_CACHE_SEMANTICS.md](docs/VLLM_PREFIX_CACHE_SEMANTICS.md):
+- [docs/VLLM_PREFIX_CACHE_SEMANTICS.md](https://github.com/printf905/AgentPerf/blob/main/docs/VLLM_PREFIX_CACHE_SEMANTICS.md):
   request-by-request vLLM cache behavior.
-- [docs/REAL_TELEMETRY_MAPPING.md](docs/REAL_TELEMETRY_MAPPING.md): vLLM field
+- [docs/REAL_TELEMETRY_MAPPING.md](https://github.com/printf905/AgentPerf/blob/main/docs/REAL_TELEMETRY_MAPPING.md): vLLM field
   mapping.
-- [docs/SERVING_BACKENDS.md](docs/SERVING_BACKENDS.md): serving backend matrix.
-- [docs/SGLANG_TELEMETRY.md](docs/SGLANG_TELEMETRY.md): SGLang telemetry mapping.
-- [docs/EXTERNAL_AGENT_VLLM_VALIDATION.md](docs/EXTERNAL_AGENT_VLLM_VALIDATION.md):
+- [docs/SERVING_BACKENDS.md](https://github.com/printf905/AgentPerf/blob/main/docs/SERVING_BACKENDS.md): serving backend matrix.
+- [docs/SGLANG_TELEMETRY.md](https://github.com/printf905/AgentPerf/blob/main/docs/SGLANG_TELEMETRY.md): SGLang telemetry mapping.
+- [docs/EXTERNAL_AGENT_VLLM_VALIDATION.md](https://github.com/printf905/AgentPerf/blob/main/docs/EXTERNAL_AGENT_VLLM_VALIDATION.md):
   OpenAI Agents SDK plus vLLM validation.
-- [docs/REAL_WORLD_GENERALIZATION_RESULTS.md](docs/REAL_WORLD_GENERALIZATION_RESULTS.md):
+- [docs/REAL_WORLD_GENERALIZATION_RESULTS.md](https://github.com/printf905/AgentPerf/blob/main/docs/REAL_WORLD_GENERALIZATION_RESULTS.md):
   mini-SWE-agent profiling result.
-- [docs/M20_REAL_WORLD_GENERALIZATION.md](docs/M20_REAL_WORLD_GENERALIZATION.md):
+- [docs/M20_REAL_WORLD_GENERALIZATION.md](https://github.com/printf905/AgentPerf/blob/main/docs/M20_REAL_WORLD_GENERALIZATION.md):
   heterogeneous workload review and finding-usefulness taxonomy.
-- [docs/M21_OVERHEAD_AND_SCALE.md](docs/M21_OVERHEAD_AND_SCALE.md):
+- [docs/M21_OVERHEAD_AND_SCALE.md](https://github.com/printf905/AgentPerf/blob/main/docs/M21_OVERHEAD_AND_SCALE.md):
   instrumentation overhead and local scale characterization.
-- [docs/SCALE_CHARACTERIZATION.md](docs/SCALE_CHARACTERIZATION.md): current
+- [docs/SCALE_CHARACTERIZATION.md](https://github.com/printf905/AgentPerf/blob/main/docs/SCALE_CHARACTERIZATION.md): current
   product-hardening scale smoke results and limits.
-- [docs/M25_MODEL_CAPACITY_REPLAY.md](docs/M25_MODEL_CAPACITY_REPLAY.md):
+- [docs/M25_MODEL_CAPACITY_REPLAY.md](https://github.com/printf905/AgentPerf/blob/main/docs/M25_MODEL_CAPACITY_REPLAY.md):
   model-capacity replay, role headroom, and routing verification semantics.
-- [docs/PRODUCT_COMPLETENESS_AUDIT.md](docs/PRODUCT_COMPLETENESS_AUDIT.md):
+- [docs/PRODUCT_COMPLETENESS_AUDIT.md](https://github.com/printf905/AgentPerf/blob/main/docs/PRODUCT_COMPLETENESS_AUDIT.md):
   core workflow completeness matrix and remaining product gaps.
-- [docs/COMPATIBILITY_MATRIX.md](docs/COMPATIBILITY_MATRIX.md): deterministic
+- [docs/COMPATIBILITY_MATRIX.md](https://github.com/printf905/AgentPerf/blob/main/docs/COMPATIBILITY_MATRIX.md): deterministic
   local compatibility checks across milestones and integrations.
-- [docs/SECURITY_AND_PRIVACY.md](docs/SECURITY_AND_PRIVACY.md): artifact and
+- [docs/SECURITY_AND_PRIVACY.md](https://github.com/printf905/AgentPerf/blob/main/docs/SECURITY_AND_PRIVACY.md): artifact and
   HTML redaction boundaries.
-- [docs/PYPI_RELEASE_READINESS.md](docs/PYPI_RELEASE_READINESS.md): package
+- [docs/PYPI_RELEASE_READINESS.md](https://github.com/printf905/AgentPerf/blob/main/docs/PYPI_RELEASE_READINESS.md): package
   index readiness and human publishing steps.
-- [docs/PRODUCT_GAPS.md](docs/PRODUCT_GAPS.md): evidence-backed remaining gaps.
-- [docs/DOGFOODING_WORKFLOW.md](docs/DOGFOODING_WORKFLOW.md): end-to-end
+- [docs/PRODUCT_GAPS.md](https://github.com/printf905/AgentPerf/blob/main/docs/PRODUCT_GAPS.md): evidence-backed remaining gaps.
+- [docs/DOGFOODING_WORKFLOW.md](https://github.com/printf905/AgentPerf/blob/main/docs/DOGFOODING_WORKFLOW.md): end-to-end
   workflow dogfooding.
 
 Release and positioning:
 
-- [CHANGELOG.md](CHANGELOG.md): release history.
-- [docs/RELEASE_NOTES_v0.4.0.md](docs/RELEASE_NOTES_v0.4.0.md): v0.4.0 release
+- [CHANGELOG.md](https://github.com/printf905/AgentPerf/blob/main/CHANGELOG.md): release history.
+- [docs/RELEASE_NOTES_v0.4.0.md](https://github.com/printf905/AgentPerf/blob/main/docs/RELEASE_NOTES_v0.4.0.md): v0.4.0 release
   notes.
-- [docs/RELEASE_NOTES_v0.3.0.md](docs/RELEASE_NOTES_v0.3.0.md): v0.3.0 release
+- [docs/RELEASE_NOTES_v0.3.0.md](https://github.com/printf905/AgentPerf/blob/main/docs/RELEASE_NOTES_v0.3.0.md): v0.3.0 release
   notes.
-- [docs/PROJECT_STORY.md](docs/PROJECT_STORY.md): conservative project and
+- [docs/PROJECT_STORY.md](https://github.com/printf905/AgentPerf/blob/main/docs/PROJECT_STORY.md): conservative project and
   interview framing.
-- [docs/LANDSCAPE.md](docs/LANDSCAPE.md): competitive and novelty review.
+- [docs/LANDSCAPE.md](https://github.com/printf905/AgentPerf/blob/main/docs/LANDSCAPE.md): competitive and novelty review.
 
 ## Limitations
 
