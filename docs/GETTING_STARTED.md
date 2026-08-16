@@ -3,8 +3,8 @@
 AgentPerf can be used without a GPU, API key, model download, or source checkout
 once it is installed as a package.
 
-AgentPerf has not yet been published to PyPI. Until the first PyPI upload, use a
-local wheel or editable source install.
+AgentPerf has not yet been published to PyPI. Until the first PyPI upload, use
+the GitHub source package, a local wheel, or an editable source install.
 
 Once published on PyPI:
 
@@ -14,6 +14,13 @@ agentperf demo
 ```
 
 From a source checkout:
+
+```bash
+pip install "git+https://github.com/printf905/AgentPerf.git"
+agentperf demo
+```
+
+For local development:
 
 ```bash
 python -m venv .venv

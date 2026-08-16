@@ -25,6 +25,8 @@ dependencies = []
 Homepage = "https://github.com/printf905/AgentPerf"
 Repository = "https://github.com/printf905/AgentPerf"
 Issues = "https://github.com/printf905/AgentPerf/issues"
+Documentation = "https://github.com/printf905/AgentPerf/blob/main/docs/GETTING_STARTED.md"
+Changelog = "https://github.com/printf905/AgentPerf/blob/main/CHANGELOG.md"
 Releases = "https://github.com/printf905/AgentPerf/releases"
 
 [project.optional-dependencies]

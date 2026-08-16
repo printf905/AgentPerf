@@ -63,6 +63,13 @@ API key, GPU, or model service. In a real repository, replace the demo step with
 your agent's candidate-artifact generation command and point `agentperf check`
 at your reviewed baseline artifact.
 
+Until AgentPerf is published on PyPI, the copyable workflow installs from the
+GitHub source package. After publication, replace that install command with:
+
+```bash
+pip install agentperf
+```
+
 ## Artifact Retention
 
 For debugging failed checks, upload the candidate artifact and HTML report as

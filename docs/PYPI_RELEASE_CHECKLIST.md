@@ -8,10 +8,13 @@ or TestPyPI unless the release owner explicitly approves it.
 - Confirm `main` is clean and up to date.
 - Confirm the intended package version in `pyproject.toml` and
   `agentperf.__version__`.
+- Confirm the intended version is not already published on PyPI.
 - Confirm artifact schema, benchmark-suite schema, and regression-policy schema
   compatibility.
 - Review README and release notes for claims that imply PyPI availability.
 - Confirm optional dependencies remain optional.
+- Recheck `https://pypi.org/pypi/agentperf/json` immediately before first
+  upload.
 
 ## Validation
 
@@ -69,13 +72,23 @@ Check tracked files and package contents for:
 
 ## Release
 
+- Confirm PyPI account ownership and required account security.
+- Configure a pending PyPI Trusted Publisher for `agentperf` if the project does
+  not yet exist.
+- Configure the GitHub publisher with:
+  - owner: `printf905`;
+  - repository: `AgentPerf`;
+  - workflow filename: `publish-pypi.yml`;
+  - environment: `pypi`.
+- Configure the GitHub `pypi` environment to require human approval.
 - Create and push the release tag only after validation passes.
 - Create the GitHub Release from the tag.
 - Publish to PyPI only after explicit approval.
-- Prefer trusted publishing if repository credentials and PyPI project
-  ownership are configured.
 - Do not upload private experiment data, Runpod bundles, or temporary HTML
   reports as release assets.
+
+See [PYPI_TRUSTED_PUBLISHING.md](PYPI_TRUSTED_PUBLISHING.md) for the prepared
+OIDC workflow and human configuration plan.
 
 ## Post-Upload Verification
 
@@ -84,9 +97,20 @@ After a real PyPI upload:
 ```bash
 python -m venv /tmp/agentperf-pypi-smoke
 source /tmp/agentperf-pypi-smoke/bin/activate
+python -m pip install --upgrade pip
 pip install agentperf
-agentperf demo --output /tmp/agentperf-pypi-demo
+agentperf --help
+agentperf demo --output /tmp/agentperf-pypi-demo --force
 agentperf doctor /tmp/agentperf-pypi-demo/baseline
+agentperf report /tmp/agentperf-pypi-demo/baseline \
+  --output /tmp/agentperf-pypi-report.html
+agentperf compare \
+  /tmp/agentperf-pypi-demo/baseline \
+  /tmp/agentperf-pypi-demo/candidate
+agentperf check \
+  /tmp/agentperf-pypi-demo/baseline \
+  /tmp/agentperf-pypi-demo/candidate \
+  --policy /tmp/agentperf-pypi-demo/agentperf-regression.yaml
 ```
 
 Also verify:
