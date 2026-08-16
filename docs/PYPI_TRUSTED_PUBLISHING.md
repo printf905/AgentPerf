@@ -7,7 +7,7 @@ tag, create a release, or configure PyPI account ownership.
 
 ## Current Name State
 
-Read-only PyPI checks on 2026-08-16:
+Read-only PyPI checks on 2026-08-16 during v0.5.0 release prep:
 
 ```text
 https://pypi.org/pypi/agentperf/json -> 404
@@ -107,6 +107,45 @@ TestPyPI human steps:
 
 Do not publish to TestPyPI from normal CI.
 
+Recommended TestPyPI publisher settings:
+
+```text
+TestPyPI project: agentperf
+GitHub owner: printf905
+GitHub repository: AgentPerf
+Workflow filename: publish-pypi.yml
+Environment: pypi
+Repository URL in publish action: https://test.pypi.org/legacy/
+```
+
+Use the same reviewed distributions as production PyPI. Do not maintain a
+permanent TestPyPI path in the normal release workflow unless the maintainer
+explicitly chooses that operational model.
+
+After a human-authorized TestPyPI upload:
+
+```bash
+python -m venv /tmp/agentperf-testpypi-smoke
+source /tmp/agentperf-testpypi-smoke/bin/activate
+python -m pip install --upgrade pip
+pip install \
+  --index-url https://test.pypi.org/simple/ \
+  --extra-index-url https://pypi.org/simple/ \
+  agentperf==0.5.0
+agentperf --help
+agentperf demo --output /tmp/agentperf-testpypi-demo --force
+agentperf doctor /tmp/agentperf-testpypi-demo/baseline
+agentperf report /tmp/agentperf-testpypi-demo/baseline \
+  --output /tmp/agentperf-testpypi-report.html
+agentperf compare \
+  /tmp/agentperf-testpypi-demo/baseline \
+  /tmp/agentperf-testpypi-demo/candidate
+agentperf check \
+  /tmp/agentperf-testpypi-demo/baseline \
+  /tmp/agentperf-testpypi-demo/candidate \
+  --policy /tmp/agentperf-testpypi-demo/agentperf-regression.yaml
+```
+
 ## Post-Publish Verification
 
 After a future PyPI upload:
@@ -115,7 +154,7 @@ After a future PyPI upload:
 python -m venv /tmp/agentperf-pypi-postpublish
 source /tmp/agentperf-pypi-postpublish/bin/activate
 python -m pip install --upgrade pip
-pip install agentperf==<VERSION>
+pip install agentperf==0.5.0
 agentperf --help
 agentperf demo --output /tmp/agentperf-pypi-demo --force
 agentperf doctor /tmp/agentperf-pypi-demo/baseline

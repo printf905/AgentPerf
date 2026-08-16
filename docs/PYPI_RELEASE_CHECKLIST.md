@@ -3,6 +3,8 @@
 This checklist prepares a future package-index release. Do not upload to PyPI
 or TestPyPI unless the release owner explicitly approves it.
 
+Target release: `v0.5.0`
+
 ## Pre-Release
 
 - Confirm `main` is clean and up to date.
@@ -72,6 +74,8 @@ Check tracked files and package contents for:
 
 ## Release
 
+- Recommended first index publication path: TestPyPI first, then production
+  PyPI.
 - Confirm PyPI account ownership and required account security.
 - Configure a pending PyPI Trusted Publisher for `agentperf` if the project does
   not yet exist.
@@ -81,6 +85,7 @@ Check tracked files and package contents for:
   - workflow filename: `publish-pypi.yml`;
   - environment: `pypi`.
 - Configure the GitHub `pypi` environment to require human approval.
+- Configure equivalent TestPyPI pending publisher settings if using TestPyPI.
 - Create and push the release tag only after validation passes.
 - Create the GitHub Release from the tag.
 - Publish to PyPI only after explicit approval.
@@ -92,13 +97,37 @@ OIDC workflow and human configuration plan.
 
 ## Post-Upload Verification
 
+After a human-authorized TestPyPI upload:
+
+```bash
+python -m venv /tmp/agentperf-testpypi-smoke
+source /tmp/agentperf-testpypi-smoke/bin/activate
+python -m pip install --upgrade pip
+pip install \
+  --index-url https://test.pypi.org/simple/ \
+  --extra-index-url https://pypi.org/simple/ \
+  agentperf==0.5.0
+agentperf --help
+agentperf demo --output /tmp/agentperf-testpypi-demo --force
+agentperf doctor /tmp/agentperf-testpypi-demo/baseline
+agentperf report /tmp/agentperf-testpypi-demo/baseline \
+  --output /tmp/agentperf-testpypi-report.html
+agentperf compare \
+  /tmp/agentperf-testpypi-demo/baseline \
+  /tmp/agentperf-testpypi-demo/candidate
+agentperf check \
+  /tmp/agentperf-testpypi-demo/baseline \
+  /tmp/agentperf-testpypi-demo/candidate \
+  --policy /tmp/agentperf-testpypi-demo/agentperf-regression.yaml
+```
+
 After a real PyPI upload:
 
 ```bash
 python -m venv /tmp/agentperf-pypi-smoke
 source /tmp/agentperf-pypi-smoke/bin/activate
 python -m pip install --upgrade pip
-pip install agentperf
+pip install agentperf==0.5.0
 agentperf --help
 agentperf demo --output /tmp/agentperf-pypi-demo --force
 agentperf doctor /tmp/agentperf-pypi-demo/baseline

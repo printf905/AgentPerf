@@ -14,7 +14,7 @@ from agentperf.instrumentation import (
 )
 from agentperf.regression import evaluate_regression_policy, load_regression_policy
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     "ExperimentArtifact",

@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_package_root_import_does_not_require_optional_integrations() -> None:
-    assert agentperf.__version__ == "0.4.0"
+    assert agentperf.__version__ == "0.5.0"
     assert hasattr(agentperf, "ExperimentSession")
     assert hasattr(agentperf, "trace_llm")
 

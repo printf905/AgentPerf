@@ -13,7 +13,7 @@ TestPyPI, or upload to PyPI.
 - Release commit: `1f1002ede596d63e0e945e43c2bb416b3e787139`
 - Current main at audit: `ad5e6f727e72942d302c5837a4b469a2e3b80fa7`
 - Commits since `v0.4.0`: 19
-- Current package version: `0.4.0`
+- Current package version at the final productization audit: `0.4.0`
 - Artifact schema version: `1`
 
 ## Post-v0.4 Capability Groups
@@ -64,7 +64,9 @@ distribution readiness, LangGraph, visual comparison reports, structured
 recommendations, model-capacity routing verification, crash-recoverable capture,
 and multi-agent semantics. This is not a patch-only change set.
 
-Do not bump the version until a release-prep PR is explicitly authorized.
+The `release/v0.5.0-prep` branch is the authorized release-prep branch that
+bumps the package version to `0.5.0`. Do not publish from it until the release
+owner completes TestPyPI/PyPI setup and explicitly approves publication.
 
 Files likely involved in a future release-prep PR:
 
@@ -185,4 +187,3 @@ without consuming the real PyPI name/version.
 - Configure GitHub `pypi` environment approval.
 - Authorize any TestPyPI or PyPI upload.
 - Verify post-publish installation.
-
