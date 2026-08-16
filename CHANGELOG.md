@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## v0.5.0
+
 ### Added
 
 - Added standalone visual replay comparison reports with
@@ -12,26 +16,20 @@
   command that creates baseline/candidate artifacts, an HTML report, a
   comparison verdict, and a regression policy without API keys, GPU, or model
   downloads.
-- Added package-first getting-started documentation and a PyPI release
-  checklist for future package-index publication.
-- Added a copyable GitHub Actions regression-check example and CI integration
-  guide.
+- Added package-first getting-started documentation, a copyable GitHub Actions
+  regression-check example, and PyPI Trusted Publishing release documentation.
 - Added an optional LangGraph integration and deterministic local LangGraph
   example using the existing AgentPerf run/LLM/tool instrumentation model.
-- Added a wheel-based M22 distribution smoke script that validates CLI startup,
-  demo, doctor, report, compare, and check outside the source checkout.
-- Added deterministic M21 scale fixture generation and a reproducible
-  benchmark harness for instrumentation overhead, artifact growth, analysis,
-  doctor, HTML report, compare, and check scaling.
-- Added compact M21 benchmark result data and an engineering note documenting
-  tested local operating ranges and limitations.
-- Added structured model-capacity replay semantics that distinguish local
-  one-role model headroom from full mixed-routing verification.
-- Added optional role/model routing summaries for artifacts and comparison HTML
-  when LLM calls include role and model metadata.
-- Added a migrated historical M4 Phase A model-choice evidence file for
-  regression tests, clearly marked as local role-headroom evidence rather than
-  mixed-routing validation.
+- Added deterministic scale fixture generation and a reproducible benchmark
+  harness for instrumentation overhead, artifact growth, analysis, doctor, HTML
+  report, compare, and check scaling.
+- Added structured recommendation contracts that describe objectives,
+  intervention classes, expected metric movement, quality risks, applicability,
+  and replay verification requirements.
+- Added standalone recommendation verification output in comparison JSON,
+  terminal output, and HTML reports.
+- Added model-capacity replay semantics that distinguish local one-role
+  headroom from full mixed-routing verification.
 - Added preserved M25 Phase B evidence for one pre-registered mixed-routing
   replay, marked as bounded `GLOBAL_ROUTING_VERIFIED` evidence rather than
   optimal or universal routing.
@@ -43,23 +41,55 @@
 
 ### Improved
 
+- Improved async/concurrent tracing correctness so concurrent LLM/tool spans,
+  nested runs, cancellation, and branch failures preserve task-local parentage.
 - Added a public `role=` alias for `trace_llm(..., semantic_role=...)` so
   framework-free experiments can record model-routing identity more directly.
-- Added a conservative `MODEL_CHOICE_HEADROOM` recommendation contract requiring
-  quality-preserving full routing replay before accepting routing changes.
 - Preserved model-capacity role semantics separately from multi-agent identity
   so `semantic_role` routing analysis and `agent_id` attribution can coexist.
+- Improved metric provenance, materiality/report semantics, and detector
+  wording so missing evidence remains unavailable rather than becoming zero,
+  negative evidence, or a successful verification.
+- Improved HTML and comparison redaction for secret-like metadata while keeping
+  raw artifact capture semantics explicit.
 - `agentperf demo` now also writes a local `comparison.html` replay-verification
   report alongside its baseline profiler report.
-- Improved README first-run onboarding so users can see the future package
-  install path, immediate demo command, BYOA path, and optional LangGraph path
-  without reading implementation docs first.
+- Improved README first-run onboarding so the package install path, demo,
+  BYOA path, CI path, and advanced integrations are easier to find.
 - Reduced framework-free tracing overhead by avoiding repeated full-run
   reconstruction during default LLM/tool ID assignment.
 - Made `agentperf doctor` use correlation-only completeness assessment instead
   of running full detectors.
 - Reduced common-prefix analysis cost with sorted-prefix and trie-based
   computations while preserving detector semantics.
+
+### Validation
+
+- Preserved the controlled M3 research-agent replay as the primary scoped
+  quantitative optimization example: input processing `132,756 -> 95,479`
+  (`-28.1%`), tool-result processing `112,287 -> 78,566` (`-30.0%`),
+  scheduled-to-first P95 `312.180 ms -> 176.534 ms` (`-43.5%`), with quality
+  remaining inside the predefined tolerance and replay verdict `ACCEPT`.
+- Preserved heterogeneous workload validation across mini-SWE-agent,
+  tool-heavy research support, and OpenAI Agents SDK support-triage workloads.
+- Added measured instrumentation-overhead and local scale characterization
+  through deterministic fixtures, without production-scale claims.
+- Preserved one bounded real model-capacity Phase B validation where the tested
+  mixed routing stayed within the predefined quality tolerance and was marked
+  `GLOBAL_ROUTING_VERIFIED`.
+- Expanded regression coverage for concurrency, failure modes, checkpoint
+  recovery, multi-agent structure, recommendations, comparison HTML, package
+  installation, vLLM, SGLang, LangGraph, and OpenAI Agents SDK paths.
+
+### Compatibility
+
+- Artifact schema version remains `1`.
+- Benchmark-suite schema version remains `1`.
+- Regression-policy schema version remains `1`.
+- Existing raw trace analysis, artifact loading, BYOA instrumentation,
+  OpenAI Agents SDK integration, LangGraph integration, vLLM fixtures, SGLang
+  fixtures, benchmark suites, `compare`, `check`, `doctor`, and HTML reports
+  remain supported.
 
 ## v0.4.0
 
@@ -96,83 +126,18 @@
 
 ### Validation
 
-- Validated BYOA instrumentation on a deterministic local support-agent
-  workflow with quality-preserving replay.
-- Validated finding interpretation across three heterogeneous local workloads:
-  mini-SWE-agent's existing coding loop, OpenAI Agents SDK support triage, and
-  a framework-free deterministic tool-heavy workload.
-- Reviewed representative findings as actionable, valid non-actionable, or
-  expected structural behavior. This review set is small and manually
-  classified; it is not a detector-accuracy benchmark.
+- M19 BYOA smoke: generated a valid framework-free artifact with 3 tasks, 6 LLM
+  calls, 3 tool calls, complete task quality, and expected doctor readiness.
+- M20 heterogeneous validation: 3 workloads, 19 tasks, 62 LLM calls, 51 tool
+  calls, and 3 reviewed findings across coding, tool-heavy, and OpenAI Agents
+  SDK-style workloads.
+- Historical M3 compare remains `ACCEPT`; M3 check remains `PASS`; M3 suite
+  check remains `PASS`.
+- vLLM and SGLang recorded fixtures remain supported with exact request ID
+  correlation where evidence is available.
 
 ### Compatibility
 
-- Existing raw trace, artifact, `compare`, `check`, `suite`, `report`, vLLM,
-  and SGLang workflows remain supported.
-- Artifact schema version remains `1`; AgentPerf package version,
-  artifact-schema version, benchmark-suite schema version, and regression-policy
-  schema version remain intentionally separate.
-- Optional integrations remain optional; importing AgentPerf does not require
-  vLLM, SGLang, OpenAI Agents SDK, or mini-SWE-agent.
-
-## v0.3.0
-
-### Added
-
-- Added replay verification for baseline/candidate runs with quality-aware
-  ACCEPT / REJECT / INCONCLUSIVE verdicts and finding lifecycle tracking.
-- Added standardized `ExperimentArtifact` bundles and `ExperimentSession` so
-  task quality, environment metadata, findings, and summaries can be emitted by
-  default.
-- Added regression policies, `agentperf check`, stable CI exit codes, JSON
-  output, and GitHub Step Summary-friendly Markdown.
-- Added benchmark suites with explicit reviewed baselines, suite validation,
-  suite checks, multi-suite checks, and baseline proposal reports.
-- Added component-aware token regression policies over system, history,
-  tool-result, retrieved-context, tool-schema, and total component-attributed
-  processing.
-- Added a standalone local HTML profiler report for artifacts and raw traces.
-- Added SGLang serving-backend ingestion/correlation with backend-specific
-  telemetry provenance.
-
-### Improved
-
-- Improved CI report hierarchy so quality regressions, task coverage, largest
-  token/latency changes, and material finding changes are easier to triage.
-- Improved duplication materiality semantics so cross-run shared scaffold is not
-  treated as removable within-run context waste.
-- Improved token accounting documentation and reporting for provider usage
-  versus AgentPerf component attribution.
-- Improved serving-backend capability reporting so missing telemetry remains
-  explicit rather than being interpreted as zero.
-
-### Compatibility
-
-- Raw trace `analyze` and `compare` workflows remain supported.
-- Artifact schema version remains `1`; AgentPerf package version,
-  artifact-schema version, suite version, and regression-policy schema version
-  are intentionally separate.
-- vLLM support and existing recorded vLLM artifacts remain valid.
-
-## v0.2.0
-
-- Added real vLLM ingestion and explicit request correlation.
-- Added real prefix-cache diagnosis and replay validation on vLLM.
-- Added component-level processed-token attribution.
-- Added tool-output and context-waste profiling.
-- Added quality-constrained context replay over a real multi-step research
-  agent.
-- Added OpenAI Agents SDK integration through public hooks/wrappers.
-- Added OpenAI Agents SDK plus live vLLM cross-layer validation.
-- Added mini-SWE-agent integration for real existing coding-agent profiling.
-- Added run-boundary-aware duplication semantics for cross-run shared scaffold.
-- Added experimental model-choice Phase A counterfactual profiling.
-
-## v0.1.0
-
-- Added initial normalized trace schema.
-- Added synthetic trace fixtures.
-- Added deterministic MVP detectors for context duplication,
-  prefix-cache opportunity, and prefill bottleneck signals.
-- Added terminal reporter and CLI.
-- Added initial vLLM recording adapter.
+- Artifact schema version remains `1`.
+- Existing normalized trace JSON workflows remain supported.
+- Existing compare/check/suite/report/analyze commands remain compatible.

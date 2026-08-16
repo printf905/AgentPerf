@@ -57,7 +57,8 @@ AgentPerf does not require a GPU for local inspection, tests, synthetic traces,
 recorded telemetry fixtures, artifact comparison, regression checks, benchmark
 suites, or HTML reports.
 
-Once AgentPerf is published on PyPI, the first-run path is:
+For the v0.5.0 release, AgentPerf's canonical first-run path after PyPI
+publication is:
 
 ```bash
 pip install agentperf
@@ -69,7 +70,7 @@ baseline and candidate artifacts, compares them, and generates a standalone HTML
 report. It does not require an API key, model download, serving backend, or
 source checkout.
 
-Until the first PyPI upload, install from the GitHub source package:
+Until the first PyPI upload is complete, install from the GitHub source package:
 
 ```bash
 pip install "git+https://github.com/printf905/AgentPerf.git"
@@ -103,8 +104,8 @@ If you already have a Python agent, start with
 minimal `ExperimentSession` / `trace_llm` / `trace_tool` path and how to run
 `agentperf doctor` to check capture completeness.
 
-LangGraph users can install the optional integration with
-`pip install "agentperf[langgraph]"` after package publication. See
+After package publication, LangGraph users can install the optional integration
+with `pip install "agentperf[langgraph]"`. See
 [docs/LANGGRAPH_INTEGRATION.md](https://github.com/printf905/AgentPerf/blob/main/docs/LANGGRAPH_INTEGRATION.md).
 
 Compare two self-contained artifacts:
@@ -473,6 +474,8 @@ Validation and backend evidence:
 Release and positioning:
 
 - [CHANGELOG.md](https://github.com/printf905/AgentPerf/blob/main/CHANGELOG.md): release history.
+- [docs/RELEASE_NOTES_v0.5.0.md](https://github.com/printf905/AgentPerf/blob/main/docs/RELEASE_NOTES_v0.5.0.md): v0.5.0 release
+  notes.
 - [docs/RELEASE_NOTES_v0.4.0.md](https://github.com/printf905/AgentPerf/blob/main/docs/RELEASE_NOTES_v0.4.0.md): v0.4.0 release
   notes.
 - [docs/RELEASE_NOTES_v0.3.0.md](https://github.com/printf905/AgentPerf/blob/main/docs/RELEASE_NOTES_v0.3.0.md): v0.3.0 release

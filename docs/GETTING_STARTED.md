@@ -3,10 +3,11 @@
 AgentPerf can be used without a GPU, API key, model download, or source checkout
 once it is installed as a package.
 
-AgentPerf has not yet been published to PyPI. Until the first PyPI upload, use
-the GitHub source package, a local wheel, or an editable source install.
+AgentPerf v0.5.0 is prepared for first PyPI publication. Until that upload is
+complete, use the GitHub source package, a local wheel, or an editable source
+install.
 
-Once published on PyPI:
+After PyPI publication:
 
 ```bash
 pip install agentperf

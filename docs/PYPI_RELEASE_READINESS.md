@@ -9,7 +9,7 @@ or perform a PyPI/TestPyPI upload.
 
 - Latest GitHub Release at this audit: `v0.4.0`
 - Package name in `pyproject.toml`: `agentperf`
-- Current package version: `0.4.0`
+- Current package version: `0.5.0` on the release-prep branch
 - Artifact schema version: `1`
 - Required Python: `>=3.11`
 - Locally validated clean wheel installs: Python 3.11 and Python 3.12 in this
@@ -86,11 +86,11 @@ python -m venv /tmp/agentperf-langgraph
 
 Use shell expansion carefully; some shells require the exact wheel filename.
 
-This audit installed the local wheel in clean Python 3.11 and 3.12 virtual
-environments outside the source tree. Base import, `agentperf --help`,
-`agentperf demo`, `doctor`, `report`, `compare`, and `check` passed. The
-`agentperf[langgraph]` optional extra installed from the local wheel on Python
-3.12, and importing `agentperf.integrations.langgraph.instrument` succeeded.
+The v0.5.0 release-prep audit must install the local wheel in clean Python 3.11
+and 3.12 virtual environments outside the source tree. Base import,
+`agentperf --help`, `agentperf demo`, `doctor`, `report`, `compare`, and
+`check` must pass. The `agentperf[langgraph]` optional extra should be validated
+from the release-candidate wheel on Python 3.12.
 
 ## Trusted Publishing Requirements
 
@@ -131,7 +131,7 @@ This readiness pass does not:
 - upload to TestPyPI;
 - create a tag;
 - create a GitHub Release;
-- change package version;
+- change package version outside the explicit release-prep branch;
 - reserve a package name;
 - configure credentials.
 
@@ -141,7 +141,6 @@ Technical packaging is close to ready. The remaining blocker is release-owner
 configuration and explicit publication authorization, not another AgentPerf
 feature.
 
-Because main contains substantial post-v0.4 development while the package
-version remains `0.4.0`, a future package-index release should include an
-explicit version decision and version bump before upload. This readiness pass
-does not change the version.
+The release-prep branch bumps the package version to `0.5.0`. Publication still
+requires explicit human authorization, TestPyPI/PyPI Trusted Publisher setup,
+and post-upload verification.
