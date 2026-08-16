@@ -73,11 +73,14 @@ deterministic carry-forward strategies were evaluated. The accepted strategy,
 DEDUP_ONLY, reduced processed input tokens by 28.1% and tool-result processed
 tokens by 30.0% while staying within an explicit quality tolerance.
 
-M4 is only partially complete. Phase A replayed role-specific counterfactuals
-for planner, reviewer, and synthesizer using Qwen3 0.6B, 1.7B, and 4B models.
-It found role-specific model headroom, but Phase B end-to-end mixed routing did
-not complete because GPU/runtime setup attempts failed before replay. The
-proposed mixed candidate must not be presented as validated.
+M4 Phase A replayed role-specific counterfactuals for planner, reviewer, and
+synthesizer using Qwen3 0.6B, 1.7B, and 4B models. It found role-specific model
+headroom but did not prove that independent substitutions compose safely. M25
+Phase B later ran one pre-registered mixed routing against a fresh
+same-environment all-strong baseline. The tested route stayed within the
+predefined quality tolerance and reduced a relative model-capacity cost proxy,
+so AgentPerf marked that specific route `GLOBAL_ROUTING_VERIFIED`. That is a
+bounded validation result, not optimal routing or universal model downsizing.
 
 Post-v0.2 work turned the profiler into a reusable development workflow:
 self-contained experiment artifacts, baseline/candidate comparison,
@@ -126,9 +129,12 @@ evidence, not a vLLM-versus-SGLang performance benchmark.
 5. Dogfooding/accounting story: provider input tokens stayed at 1,604 -> 1,604
    while AgentPerf system-component processing changed from 680 -> 520 with
    quality unchanged at 1.000 -> 1.000.
-6. M4 Phase A: all-4B baseline quality was 0.967 mean score and 90% pass rate;
-   one-role replay found several quality-preserving smaller-model candidates.
-   This is counterfactual evidence only, not an end-to-end mixed-routing result.
+6. Model-capacity story: historical M4 Phase A found local role-level
+   headroom; M25 Phase B then verified one pre-registered mixed routing under a
+   fresh same-environment replay. Quality moved from 0.967 to 0.933 mean score
+   and pass rate moved from 90% to 80%, which was exactly within the predefined
+   tolerance boundary. This should not be described as quality unchanged or a
+   general cost-savings benchmark.
 
 ## Failure And Learning Stories
 
@@ -158,7 +164,7 @@ evidence, not a vLLM-versus-SGLang performance benchmark.
   headline, resume bullet, or general speedup claim.
 - Do not call scheduled-to-first-token pure GPU prefill latency.
 - Do not claim optimal KV-cache sizing.
-- Do not claim M4 mixed routing is validated.
+- Do not claim optimal or universal mixed-model routing.
 - Do not claim small models are generally better for the reviewer role.
 - Do not present synthetic fixtures as benchmark results.
 
@@ -178,6 +184,7 @@ evidence, not a vLLM-versus-SGLang performance benchmark.
 - Added SGLang as a second serving backend and validated 10/10 exact
   external-agent request correlations in a real SGLang-backed support-triage
   run without timestamp fuzzy matching.
-- Experimental: implemented model-choice counterfactual profiling by semantic
-  agent role and validated Phase A role sensitivity on Qwen3 0.6B/1.7B/4B; the
-  end-to-end mixed-routing replay remains pending.
+- Implemented model-choice counterfactual profiling by semantic agent role and
+  validated one pre-registered mixed routing end to end under an explicit
+  quality tolerance; framed as bounded replay evidence, not optimal routing or
+  universal downsizing.
