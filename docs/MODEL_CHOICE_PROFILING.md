@@ -3,7 +3,8 @@
 Status: Phase A completed on a real RTX 3090 using sequential model loading.
 The first concurrent multi-server attempt did not fit on 24GB, but the
 sequential runner produced a real all-strong baseline and one-role
-counterfactual matrix. Phase B mixed-routing replay has not been run.
+counterfactual matrix. M25 Phase B later completed one bounded
+same-environment mixed-routing replay; see `docs/M25_PHASE_B_RESULTS.md`.
 
 M25 adds structured model-capacity replay semantics around this historical
 evidence: local role headroom is now explicitly separated from full
@@ -86,7 +87,7 @@ Mixed candidate:
 
 | Config | Planner | Evidence reviewer | Final synthesizer |
 | --- | --- | --- | --- |
-| `mixed_evidence_backed` | Small | Medium | Strong |
+| `mixed_evidence_backed` | Medium | Small | Small |
 
 The mixed candidate should be selected after Phase A evidence is available. It
 is not produced by combining aggregate metrics from independent runs.
@@ -182,16 +183,15 @@ The successful Phase A run used:
 - `torch 2.11.0+cu129`
 - sequential one-model-at-a-time residency
 
-See `docs/MODEL_CHOICE_RESULTS.md` for measured quality, latency, cost-proxy,
-and `MODEL_CHOICE_HEADROOM` findings.
+See `docs/MODEL_CHOICE_RESULTS.md` for historical Phase A quality, latency,
+cost-proxy, and `MODEL_CHOICE_HEADROOM` findings. See
+`docs/M25_PHASE_B_RESULTS.md` for the later full mixed-routing replay.
 
-Do not report a mixed-routing result until Phase B replays a reviewed mixed
-candidate end to end.
+Do not report broader model-routing claims from Phase B; it is one bounded
+mixed-routing replay, not a general benchmark.
 
 ## Phase B Gate
 
-Do not start Phase B automatically. Phase A proposes a mixed candidate for
-review, but Phase B must explicitly replay it before AgentPerf claims end-to-end
-model-routing improvement. If the selected mixed configuration requires
-simultaneous serving, estimate memory explicitly and request approval before
-using a larger GPU when the price exceeds the configured cap.
+Do not start additional Phase B searches automatically. The completed M25
+Phase B replay tested one reviewed mixed candidate end to end. Any additional
+candidate search should be a separate reviewed experiment.

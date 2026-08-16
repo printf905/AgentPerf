@@ -1,0 +1,268 @@
+{
+  "tasks": [
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 7467.520656064153,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "atlas-cache"
+        ],
+        "fact_hits": [
+          "cache rollout",
+          "disable the new cache admission policy",
+          "platform-cache"
+        ]
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "q01-cache"
+    },
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 7881.72384724021,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "borealis-jobs"
+        ],
+        "fact_hits": [
+          "database CPU saturation",
+          "pause low-priority enrichment jobs",
+          "data-platform"
+        ]
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "q02-jobs"
+    },
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 7708.28464999795,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "cygnus-region"
+        ],
+        "fact_hits": [
+          "eu-west",
+          "shift read traffic",
+          "edge-routing"
+        ]
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "q03-region"
+    },
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 7241.116212680936,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "draco-auth"
+        ],
+        "fact_hits": [
+          "stale JWKS cache",
+          "flush the JWKS cache",
+          "identity-platform"
+        ]
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "q04-auth"
+    },
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 7366.6401617228985,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "equinox-payments"
+        ],
+        "fact_hits": [
+          "provider throttling",
+          "exponential backoff",
+          "payments-integrations"
+        ]
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "q05-webhooks"
+    },
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 7835.529955103993,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "atlas-cache"
+        ],
+        "fact_hits": [
+          "platform-cache",
+          "prior stable cache configuration"
+        ]
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "q06-cache-owner"
+    },
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 8373.341424390674,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "borealis-jobs"
+        ],
+        "fact_hits": [
+          "increase pressure on the database",
+          "pause non-critical enrichment"
+        ]
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "q07-jobs-no-scale"
+    },
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 7374.005749821663,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "cygnus-region"
+        ],
+        "fact_hits": [
+          "replication lag",
+          "read traffic"
+        ]
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "q08-region-writes"
+    },
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 8179.353289306164,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "draco-auth"
+        ],
+        "fact_hits": [
+          "targeted cache flush",
+          "lower risk"
+        ]
+      },
+      "output_tokens": null,
+      "passed": true,
+      "quality_metrics": [],
+      "quality_score": 1.0,
+      "status": "COMPLETE",
+      "task_id": "q09-auth-risk"
+    },
+    {
+      "agent_run_ids": [
+        "strong_control"
+      ],
+      "client_latency_ms": 6970.619762316346,
+      "duration_ms": null,
+      "error": null,
+      "evaluator": "local-corpus-fact-coverage",
+      "execution_id": null,
+      "input_tokens": null,
+      "metadata": {
+        "doc_id_hits": [
+          "equinox-payments"
+        ],
+        "fact_hits": [
+          "gradually draining the retry queue"
+        ]
+      },
+      "output_tokens": null,
+      "passed": false,
+      "quality_metrics": [],
+      "quality_score": 0.6666666666666666,
+      "status": "COMPLETE",
+      "task_id": "q10-webhook-drain"
+    }
+  ]
+}

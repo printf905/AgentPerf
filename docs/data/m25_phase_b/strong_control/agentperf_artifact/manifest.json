@@ -1,0 +1,26 @@
+{
+  "agent_name": "m3-framework-free-research-agent",
+  "agentperf_version": "0.4.0",
+  "artifact_id": "m3-strong_control",
+  "backend": "vllm",
+  "created_at": "2026-08-16T06:25:31.296754+00:00",
+  "framework": "none",
+  "locations": {
+    "environment": "environment.json",
+    "findings": "findings.json",
+    "quality": "quality.json",
+    "summary": "summary.json",
+    "tasks": "tasks.json",
+    "trace": "trace.json"
+  },
+  "metadata": {
+    "experiment_session_compatible": true,
+    "status": "COMPLETE"
+  },
+  "model": "agentperf-qwen3-4b",
+  "schema_version": 1,
+  "serving_telemetry": true,
+  "status": "COMPLETE",
+  "task_count": 10,
+  "workload_id": "m3-real-agent-context-waste"
+}

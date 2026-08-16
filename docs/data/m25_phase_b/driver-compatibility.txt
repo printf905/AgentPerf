@@ -1,0 +1,3 @@
+driver_compatibility_status=newer_driver_backward_compatibility
+nvidia_smi_cuda_label=13.0
+selected_wheel_cuda=12.9

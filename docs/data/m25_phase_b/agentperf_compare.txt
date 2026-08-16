@@ -1,0 +1,72 @@
+============================================================
+AgentPerf Replay Comparison
+============================================================
+Result                             ACCEPT
+Quality                            PASS; mean 0.967 -> 0.933  -0.033 (-3.4%); pass 90.0% -> 80.0%  -10.0pp (-11.1%)
+Task coverage                      10 matched; 0 baseline-only; 0 candidate-only
+
+Largest Context Changes
+------------------------------------------------------------
+No component attribution available.
+
+Finding Summary
+------------------------------------------------------------
+Resolved                           2
+Improved                           0
+Regressed                          0
+New material                       1
+Regressed material                 0
+
+Tasks
+------------------------------------------------------------
+Baseline                           m3-real-agent-context-waste
+Candidate                          m3-real-agent-context-waste
+Matched tasks                      10
+Unmatched baseline                 0
+Unmatched candidate                0
+
+Performance
+------------------------------------------------------------
+Provider input tokens              95,483 -> 95,481  -2 (-0.0%)
+Provider output tokens             4,944 -> 5,142  +198 (+4.0%)
+Component processed tokens         85,811 -> 85,794  -17 (-0.0%)
+Attribution coverage               100.0% -> 100.0%  +0.0pp (+0.0%)
+Attribution confidence             APPROXIMATE -> APPROXIMATE
+Tool-result tokens                 78,566 -> 78,566  +0 (+0.0%)
+Client P95                         8286.047 ms -> 2530.472 ms  -5755.575 ms (-69.5%)
+Scheduled->first P95               827.943 ms -> 175.862 ms  -652.082 ms (-78.8%)
+
+Token Components
+------------------------------------------------------------
+Component                          Baseline -> Candidate  Delta
+History                            2,915 -> 2,898  -17 (-0.6%)
+System                             1,200 -> 1,200  +0 (+0.0%)
+Tool Result                        78,566 -> 78,566  +0 (+0.0%)
+Tool Schema                        1,590 -> 1,590  +0 (+0.0%)
+User                               1,540 -> 1,540  +0 (+0.0%)
+
+Quality
+------------------------------------------------------------
+Mean score                         0.967 -> 0.933  -0.033 (-3.4%)
+Pass rate                          90.0% -> 80.0%  -10.0pp (-11.1%)
+Constraint                         PASS
+
+Cache
+------------------------------------------------------------
+Cached tokens                      4,176 -> 4,064  -112 (-2.7%)
+Cache-miss tokens                  91,307 -> 91,417  +110 (+0.1%)
+Cached-token ratio                 4.4% -> 4.3%  -0.1pp (-2.7%)
+
+Finding Lifecycle
+------------------------------------------------------------
+CONTEXT_DUPLICATION                MEDIUM -> MEDIUM  PERSISTENT
+MATERIAL_PREFILL_BOTTLENECK        HIGH -> absent  RESOLVED
+MATERIAL_PREFILL_BOTTLENECK        absent -> MEDIUM  NEW
+MATERIAL_PREFIX_CACHE_OPPORTUNITY  HIGH -> absent  RESOLVED
+MATERIAL_PREFIX_CACHE_OPPORTUNITY  absent -> HIGH  NEW
+TOOL_OUTPUT_BLOAT                  MEDIUM -> MEDIUM  PERSISTENT
+
+Verdict
+------------------------------------------------------------
+Result                             ACCEPT
+Performance materially improved and quality stayed within the configured tolerance.

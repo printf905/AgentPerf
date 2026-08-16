@@ -1,0 +1,40 @@
+============================================================
+AgentPerf Regression Check
+============================================================
+Result                             FAIL
+Baseline                           m3-real-agent-context-waste
+Candidate                          m3-real-agent-context-waste
+Matched tasks                      10
+
+Summary
+------------------------------------------------------------
+Quality: mean_score: 0.967 -> 0.933, -3.4%; pass_rate: 0.900 -> 0.800, -11.1%
+Task coverage: 10 matched
+Biggest improvements: scheduled_to_first_p95: 827.943 -> 175.862, -78.8%; input_tokens: 95483 -> 95481, -0.0%
+Biggest regressions: none above configured thresholds
+Findings: new_material_findings=1
+Task regressions: q09-auth-risk: True -> False
+
+Artifact
+------------------------------------------------------------
+Baseline Artifact Status           COMPLETE  allowed COMPLETE  PASS
+Candidate Artifact Status          COMPLETE  allowed COMPLETE  PASS
+
+Quality
+------------------------------------------------------------
+Mean Score                         0.967 -> 0.933  allowed 0.05  delta 0.033  -3.4%  PASS
+Pass Rate                          0.900 -> 0.800  allowed 0.1  delta 0.100  -11.1%  PASS
+
+Performance
+------------------------------------------------------------
+Input Tokens                       95483 -> 95481  allowed 15%  delta -2  -0.0%  source provider_usage  PASS
+Component.Tool Result.Processed Tokens 78566 -> 78566  allowed 15%  delta 0  +0.0%  source agentperf_component_attribution  PASS
+Scheduled To First P95             827.943 -> 175.862  allowed 20%  delta -652.082  -78.8%  source latency  PASS
+
+Findings
+------------------------------------------------------------
+New Material Findings              1  allowed 0  FAIL
+
+Final Result
+------------------------------------------------------------
+FAIL

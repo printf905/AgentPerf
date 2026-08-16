@@ -1,0 +1,4 @@
+2.9.1+cu128 12.8
+True
+NVIDIA GeForce RTX 3090
+tensor([1.], device='cuda:0')

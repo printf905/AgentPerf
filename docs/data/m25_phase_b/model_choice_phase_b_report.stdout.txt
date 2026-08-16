@@ -1,0 +1,92 @@
+============================================================
+AgentPerf Model-Choice Report
+============================================================
+Quality Constraint
+------------------------------------------------------------
+Baseline config                    strong_control
+Minimum mean score                 0.917
+Minimum pass rate                  80.0%
+
+Configurations
+------------------------------------------------------------
+Config                             Quality  Pass  Cost  Client P95
+strong_control                     0.967   90.0%   0.40  4634 ms
+mixed_evidence_backed              0.933   80.0%   0.06  1258 ms
+
+Role Sensitivity
+------------------------------------------------------------
+No one-role counterfactuals found.
+
+Candidate Routing
+------------------------------------------------------------
+No quality-preserving role substitutions produced a routing candidate.
+
+Full Routing Verification
+------------------------------------------------------------
+Config                             mixed_evidence_backed
+Status                             VERIFIED
+Quality preserving                 True
+Relative cost delta                -0.3
+Client P95 delta ms                -3375.9
+  - Full mixed-routing replay preserved quality and improved relative model-capacity cost or latency evidence.
+Recommendation verification        VERIFIED
+  - Required recommendation expectations moved in the predicted direction.
+
+Pareto
+------------------------------------------------------------
+Config                             Quality  Cost  Status
+strong_control                     0.967  0.40  pareto
+mixed_evidence_backed              0.933  0.06  pareto
+
+Findings
+------------------------------------------------------------
+
+[HIGH] MODEL_CHOICE_HEADROOM
+
+End-to-end replay shows mixed_evidence_backed stays within the configured quality tolerance while reducing model-capacity cost or latency.
+
+Evidence:
+evidence source                    END_TO_END_VALIDATED
+headroom scope                     GLOBAL_ROUTING_VERIFIED
+role                               mixed_routing
+config name                        mixed_evidence_backed
+changed roles                      [{'role': 'planner', 'baseline_model': 'strong', 'selected_model': 'medium'}, {'role': 'evidence_reviewer', 'baseline_model': 'strong', 'selected_model': 'small'}, {'role': 'final_synthesizer', 'baseline_model': 'strong', 'selected_model': 'small'}]
+replay task count                  10
+baseline mean score                96.7%
+candidate mean score               93.3%
+mean quality delta                 -0.0
+baseline pass rate                 90.0%
+candidate pass rate                80.0%
+pass rate delta                    -0.1
+quality minimum mean score         91.7%
+quality minimum pass rate          80.0%
+client latency p95 delta ms        -3375.9
+ttft p95 delta ms                  -652.1
+relative cost delta                -0.3
+
+Recommendation:
+  Evaluate mixed_evidence_backed as a mixed model-routing configuration and monitor task quality on a broader workload.
+
+Recommendation contract:
+  Objective: Reduce unnecessary model capacity for a specific role only when counterfactual replay and full routing replay preserve task quality.
+  Applicability: CONDITIONAL
+  Possible interventions:
+    - Route the tested role to the replayed smaller or cheaper model.
+    - Combine multiple role substitutions only as a candidate routing that must be replayed end to end.
+    - Keep stronger models for roles whose counterfactual replay failed quality.
+  Expected evidence:
+    - model.relative_cost_proxy decrease (required)
+    - latency.client_p95_ms decrease (supporting)
+  Risk:
+    - The role may need the stronger model for tasks outside the replay set.
+    - Independent role substitutions may interact badly when combined.
+  Verification:
+    - Replay one role substitution at a time to estimate local sensitivity.
+    - Construct candidate routing only from quality-preserving substitutions.
+    - Replay the full mixed routing end to end before accepting it.
+
+Provenance:
+config name                        mixed_evidence_backed
+quality preserving                 True
+validation status                  END_TO_END_VALIDATED
+  - Finding is based on a full mixed-agent replay where role outputs feed downstream roles.

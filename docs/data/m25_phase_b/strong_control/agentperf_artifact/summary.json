@@ -1,0 +1,89 @@
+{
+  "client_latency_p50_ms": 2653.6235865205526,
+  "client_latency_p95_ms": 4634.381182026117,
+  "compaction": {
+    "carried_forward_tokens": 78566,
+    "dropped_duplicate_tokens": 886,
+    "dropped_low_rank_tokens": 0,
+    "original_tokens": 86086
+  },
+  "component_processed_tokens": 85811,
+  "component_unique_tokens": 45471,
+  "correctness": {
+    "mean_score": 0.9666666666666666,
+    "pass_rate": 0.9
+  },
+  "detectors_fired": [
+    "CONTEXT_DUPLICATION",
+    "TOOL_OUTPUT_BLOAT",
+    "MATERIAL_PREFIX_CACHE_OPPORTUNITY",
+    "MATERIAL_PREFILL_BOTTLENECK"
+  ],
+  "input_tokens": 95483,
+  "llm_calls": 30,
+  "output_tokens": 4944,
+  "prefill_or_path_latency_ms": 12691.754879429936,
+  "prefix_cache_hit_ratio": 0.04373553407412838,
+  "processed_tokens_by_component": {
+    "history": 2915,
+    "system": 1200,
+    "tool_result": 78566,
+    "tool_schema": 1590,
+    "user": 1540
+  },
+  "questions": 10,
+  "role_profiles": {
+    "evidence_reviewer": {
+      "calls": 10,
+      "client_latency_p50_ms": 2653.6235865205526,
+      "client_latency_p95_ms": 2659.1283986344934,
+      "generation_latency_p50_ms": 2046.2104203179479,
+      "generation_latency_p95_ms": 2049.2453020066023,
+      "input_tokens": 43690,
+      "models": [
+        "agentperf-qwen3-4b"
+      ],
+      "output_tokens": 1600,
+      "ttft_p50_ms": 574.9412272125483,
+      "ttft_p95_ms": 578.2286535948515
+    },
+    "final_synthesizer": {
+      "calls": 10,
+      "client_latency_p50_ms": 4134.702103212476,
+      "client_latency_p95_ms": 4863.162155263126,
+      "generation_latency_p50_ms": 3464.655972085893,
+      "generation_latency_p95_ms": 4100.400383397937,
+      "input_tokens": 50166,
+      "models": [
+        "agentperf-qwen3-4b"
+      ],
+      "output_tokens": 2704,
+      "ttft_p50_ms": 607.6290449127555,
+      "ttft_p95_ms": 833.6834876798093
+    },
+    "planner": {
+      "calls": 10,
+      "client_latency_p50_ms": 765.9981455653906,
+      "client_latency_p95_ms": 939.6552603691813,
+      "generation_latency_p50_ms": 734.7601745277643,
+      "generation_latency_p95_ms": 736.7923566140234,
+      "input_tokens": 1627,
+      "models": [
+        "agentperf-qwen3-4b"
+      ],
+      "output_tokens": 640,
+      "ttft_p50_ms": 20.648861303925514,
+      "ttft_p95_ms": 39.134351257234776
+    }
+  },
+  "tool_calls": 20,
+  "ttft_p50_ms": 574.9412272125483,
+  "ttft_p95_ms": 827.9434843920171,
+  "unique_tokens_by_component": {
+    "history": 2915,
+    "system": 40,
+    "tool_result": 41148,
+    "tool_schema": 53,
+    "user": 1315
+  }
+}
