@@ -409,6 +409,9 @@ def _agent_readiness(
     if manifest and manifest.status == "PARTIAL":
         limitations.append("artifact status is PARTIAL")
         status = "PARTIAL"
+    if manifest and manifest.metadata.get("capture_state") == "RECOVERED_FROM_CHECKPOINT":
+        limitations.append("artifact recovered from latest checkpoint")
+        status = "PARTIAL"
     if expected_tasks and tasks_observed < expected_tasks:
         limitations.append(f"only {tasks_observed}/{expected_tasks} expected task rows recorded")
         status = "PARTIAL"

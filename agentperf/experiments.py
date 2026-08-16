@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import os
 import platform
 import shutil
 import subprocess
@@ -63,7 +65,10 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
         recorder: TraceRecorder | None = None,
         mean_score_tolerance: float | None = None,
         pass_rate_tolerance: float | None = None,
+        checkpoint_interval: int | None = None,
     ) -> None:
+        if checkpoint_interval is not None and checkpoint_interval <= 0:
+            raise ValueError("checkpoint_interval must be a positive integer")
         self.output_path = output_path
         self.artifact_id = artifact_id or f"artifact-{uuid4().hex}"
         self.workload_id = workload_id or self.artifact_id
@@ -76,6 +81,7 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
         self.metadata = metadata or {}
         self.mean_score_tolerance = mean_score_tolerance
         self.pass_rate_tolerance = pass_rate_tolerance
+        self.checkpoint_interval = checkpoint_interval
         self.recorder = recorder or TraceRecorder(
             agent_run_id=self.workload_id,
             name=name,
@@ -92,6 +98,10 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
         self._finished = False
         self._recording_context: Any | None = None
         self._status = "PARTIAL"
+        self._checkpoint_sequence = 0
+        self._events_since_checkpoint = 0
+        self._checkpointing = False
+        self.recorder.set_completion_callback(self._record_completed_capture_event)
 
     def __enter__(self) -> ExperimentSession:
         self._recording_context = self.recorder.as_current()
@@ -107,7 +117,13 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
         if self._recording_context is not None:
             self._recording_context.__exit__(exc_type, exc, traceback)
             self._recording_context = None
-        self.finalize(status="FAILED" if exc is not None else None)
+        try:
+            if exc is not None:
+                self.flush(status="FAILED")
+            self.finalize(status="FAILED" if exc is not None else None)
+        except Exception:
+            if exc is None:
+                raise
         return None
 
     def run_task(
@@ -193,7 +209,33 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
             metadata=metadata or {},
         )
         self._task_results.append(result)
+        self._record_completed_capture_event("task_result")
         return result
+
+    def flush(self, *, status: str = "PARTIAL") -> ExperimentArtifact:
+        """Persist a recoverable local checkpoint for evidence recorded so far."""
+
+        if self._finished:
+            return load_artifact(self.output_path)
+        self._validate_status(status)
+        if status == "COMPLETE":
+            raise ValueError("flush checkpoints cannot be COMPLETE; use finalize()")
+        if self._checkpointing:
+            return self._checkpoint_artifact(status=status)
+        self._checkpointing = True
+        try:
+            artifact = self._checkpoint_artifact(status=status)
+            self._write_checkpoint(artifact)
+            self._events_since_checkpoint = 0
+            return artifact
+        finally:
+            self._checkpointing = False
+
+    @classmethod
+    def recover(cls, path: Path) -> ExperimentArtifact:
+        """Load a finalized artifact or the latest recoverable checkpoint at path."""
+
+        return load_artifact(path)
 
     def finalize(self, *, status: str | None = None) -> ExperimentArtifact:
         if self._finished:
@@ -201,28 +243,20 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
         run = self.recorder.finish()
         report = analyze_run(run)
         resolved_status = status or self._infer_status()
-        if resolved_status not in {"COMPLETE", "PARTIAL", "FAILED"}:
-            raise ValueError("experiment status must be COMPLETE, PARTIAL, or FAILED")
+        self._validate_status(resolved_status)
         quality_metrics = self._aggregate_quality_metrics()
         environment = {
             **_safe_environment_metadata(),
             **self.environment,
         }
         component_accounting = _component_accounting_summary(report)
-        summary = {
-            "workload_id": self.workload_id,
-            "status": resolved_status,
-            "expected_task_count": self.expected_task_count,
-            "recorded_task_count": len(self._task_results),
-            "llm_calls": len(run.llm_calls),
-            "tool_calls": len(run.tool_calls),
-            "input_tokens": sum(call.input_tokens or 0 for call in run.llm_calls),
-            "output_tokens": sum(call.output_tokens or 0 for call in run.llm_calls),
-            "duration_ms": _elapsed_ms(self._started_at),
-            "findings": [finding.id for finding in report.findings],
-            "component_accounting": component_accounting,
-            "model_routing": routing_summary_from_run(run),
-        }
+        summary = self._summary_for_run(
+            run,
+            status=resolved_status,
+            findings=[finding.id for finding in report.findings],
+            component_accounting=component_accounting,
+            capture_state="FINALIZED",
+        )
         artifact = ExperimentArtifact.from_analysis(
             report,
             artifact_id=self.artifact_id,
@@ -255,6 +289,98 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
         self._finished = True
         return artifact
 
+    def _checkpoint_artifact(self, *, status: str) -> ExperimentArtifact:
+        run = self.recorder.to_agent_run()
+        quality_metrics = self._aggregate_quality_metrics()
+        environment = {
+            **_safe_environment_metadata(),
+            **self.environment,
+        }
+        summary = self._summary_for_run(
+            run,
+            status=status,
+            findings=[],
+            component_accounting=None,
+            capture_state="CHECKPOINTED",
+        )
+        artifact = ExperimentArtifact.from_run(
+            run,
+            artifact_id=self.artifact_id,
+            workload_id=self.workload_id,
+            task_results=list(self._task_results),
+            task_count=self.expected_task_count or len(self._task_results),
+            quality_metrics=quality_metrics,
+            findings=[],
+            environment=environment,
+            summary=summary,
+            framework=self.framework,
+            agent_name=self.agent_name,
+            backend=self.backend,
+            model=self.model,
+            serving_telemetry=bool(run.serving_requests),
+            metadata={
+                **self.metadata,
+                "status": status,
+                "experiment_session": True,
+                "capture_state": "CHECKPOINTED",
+                "checkpoint_sequence": self._checkpoint_sequence + 1,
+            },
+        )
+        return replace(
+            artifact,
+            manifest=replace(
+                artifact.manifest,
+                status=cast(ArtifactStatus, status),
+            ),
+        )
+
+    def _summary_for_run(
+        self,
+        run: Any,
+        *,
+        status: str,
+        findings: list[str],
+        component_accounting: dict[str, Any] | None,
+        capture_state: str,
+    ) -> dict[str, Any]:
+        return {
+            "workload_id": self.workload_id,
+            "status": status,
+            "capture_state": capture_state,
+            "expected_task_count": self.expected_task_count,
+            "recorded_task_count": len(self._task_results),
+            "llm_calls": len(run.llm_calls),
+            "tool_calls": len(run.tool_calls),
+            "input_tokens": sum(call.input_tokens or 0 for call in run.llm_calls),
+            "output_tokens": sum(call.output_tokens or 0 for call in run.llm_calls),
+            "duration_ms": _elapsed_ms(self._started_at),
+            "findings": findings,
+            "component_accounting": component_accounting,
+            "model_routing": routing_summary_from_run(run),
+        }
+
+    def _write_checkpoint(self, artifact: ExperimentArtifact) -> None:
+        root = self.output_path / ".agentperf_checkpoints"
+        root.mkdir(parents=True, exist_ok=True)
+        sequence = self._checkpoint_sequence + 1
+        checkpoint_name = f"checkpoint-{sequence:06d}"
+        tmp_path = root / f".{checkpoint_name}.tmp-{uuid4().hex}"
+        final_path = root / checkpoint_name
+        artifact.save(tmp_path)
+        load_artifact(tmp_path)
+        tmp_path.rename(final_path)
+        _atomic_write_json(
+            root / "latest.json",
+            {
+                "checkpoint": checkpoint_name,
+                "sequence": sequence,
+                "created_at": datetime.now(UTC).isoformat(),
+                "status": artifact.manifest.status,
+            },
+        )
+        _prune_old_checkpoints(root, keep=checkpoint_name)
+        self._checkpoint_sequence = sequence
+
     def _infer_status(self) -> str:
         if any(task.error for task in self._task_results):
             return "FAILED"
@@ -264,6 +390,18 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
         ):
             return "PARTIAL"
         return "COMPLETE"
+
+    def _record_completed_capture_event(self, event: str) -> None:
+        del event
+        if self.checkpoint_interval is None or self._finished or self._checkpointing:
+            return
+        self._events_since_checkpoint += 1
+        if self._events_since_checkpoint >= self.checkpoint_interval:
+            self.flush()
+
+    def _validate_status(self, status: str) -> None:
+        if status not in {"COMPLETE", "PARTIAL", "FAILED"}:
+            raise ValueError("experiment status must be COMPLETE, PARTIAL, or FAILED")
 
     def _aggregate_quality_metrics(self) -> list[QualityMetric]:
         metrics: list[QualityMetric] = []
@@ -348,6 +486,31 @@ def _atomic_save(artifact: ExperimentArtifact, output_path: Path) -> None:
     if output_path.exists():
         shutil.rmtree(output_path)
     tmp_path.rename(output_path)
+
+
+def _atomic_write_json(path: Path, data: dict[str, Any]) -> None:
+    tmp_path = path.with_name(f".{path.name}.tmp-{uuid4().hex}")
+    with tmp_path.open("w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    tmp_path.replace(path)
+
+
+def _prune_old_checkpoints(root: Path, *, keep: str) -> None:
+    for child in root.iterdir():
+        if child.name in {keep, "latest.json"}:
+            continue
+        if not (child.name.startswith("checkpoint-") or child.name.startswith(".checkpoint-")):
+            continue
+        try:
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
+        except OSError:
+            pass
 
 
 def _elapsed_ms(started: float) -> float:
