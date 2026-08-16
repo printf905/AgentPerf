@@ -58,6 +58,10 @@ def test_html_report_escapes_html_and_redacts_sensitive_metadata(tmp_path: Path)
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
     assert "super-secret" not in html
+    assert "sk-test-secret" not in html
+    assert "Authorization: Bearer fake-secret" not in html
+    assert "RUNPOD_API_KEY=fake" not in html
+    assert "/user/private/path" not in html
     assert "[redacted]" in html
 
 
@@ -185,6 +189,10 @@ def _trace(*, serving: bool = True, secret_metadata: bool = False) -> dict[str, 
     }
     if secret_metadata:
         metadata["api_token"] = "super-secret"
+        metadata["authorization_header"] = "Authorization: Bearer fake-secret"
+        metadata["note_with_key"] = "OPENAI_API_KEY=sk-test-secret"
+        metadata["runpod_hint"] = "RUNPOD_API_KEY=fake"
+        metadata["private_path"] = "/user/private/path"
     trace: dict[str, object] = {
         "schema_version": "agentperf.trace.v1",
         "agent_run": {

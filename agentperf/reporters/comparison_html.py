@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path
@@ -148,7 +149,7 @@ def render_comparison_html(report_input: ComparisonHtmlInput) -> str:
             "<body>",
             (
                 '<script type="application/json" id="agentperf-comparison-data">'
-                f"{_h(json.dumps(payload, sort_keys=True))}</script>"
+                f"{_h(json.dumps(_redact_payload(payload), sort_keys=True))}</script>"
             ),
             '<main class="page">',
             _hero(report_input),
@@ -276,7 +277,7 @@ def _quality(comparison: RunComparison) -> str:
     if isinstance(changes, list) and changes:
         rows = [
             [
-                str(item.get("task_id", "unknown")),
+                _safe_text(item.get("task_id", "unknown")),
                 _pass_text(item.get("baseline_passed")),
                 _pass_text(item.get("candidate_passed")),
                 _fmt_optional(item.get("baseline_score")),
@@ -799,7 +800,7 @@ def _task_drilldown(report_input: ComparisonHtmlInput) -> str:
         )
         body += (
             '<details class="run">'
-            f"<summary>{_h(task_id)} <span>{_h(summary)}</span></summary>"
+            f"<summary>{_h(_safe_text(task_id))} <span>{_h(summary)}</span></summary>"
             '<div class="two-col">'
             + _run_steps("Baseline", base)
             + _run_steps("Candidate", cand)
@@ -844,7 +845,7 @@ def _context_task_tables(report_input: ComparisonHtmlInput) -> str:
                 ]
             )
         body += (
-            f"<h3>Context growth: {_h(task_id)}</h3>"
+            f"<h3>Context growth: {_h(_safe_text(task_id))}</h3>"
             + _metric_table(["Step", "Baseline input", "Candidate input", "Delta"], rows)
         )
     return body
@@ -1134,12 +1135,72 @@ def _finding_sort_key(change: FindingChange) -> tuple[int, str]:
 
 def _safe_text(value: object) -> str:
     text = str(value)
-    lowered = text.lower()
-    if any(marker in lowered for marker in ("secret", "token", "api_key", "private_key")):
+    if _secretish_text(text):
         return "[redacted]"
     if len(text) > 160:
         return text[:157] + "..."
     return text
+
+
+def _redact_payload(value: object) -> object:
+    if isinstance(value, dict):
+        return {
+            str(key): (
+                "[redacted]"
+                if _secretish_key(str(key))
+                else _redact_payload(child_value)
+            )
+            for key, child_value in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact_payload(item) for item in value]
+    if isinstance(value, str) and _secretish_text(value):
+        return "[redacted]"
+    return value
+
+
+def _secretish_text(text: str) -> bool:
+    lowered = text.lower()
+    if any(
+        marker in lowered
+        for marker in (
+            "secret",
+            "api_key",
+            "apikey",
+            "private_key",
+            "authorization:",
+            "bearer ",
+            "password=",
+            "runpod_api_key=",
+            "hf_token=",
+        )
+    ):
+        return True
+    if re.search(r"\bsk-[a-z0-9_-]{8,}\b", text, flags=re.IGNORECASE):
+        return True
+    return bool(re.search(r"(/users/|/user/|/private/tmp/)", text, flags=re.IGNORECASE))
+
+
+def _secretish_key(key: str) -> bool:
+    lower = key.lower()
+    if any(
+        marker in lower
+        for marker in (
+            "password",
+            "secret",
+            "credential",
+            "private_key",
+            "api_key",
+            "apikey",
+            "access_key",
+            "authorization",
+            "bearer",
+        )
+    ):
+        return True
+    if lower in {"api_key", "apikey", "access_key", "bearer_token", "auth_token"}:
+        return True
+    return lower.endswith("_token") and not lower.endswith("_tokens")
 
 
 def _h(value: object) -> str:

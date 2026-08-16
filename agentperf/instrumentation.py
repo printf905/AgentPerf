@@ -27,6 +27,10 @@ _CURRENT_RECORDER: ContextVar[TraceRecorder | None] = ContextVar(
     "agentperf_current_recorder",
     default=None,
 )
+_CURRENT_SPAN_STACKS: ContextVar[dict[int, tuple[str, ...]] | None] = ContextVar(
+    "agentperf_current_span_stacks",
+    default=None,
+)
 P = ParamSpec("P")
 R = TypeVar("R")
 
@@ -63,7 +67,7 @@ class TraceRecorder:
         self.metadata = metadata or {}
         self._steps: list[_StepBuilder] = []
         self._steps_by_id: dict[str, _StepBuilder] = {}
-        self._span_stack: list[str] = []
+        self._steps_by_span_id: dict[str, _StepBuilder] = {}
         self._counter = 0
         self._llm_call_count = 0
         self._tool_call_count = 0
@@ -72,11 +76,15 @@ class TraceRecorder:
 
     @contextmanager
     def as_current(self) -> Iterator[TraceRecorder]:
-        token = _CURRENT_RECORDER.set(self)
+        recorder_token = _CURRENT_RECORDER.set(self)
+        stacks = dict(_CURRENT_SPAN_STACKS.get() or {})
+        stacks[id(self)] = ()
+        stack_token = _CURRENT_SPAN_STACKS.set(stacks)
         try:
             yield self
         finally:
-            _CURRENT_RECORDER.reset(token)
+            _CURRENT_SPAN_STACKS.reset(stack_token)
+            _CURRENT_RECORDER.reset(recorder_token)
 
     @contextmanager
     def step(
@@ -108,17 +116,19 @@ class TraceRecorder:
     ) -> _StepBuilder:
         self._counter += 1
         actual_span_id = span_id or f"span-{self._counter}"
+        span_stack = self._span_stack()
         step = _StepBuilder(
             step_id=f"step-{self._counter}-{_safe_id(name)}",
             trace_id=self.trace_id,
             span_id=actual_span_id,
-            parent_span_id=parent_span_id or (self._span_stack[-1] if self._span_stack else None),
+            parent_span_id=parent_span_id or (span_stack[-1] if span_stack else None),
             started_at=_now_iso(),
             metadata={"name": name, **(metadata or {})},
         )
         self._steps.append(step)
         self._steps_by_id[step.step_id] = step
-        self._span_stack.append(actual_span_id)
+        self._steps_by_span_id[actual_span_id] = step
+        self._set_span_stack((*span_stack, actual_span_id))
         return step
 
     def end_step(self, step_id: str) -> None:
@@ -126,8 +136,9 @@ class TraceRecorder:
         if step is None:
             return
         step.ended_at = _now_iso()
-        if self._span_stack and self._span_stack[-1] == step.span_id:
-            self._span_stack.pop()
+        span_stack = self._span_stack()
+        if span_stack and span_stack[-1] == step.span_id:
+            self._set_span_stack(span_stack[:-1])
 
     def record_llm_call(
         self,
@@ -308,6 +319,11 @@ class TraceRecorder:
         path.write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
 
     def _current_or_new_step(self, name: str) -> _StepBuilder:
+        span_stack = self._span_stack()
+        if span_stack:
+            step = self._steps_by_span_id.get(span_stack[-1])
+            if step is not None and step.ended_at is None:
+                return step
         if self._steps and self._steps[-1].ended_at is None:
             return self._steps[-1]
         return self.start_step(name)
@@ -317,6 +333,14 @@ class TraceRecorder:
 
     def _find_tool_call(self, tool_call_id: str) -> ToolCall | None:
         return self._tool_calls_by_id.get(tool_call_id)
+
+    def _span_stack(self) -> tuple[str, ...]:
+        return (_CURRENT_SPAN_STACKS.get() or {}).get(id(self), ())
+
+    def _set_span_stack(self, stack: tuple[str, ...]) -> None:
+        stacks = dict(_CURRENT_SPAN_STACKS.get() or {})
+        stacks[id(self)] = stack
+        _CURRENT_SPAN_STACKS.set(stacks)
 
 
 @contextmanager
