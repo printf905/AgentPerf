@@ -1,0 +1,20 @@
+{
+  "metrics": [
+    {
+      "aggregation": "mean",
+      "direction": "higher_is_better",
+      "metadata": {},
+      "name": "mean_score",
+      "tolerance": 0.05,
+      "value": 0.9333333333333333
+    },
+    {
+      "aggregation": "rate",
+      "direction": "higher_is_better",
+      "metadata": {},
+      "name": "pass_rate",
+      "tolerance": 0.1,
+      "value": 0.8
+    }
+  ]
+}

@@ -1,10 +1,12 @@
 # M4 Model-Choice Results
 
 Status: Phase A completed on a real RTX 3090 using sequential model loading.
+M25 Phase B later completed one bounded same-environment mixed-routing replay;
+see `docs/M25_PHASE_B_RESULTS.md`.
 
 M4 Phase A now has real vLLM replay evidence for the all-strong baseline and
-one-role-at-a-time counterfactuals. Phase B has not been run. Do not claim an
-end-to-end mixed-routing result until a reviewed mixed candidate is replayed.
+one-role-at-a-time counterfactuals. Keep these historical one-role results
+separate from the later Phase B mixed-routing replay.
 
 ## 2026-08-09 RTX 3090 Sequential Phase A
 
@@ -297,21 +299,19 @@ Cleanup:
 - Pod was deleted after diagnostics were copied locally.
 - `runpodctl pod list` returned `[]`.
 
-## Next Step
+## Historical Phase A Next Step
 
 Do not continue with more runtime-environment experiments for Phase A. The
 sequential RTX 3090 run completed the required role-sensitivity matrix.
 
-The next step is a reviewed Phase B mixed-routing replay using the proposed
-candidate above, or a revised candidate if review rejects the noisy
-`evidence_reviewer` signal. Phase B must produce real end-to-end mixed-agent
-quality and latency measurements before any model-routing improvement is
-claimed.
+The historical next step was a reviewed Phase B mixed-routing replay using the
+proposed candidate above. That follow-up was later completed in M25 Phase B; see
+`docs/M25_PHASE_B_RESULTS.md`.
 
-## Phase B Attempt Status
+## Historical 2026-08-09 Phase B Attempt Status
 
-Status: Phase B implementation prepared, but no Phase B real replay completed
-yet.
+Status at the end of the 2026-08-09 attempts: Phase B implementation was
+prepared, but the real replay had not completed yet.
 
 Phase B target:
 
@@ -394,8 +394,13 @@ Cleanup:
 - Pod was deleted while still awaiting container startup.
 - `runpodctl pod list` returned `[]`.
 
-Phase B conclusion:
+Historical attempt conclusion:
 
 - No Phase B quality, latency, cost, or mixed-routing result should be reported.
-- M4 is not complete until a strong same-environment control and the selected
-  mixed route both run end to end.
+- At that time, M4 still required a strong same-environment control and the
+  selected mixed route to run end to end.
+
+Current status:
+
+- M25 Phase B later ran that strong same-environment control and selected mixed
+  route end to end. See `docs/M25_PHASE_B_RESULTS.md`.

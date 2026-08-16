@@ -1,0 +1,74 @@
+{
+  "medium": {
+    "runs": [
+      {
+        "config": "reviewer_medium_repeat_1",
+        "mean_score": 0.9333333333333333,
+        "pass_rate": 0.8,
+        "client_latency_p95_ms": 4498.87022729963,
+        "ttft_p95_ms": 824.1764863952994
+      },
+      {
+        "config": "reviewer_medium_repeat_2",
+        "mean_score": 0.9666666666666666,
+        "pass_rate": 0.9,
+        "client_latency_p95_ms": 4296.5301857329905,
+        "ttft_p95_ms": 827.0113345235586
+      },
+      {
+        "config": "reviewer_medium_repeat_3",
+        "mean_score": 0.9666666666666666,
+        "pass_rate": 0.9,
+        "client_latency_p95_ms": 3853.3941418863833,
+        "ttft_p95_ms": 29.318966902792454
+      }
+    ],
+    "mean_score_values": [
+      0.9333333333333333,
+      0.9666666666666666,
+      0.9666666666666666
+    ],
+    "pass_rate_values": [
+      0.8,
+      0.9,
+      0.9
+    ],
+    "all_quality_preserving": true
+  },
+  "small": {
+    "runs": [
+      {
+        "config": "reviewer_small_repeat_1",
+        "mean_score": 0.9666666666666666,
+        "pass_rate": 0.9,
+        "client_latency_p95_ms": 4527.781504299492,
+        "ttft_p95_ms": 840.118192601949
+      },
+      {
+        "config": "reviewer_small_repeat_2",
+        "mean_score": 0.9666666666666666,
+        "pass_rate": 0.9,
+        "client_latency_p95_ms": 4679.023910779505,
+        "ttft_p95_ms": 731.0050081461661
+      },
+      {
+        "config": "reviewer_small_repeat_3",
+        "mean_score": 0.9666666666666666,
+        "pass_rate": 0.9,
+        "client_latency_p95_ms": 3946.5446915477514,
+        "ttft_p95_ms": 28.636641986668103
+      }
+    ],
+    "mean_score_values": [
+      0.9666666666666666,
+      0.9666666666666666,
+      0.9666666666666666
+    ],
+    "pass_rate_values": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "all_quality_preserving": true
+  }
+}

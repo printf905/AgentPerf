@@ -1,0 +1,11 @@
+{
+  "agent_architecture": "planner LLM -> local search -> evidence review LLM -> local search -> final LLM",
+  "agent_framework": "none",
+  "backend": "vllm",
+  "carry_strategy": "dedup_only",
+  "date": "2026-08-16T06:43:46.588809+00:00",
+  "gpu": "GPU 0: NVIDIA GeForce RTX 3090 (UUID: GPU-4a6171c6-67a5-d413-a54b-556f78e43e2c)",
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-107-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3"
+}

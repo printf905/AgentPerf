@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from agentperf.cli import main as cli_main
-from agentperf.comparison import compare_workloads
+from agentperf.comparison import compare_paths, compare_workloads
 from agentperf.experiments import ExperimentSession
 from agentperf.instrumentation import trace_llm, trace_run
 from agentperf.metrics.roles import role_profiles
@@ -171,6 +171,108 @@ def test_historical_m4_phase_a_migration_stays_local_headroom_only() -> None:
         finding.evidence.get("headroom_scope") == "GLOBAL_ROUTING_VERIFIED"
         for finding in report.findings
     )
+
+
+def test_real_m25_phase_b_evidence_verifies_global_routing() -> None:
+    data = json.loads(
+        (ROOT / "docs/data/m25_phase_b/model_choice_phase_b_comparison.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    report = analyze_model_choice_data(data)
+    verification = report.routing_verification
+
+    assert verification.status == "VERIFIED"
+    assert verification.config_name == "mixed_evidence_backed"
+    assert verification.quality_preserving is True
+    assert verification.recommendation_verification is not None
+    assert verification.recommendation_verification.status == "VERIFIED"
+    assert verification.relative_cost_delta is not None
+    assert verification.relative_cost_delta < 0
+    assert verification.client_latency_p95_delta_ms is not None
+    assert verification.client_latency_p95_delta_ms < 0
+
+    mixed = next(
+        finding
+        for finding in report.findings
+        if finding.evidence.get("evidence_source") == "END_TO_END_VALIDATED"
+    )
+    assert mixed.evidence["headroom_scope"] == "GLOBAL_ROUTING_VERIFIED"
+    assert mixed.evidence["changed_roles"] == [
+        {
+            "role": "planner",
+            "baseline_model": "strong",
+            "selected_model": "medium",
+        },
+        {
+            "role": "evidence_reviewer",
+            "baseline_model": "strong",
+            "selected_model": "small",
+        },
+        {
+            "role": "final_synthesizer",
+            "baseline_model": "strong",
+            "selected_model": "small",
+        },
+    ]
+
+
+def test_real_m25_phase_b_artifacts_compare_as_accept() -> None:
+    base = ROOT / "docs/data/m25_phase_b"
+
+    comparison = compare_paths(
+        base / "strong_control/agentperf_artifact",
+        base / "mixed_evidence_backed/agentperf_artifact",
+    )
+
+    assert comparison.acceptance_result.verdict == "ACCEPT"
+    assert comparison.quality_deltas.passed is True
+    assert comparison.quality_deltas.mean_score.delta == -0.033333333333333215
+    assert comparison.quality_deltas.pass_rate.delta == -0.09999999999999998
+    assert comparison.matched_tasks == [
+        "q01-cache",
+        "q02-jobs",
+        "q03-region",
+        "q04-auth",
+        "q05-webhooks",
+        "q06-cache-owner",
+        "q07-jobs-no-scale",
+        "q08-region-writes",
+        "q09-auth-risk",
+        "q10-webhook-drain",
+    ]
+    assert comparison.metadata["baseline_model_routing"]["role_model_map"] == {
+        "evidence_reviewer": "agentperf-qwen3-4b",
+        "final_synthesizer": "agentperf-qwen3-4b",
+        "planner": "agentperf-qwen3-4b",
+    }
+    assert comparison.metadata["candidate_model_routing"]["role_model_map"] == {
+        "evidence_reviewer": "agentperf-qwen3-0.6b",
+        "final_synthesizer": "agentperf-qwen3-0.6b",
+        "planner": "agentperf-qwen3-1.7b",
+    }
+    assert comparison.metadata["task_quality_changes"] == [
+        {
+            "task_id": "q09-auth-risk",
+            "baseline_score": 1.0,
+            "candidate_score": 0.6666666666666666,
+            "baseline_passed": True,
+            "candidate_passed": False,
+        }
+    ]
+
+
+def test_real_m25_phase_b_html_renders_model_routing() -> None:
+    html = (
+        ROOT / "docs/data/m25_phase_b/model_choice_phase_b_comparison.html"
+    ).read_text(encoding="utf-8")
+
+    assert "Model Routing" in html
+    assert "agentperf-qwen3-4b -&gt; agentperf-qwen3-1.7b" in html
+    assert "agentperf-qwen3-4b -&gt; agentperf-qwen3-0.6b" in html
+    assert "Replay Verification" in html
+    assert "ACCEPT" in html
 
 
 def test_candidate_routing_prefers_quality_margin_over_tiniest_model() -> None:

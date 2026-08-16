@@ -185,11 +185,14 @@ M25 validation uses:
 - the existing historical M4 Phase A evidence document;
 - a compact migrated Phase A JSON file for regression tests;
 - the existing deterministic/mock Phase B runner;
+- the completed M25 Phase B real mixed-routing replay in
+  `docs/M25_PHASE_B_RESULTS.md`;
 - normal AgentPerf comparison, HTML, recommendation, and artifact paths.
 
-No new GPU run was performed during this implementation. The product capability
-for mixed-routing verification is implemented and tested, but new real Phase B
-closure remains pending until a bounded real model run is executed.
+The M25 implementation PR added the product capability before a new GPU run was
+available. The later Phase B validation replayed the selected mixed route end to
+end on one bounded real RTX 3090 workload and verified the routing under the
+predefined quality constraint.
 
 ## Limitations
 
@@ -199,5 +202,5 @@ closure remains pending until a bounded real model run is executed.
 - Relative model-capacity cost is not dollar cost.
 - No universal model-size monotonicity is assumed.
 - No automatic routing, prompt rewriting, or optimizer agent is implemented.
-- A new real mixed-routing replay is still required before claiming the M4
-  real-model model-capacity axis is empirically closed.
+- The Phase B result is one bounded workload, not a universal model-routing
+  benchmark.
