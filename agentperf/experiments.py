@@ -18,6 +18,7 @@ from uuid import uuid4
 from agentperf.analyzer import analyze_run
 from agentperf.artifacts import ExperimentArtifact, load_artifact
 from agentperf.instrumentation import TraceRecorder
+from agentperf.model_choice import routing_summary_from_run
 from agentperf.schema.artifacts import ArtifactStatus, QualityMetric, TaskResult
 
 T = TypeVar("T")
@@ -220,6 +221,7 @@ class ExperimentSession(AbstractContextManager["ExperimentSession"]):
             "duration_ms": _elapsed_ms(self._started_at),
             "findings": [finding.id for finding in report.findings],
             "component_accounting": component_accounting,
+            "model_routing": routing_summary_from_run(run),
         }
         artifact = ExperimentArtifact.from_analysis(
             report,

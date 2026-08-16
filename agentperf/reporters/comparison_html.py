@@ -125,6 +125,7 @@ def render_comparison_html(report_input: ComparisonHtmlInput) -> str:
         _finding_lifecycle(comparison),
         _context_growth(comparison, report_input),
         _tool_output_carry_forward(report_input),
+        _model_routing(comparison),
         _latency(comparison),
         _cache(comparison),
         _serving(report_input),
@@ -570,6 +571,67 @@ def _tool_output_carry_forward(report_input: ComparisonHtmlInput) -> str:
             "processing caused by carry-forward.</p>"
         ),
     )
+
+
+def _model_routing(comparison: RunComparison) -> str:
+    baseline = comparison.metadata.get("baseline_model_routing")
+    candidate = comparison.metadata.get("candidate_model_routing")
+    if not isinstance(baseline, dict) or not isinstance(candidate, dict):
+        return _section("Model Routing", '<p class="empty">Model-role metadata unavailable.</p>')
+    if not baseline.get("available") and not candidate.get("available"):
+        return _section("Model Routing", '<p class="empty">Model-role metadata unavailable.</p>')
+    baseline_map = _routing_role_map(baseline)
+    candidate_map = _routing_role_map(candidate)
+    roles = sorted(set(baseline_map) | set(candidate_map))
+    rows = [
+        [
+            role,
+            baseline_map.get(role, "Unavailable"),
+            candidate_map.get(role, "Unavailable"),
+            _routing_delta(baseline_map.get(role), candidate_map.get(role)),
+        ]
+        for role in roles
+    ]
+    return _section(
+        "Model Routing",
+        _metric_table(["Role", "Baseline model", "Candidate model", "Change"], rows)
+        + (
+            '<p class="note">Role/model assignments come from trace metadata. '
+            "They describe the replay configuration; model-capacity acceptance still "
+            "requires quality-aware comparison evidence.</p>"
+        ),
+    )
+
+
+def _routing_role_map(summary: dict[str, object]) -> dict[str, str]:
+    raw_map = summary.get("role_model_map")
+    if isinstance(raw_map, dict):
+        return {str(role): str(model) for role, model in raw_map.items()}
+    assignments = summary.get("assignments")
+    result: dict[str, str] = {}
+    if isinstance(assignments, list):
+        for item in assignments:
+            if not isinstance(item, dict):
+                continue
+            role = item.get("role_id")
+            model = item.get("model")
+            if role is None or model is None:
+                continue
+            role_key = str(role)
+            model_value = str(model)
+            if role_key in result and result[role_key] != model_value:
+                result[role_key] = "Mixed"
+            else:
+                result[role_key] = model_value
+    return result
+
+
+def _routing_delta(baseline: str | None, candidate: str | None) -> str:
+    if baseline is None or candidate is None:
+        return "Unavailable"
+    if baseline == candidate:
+        return "unchanged"
+    return f"{baseline} -> {candidate}"
 
 
 def _latency(comparison: RunComparison) -> str:

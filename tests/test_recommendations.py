@@ -91,6 +91,21 @@ def test_cacheability_and_prefill_contracts_are_conditional_when_not_material() 
     )
 
 
+def test_model_choice_contract_is_conditional_and_replay_guarded() -> None:
+    contract = recommendation_contract_for_id("MODEL_CHOICE_HEADROOM")
+
+    assert contract is not None
+    assert contract.applicability == "CONDITIONAL"
+    assert any(
+        change.metric == "model.relative_cost_proxy"
+        and change.direction == "DECREASE"
+        and change.required
+        for change in contract.expected_metric_changes
+    )
+    assert any("full mixed routing" in item.lower() for item in contract.verification_requirements)
+    assert any("Relative cost proxy" in risk for risk in contract.risks)
+
+
 def test_m3_tool_output_recommendation_verifies_against_replay() -> None:
     comparison = compare_paths(
         ROOT / "examples/artifacts/m3_raw_full",

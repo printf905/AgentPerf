@@ -178,6 +178,24 @@ is not pure GPU prefill-kernel latency. AgentPerf recommends prioritizing this
 path only when the materiality gates and quality-preserving replay evidence
 support it.
 
+### MODEL_CHOICE_HEADROOM
+
+Model-choice headroom is conditional. AgentPerf does not recommend "use the
+smallest model." It records replay evidence for a specific role/model
+substitution.
+
+Expected evidence:
+
+- configured task quality remains within tolerance;
+- `model.relative_cost_proxy` decreases when relative model-capacity evidence is
+  available;
+- latency may decrease, but latency is supporting evidence rather than the sole
+  definition of headroom.
+
+A one-role counterfactual can produce local role headroom and a candidate
+routing to verify. It does not validate a mixed routing policy. Full mixed
+routing must be replayed end to end before the recommendation can be accepted.
+
 ## Outputs
 
 Structured recommendation contracts appear in:

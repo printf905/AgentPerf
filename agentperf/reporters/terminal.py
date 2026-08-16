@@ -285,10 +285,42 @@ def render_model_choice_report(
                         f"{row.candidate_model}  "
                         f"{row.mean_quality_delta:+.3f}  "
                         f"{row.pass_rate_delta * 100:+.1f}pp  "
-                        f"{row.relative_cost_delta:+.2f}"
+                        f"{row.relative_cost_delta:+.2f}  "
+                        f"{row.status}"
                     ),
                 )
             )
+    lines.extend(["", "Candidate Routing", "-" * 60])
+    if report.candidate_routing is None:
+        lines.append("No quality-preserving role substitutions produced a routing candidate.")
+    else:
+        for role, model in sorted(report.candidate_routing.routing.items()):
+            baseline_model = report.baseline.routing.get(role)
+            movement = (
+                f"{baseline_model} -> {model}"
+                if baseline_model != model
+                else str(model)
+            )
+            lines.append(_row(role, movement))
+        lines.append(_row("Status", report.candidate_routing.status))
+        lines.append(f"  - {report.candidate_routing.rationale}")
+    verification = report.routing_verification
+    lines.extend(["", "Full Routing Verification", "-" * 60])
+    lines.append(_row("Config", verification.config_name or "not replayed"))
+    lines.append(_row("Status", verification.status))
+    lines.append(_row("Quality preserving", _format_value(verification.quality_preserving)))
+    lines.append(_row("Relative cost delta", _format_value(verification.relative_cost_delta)))
+    lines.append(
+        _row(
+            "Client P95 delta ms",
+            _format_value(verification.client_latency_p95_delta_ms),
+        )
+    )
+    lines.append(f"  - {verification.reason}")
+    if verification.recommendation_verification is not None:
+        rec = verification.recommendation_verification
+        lines.append(_row("Recommendation verification", rec.status))
+        lines.append(f"  - {rec.reason}")
     lines.extend(["", "Pareto", "-" * 60])
     lines.append(_row("Config", "Quality  Cost  Status"))
     for pareto_row in report.pareto:

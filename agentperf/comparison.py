@@ -12,6 +12,7 @@ from agentperf.metrics.attribution import ContextGrowthRow
 from agentperf.metrics.cache import prefix_cache_hit_ratio
 from agentperf.metrics.latency import percentile, prefill_or_path_latency_ms
 from agentperf.metrics.tokens import call_input_tokens, call_output_tokens
+from agentperf.model_choice import routing_summary_from_runs
 from agentperf.recommendations import (
     recommendation_verification_to_dict,
     recommendation_verifications,
@@ -277,6 +278,8 @@ def _compare_loaded_workloads(
                 baseline.artifact,
                 candidate.artifact,
             ),
+            "baseline_model_routing": routing_summary_from_runs(baseline_runs),
+            "candidate_model_routing": routing_summary_from_runs(candidate_runs),
         },
     )
 
