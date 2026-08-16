@@ -15,6 +15,10 @@ from agentperf.comparison import (
 )
 from agentperf.metrics.components import COMPONENT_ORDER
 from agentperf.metrics.tokens import call_input_tokens
+from agentperf.recommendations import (
+    recommendation_contract_for_id,
+    verify_recommendation,
+)
 from agentperf.regression import regression_result_to_dict
 from agentperf.schema.comparison import FindingChange, MetricDelta, RunComparison
 from agentperf.schema.regression import RegressionResult
@@ -424,6 +428,7 @@ def _finding_lifecycle(comparison: RunComparison) -> str:
     for change in sorted(comparison.finding_changes, key=_finding_sort_key):
         baseline_severity = _severity(change.baseline_severity, change.baseline_materiality)
         candidate_severity = _severity(change.candidate_severity, change.candidate_materiality)
+        verification = _recommendation_verification_html(comparison, change)
         details += (
             '<details class="finding">'
             f"<summary>{_h(change.finding_id)} · {_h(change.lifecycle)}</summary>"
@@ -433,6 +438,7 @@ def _finding_lifecycle(comparison: RunComparison) -> str:
             f"<p><strong>Baseline evidence:</strong> {_h(change.baseline_summary or 'absent')}</p>"
             f"<p><strong>Candidate evidence:</strong> "
             f"{_h(change.candidate_summary or 'absent')}</p>"
+            f"{verification}"
             "</details>"
         )
     return _section(
@@ -443,6 +449,65 @@ def _finding_lifecycle(comparison: RunComparison) -> str:
         )
         + details,
     )
+
+
+def _recommendation_verification_html(
+    comparison: RunComparison,
+    change: FindingChange,
+) -> str:
+    contract = recommendation_contract_for_id(
+        change.finding_id,
+        severity=change.baseline_severity or change.candidate_severity,
+        materiality=change.baseline_materiality or change.candidate_materiality,
+    )
+    if contract is None:
+        return ""
+    verification = verify_recommendation(
+        comparison,
+        contract,
+        finding_id=change.finding_id,
+        finding_change=change,
+    )
+    rows = [
+        [
+            check.metric,
+            check.direction,
+            "required" if check.required else "supporting",
+            check.observed
+            or _metric_observed(check.baseline, check.candidate, check.delta),
+            check.status,
+        ]
+        for check in verification.metric_checks
+    ]
+    body = (
+        "<h4>Recommendation verification</h4>"
+        f"<p><strong>Status:</strong> {_h(verification.status)}</p>"
+        f"<p><strong>Quality requirement:</strong> {_h(verification.quality_status)}</p>"
+        f"<p>{_h(verification.reason)}</p>"
+        f"<p><strong>Objective:</strong> {_h(contract.objective)}</p>"
+        f"<p><strong>Applicability:</strong> {_h(contract.applicability)}</p>"
+    )
+    if rows:
+        body += _metric_table(
+            ["Metric", "Expected", "Requirement", "Observed", "Result"],
+            rows,
+        )
+    else:
+        body += '<p class="empty">No machine-checkable metric expectation.</p>'
+    return body
+
+
+def _metric_observed(
+    baseline: float | int | None,
+    candidate: float | int | None,
+    delta: float | int | None,
+) -> str:
+    if baseline is None or candidate is None:
+        return "Unavailable"
+    text = f"{_fmt_optional(baseline)} -> {_fmt_optional(candidate)}"
+    if delta is not None:
+        text += f" ({_fmt_optional(delta, signed=True)})"
+    return text
 
 
 def _context_growth(comparison: RunComparison, report_input: ComparisonHtmlInput) -> str:

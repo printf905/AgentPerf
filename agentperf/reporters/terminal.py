@@ -13,7 +13,9 @@ from agentperf.metrics.latency import (
 )
 from agentperf.metrics.tokens import call_input_tokens, call_output_tokens
 from agentperf.model_choice import ModelChoiceReport
+from agentperf.recommendations import recommendation_contract_for_finding
 from agentperf.schema.comparison import MetricDelta, RunComparison
+from agentperf.schema.findings import RecommendationContract
 from agentperf.schema.regression import RegressionCheck, RegressionResult
 
 
@@ -205,6 +207,10 @@ def render_report(report: AnalysisReport, *, show_provenance: bool = False) -> s
             lines.append("Validation:")
             for item in finding.validation_plan:
                 lines.append(f"  - {item}")
+        contract = recommendation_contract_for_finding(finding)
+        if contract is not None:
+            lines.extend(["", "Recommendation contract:"])
+            lines.extend(_recommendation_contract_lines(contract))
         if show_provenance:
             lines.extend(["", "Provenance:"])
             finding_provenance = finding.provenance
@@ -319,6 +325,10 @@ def render_model_choice_report(
         for key, value in finding.evidence.items():
             lines.append(_row(key.replace("_", " "), _format_value(value)))
         lines.extend(["", "Recommendation:", f"  {finding.recommendation}"])
+        contract = recommendation_contract_for_finding(finding)
+        if contract is not None:
+            lines.extend(["", "Recommendation contract:"])
+            lines.extend(_recommendation_contract_lines(contract))
         if show_provenance:
             lines.extend(["", "Provenance:"])
             for key, value in finding.provenance.derived_metrics.items():
@@ -986,6 +996,35 @@ def _quality_status(value: bool | None) -> str:
     if value is False:
         return "FAIL"
     return "UNVERIFIED"
+
+
+def _recommendation_contract_lines(contract: RecommendationContract) -> list[str]:
+    lines = [
+        f"  Objective: {contract.objective}",
+        f"  Applicability: {contract.applicability}",
+    ]
+    if contract.interventions:
+        lines.append("  Possible interventions:")
+        for item in contract.interventions[:4]:
+            lines.append(f"    - {item}")
+    if contract.expected_metric_changes:
+        lines.append("  Expected evidence:")
+        for expected in contract.expected_metric_changes:
+            requirement = "required" if expected.required else "supporting"
+            lines.append(
+                f"    - {expected.metric} {expected.direction.lower()} ({requirement})"
+            )
+    else:
+        lines.append("  Expected evidence: no optimization metric required")
+    if contract.risks:
+        lines.append("  Risk:")
+        for risk in contract.risks[:2]:
+            lines.append(f"    - {risk}")
+    if contract.verification_requirements:
+        lines.append("  Verification:")
+        for item in contract.verification_requirements[:3]:
+            lines.append(f"    - {item}")
+    return lines
 
 
 def _compact_dict(value: dict[str, object]) -> str:

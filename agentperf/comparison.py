@@ -12,6 +12,10 @@ from agentperf.metrics.attribution import ContextGrowthRow
 from agentperf.metrics.cache import prefix_cache_hit_ratio
 from agentperf.metrics.latency import percentile, prefill_or_path_latency_ms
 from agentperf.metrics.tokens import call_input_tokens, call_output_tokens
+from agentperf.recommendations import (
+    recommendation_verification_to_dict,
+    recommendation_verifications,
+)
 from agentperf.schema.comparison import (
     AcceptanceResult,
     CacheDelta,
@@ -278,7 +282,12 @@ def _compare_loaded_workloads(
 
 
 def comparison_to_dict(comparison: RunComparison) -> dict[str, Any]:
-    return asdict(comparison)
+    data = asdict(comparison)
+    data["recommendation_verifications"] = [
+        recommendation_verification_to_dict(verification)
+        for verification in recommendation_verifications(comparison)
+    ]
+    return data
 
 
 def comparison_to_json(comparison: RunComparison) -> str:

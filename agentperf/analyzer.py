@@ -20,6 +20,7 @@ from agentperf.metrics.attribution import (
     context_growth_rows,
     tool_reinjections,
 )
+from agentperf.recommendations import enrich_finding_recommendations
 from agentperf.schema.findings import Finding
 from agentperf.schema.trace import AgentRun, TraceParseError, parse_agentperf_trace
 
@@ -57,6 +58,7 @@ def analyze_run(run: AgentRun) -> AnalysisReport:
     findings: list[Finding] = []
     for detector in detectors:
         findings.extend(detector.detect(context))
+    findings = enrich_finding_recommendations(findings)
     attribution = component_token_attribution(run)
     growth = context_growth_rows(run)
     return AnalysisReport(
