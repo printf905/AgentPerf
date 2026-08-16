@@ -16,6 +16,7 @@ from agentperf.metrics.attribution import (
 )
 from agentperf.metrics.components import COMPONENT_ORDER, component_kind
 from agentperf.metrics.tokens import call_input_tokens, token_count
+from agentperf.recommendations import recommendation_contract_for_finding
 from agentperf.schema.artifacts import QualityMetric, TaskResult
 from agentperf.schema.findings import Finding
 from agentperf.schema.trace import (
@@ -668,6 +669,7 @@ def _findings(report_input: HtmlReportInput) -> str:
         )
         materiality = _finding_materiality_evaluation(finding)
         validation = "".join(f"<li>{_h(item)}</li>" for item in finding.validation_plan)
+        contract = _recommendation_contract_html(finding)
         cards.append(
             '<article class="finding">'
             f'<div><span class="severity {finding.severity.lower()}">'
@@ -680,6 +682,7 @@ def _findings(report_input: HtmlReportInput) -> str:
             f"<p><strong>Evidence:</strong> <code>{_h(evidence)}</code></p>"
             f"{materiality}"
             f"<p><strong>Recommendation:</strong> {_h(finding.recommendation)}</p>"
+            f"{contract}"
             "<details><summary>Validation plan</summary>"
             f"<ul>{validation or '<li>none recorded</li>'}</ul></details>"
             "</article>"
@@ -689,6 +692,43 @@ def _findings(report_input: HtmlReportInput) -> str:
         "necessarily mean material; repeated does not automatically mean removable.</p>"
     )
     return _section("Findings", note + "".join(cards))
+
+
+def _recommendation_contract_html(finding: Finding) -> str:
+    contract = recommendation_contract_for_finding(finding)
+    if contract is None:
+        return ""
+    interventions = "".join(f"<li>{_h(item)}</li>" for item in contract.interventions)
+    expected = "".join(
+        "<li>"
+        f"<code>{_h(change.metric)}</code> {_h(change.direction.lower())}"
+        f" ({'required' if change.required else 'supporting'})"
+        "</li>"
+        for change in contract.expected_metric_changes
+    )
+    risks = "".join(f"<li>{_h(item)}</li>" for item in contract.risks)
+    verification = "".join(
+        f"<li>{_h(item)}</li>" for item in contract.verification_requirements
+    )
+    if not expected:
+        expected = "<li>No optimization metric required.</li>"
+    if not interventions:
+        interventions = "<li>No intervention recommended from this observation alone.</li>"
+    return (
+        '<details class="recommendation-contract">'
+        "<summary>Recommendation contract</summary>"
+        f"<p><strong>Objective:</strong> {_h(contract.objective)}</p>"
+        f"<p><strong>Applicability:</strong> {_h(contract.applicability)}</p>"
+        "<h4>Possible interventions</h4>"
+        f"<ul>{interventions}</ul>"
+        "<h4>Expected metric movement</h4>"
+        f"<ul>{expected}</ul>"
+        "<h4>Risk</h4>"
+        f"<ul>{risks or '<li>none recorded</li>'}</ul>"
+        "<h4>How to verify</h4>"
+        f"<ul>{verification or '<li>none recorded</li>'}</ul>"
+        "</details>"
+    )
 
 
 def _serving(report_input: HtmlReportInput) -> str:

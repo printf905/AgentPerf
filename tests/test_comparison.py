@@ -240,6 +240,7 @@ def test_comparison_json_serialization(tmp_path: Path) -> None:
     assert data["baseline_id"] == "base"
     assert data["token_deltas"]["input_tokens"]["baseline"] is not None
     assert data["token_deltas"]["component_accounting"]["source"] == "component"
+    assert "recommendation_verifications" in data
     assert json.loads(json.dumps(data))["matched_tasks"] == ["task"]
 
 

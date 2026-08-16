@@ -72,6 +72,11 @@ def test_artifact_save_load_preserves_manifest_quality_environment_and_findings(
     assert loaded.task_results[0].quality_score == 0.95
     assert loaded.quality_metrics[0].tolerance == 0.05
     assert any(finding.id == "TOOL_OUTPUT_BLOAT" for finding in loaded.findings)
+    assert any(
+        finding.recommendation_contract is not None
+        and finding.recommendation_contract.applicability == "ACTIONABLE"
+        for finding in loaded.findings
+    )
     assert loaded.runs_for_comparison()[0].metadata["quality"]["score"] == 0.95
 
 

@@ -16,7 +16,12 @@ from agentperf.schema.artifacts import (
     QualityMetric,
     TaskResult,
 )
-from agentperf.schema.findings import Finding, FindingProvenance
+from agentperf.schema.findings import (
+    ExpectedMetricChange,
+    Finding,
+    FindingProvenance,
+    RecommendationContract,
+)
 from agentperf.schema.trace import AgentRun, TraceParseError, parse_agentperf_trace
 
 
@@ -428,11 +433,56 @@ def _parse_finding(data: Any) -> Finding:
             derived_metrics=_dict(provenance.get("derived_metrics", {}), "derived_metrics"),
             notes=_str_list(provenance.get("notes", []), "notes"),
         ),
+        recommendation_contract=_parse_recommendation_contract(
+            root.get("recommendation_contract")
+        ),
     )
 
 
 def _finding_to_dict(finding: Finding) -> dict[str, Any]:
     return asdict(finding)
+
+
+def _parse_recommendation_contract(data: Any) -> RecommendationContract | None:
+    if data is None:
+        return None
+    root = _dict(data, "finding.recommendation_contract")
+    evidence_level = root.get("evidence_level")
+    return RecommendationContract(
+        objective=_required_str(root, "objective", "recommendation_contract"),
+        applicability=_recommendation_applicability(root.get("applicability")),
+        interventions=_str_list(root.get("interventions", []), "interventions"),
+        expected_metric_changes=[
+            _parse_expected_metric_change(item)
+            for item in _list(root.get("expected_metric_changes", []), "expected_metric_changes")
+        ],
+        risks=_str_list(root.get("risks", []), "risks"),
+        verification_requirements=_str_list(
+            root.get("verification_requirements", []),
+            "verification_requirements",
+        ),
+        quality_requirement=(
+            None
+            if root.get("quality_requirement") is None
+            else _optional_str(root, "quality_requirement")
+        )
+        if "quality_requirement" in root
+        else "within_configured_tolerance",
+        evidence_level=(
+            _confidence(evidence_level) if evidence_level is not None else None
+        ),
+        schema_version=_optional_int(root, "schema_version") or 1,
+    )
+
+
+def _parse_expected_metric_change(data: Any) -> ExpectedMetricChange:
+    root = _dict(data, "expected_metric_change")
+    return ExpectedMetricChange(
+        metric=_required_str(root, "metric", "expected_metric_change"),
+        direction=_expected_metric_direction(root.get("direction")),
+        required=bool(root.get("required", True)),
+        rationale=_optional_str(root, "rationale") or "",
+    )
 
 
 def _with_artifact_quality(run: AgentRun, artifact: ExperimentArtifact) -> AgentRun:
@@ -533,6 +583,12 @@ def _str_list(data: Any, name: str) -> list[str]:
     return [str(item) for item in data]
 
 
+def _list(data: Any, name: str) -> list[Any]:
+    if not isinstance(data, list):
+        raise ArtifactError(f"{name} must be a list")
+    return data
+
+
 def _severity(value: Any) -> Any:
     text = str(value)
     if text not in {"LOW", "MEDIUM", "HIGH"}:
@@ -544,6 +600,25 @@ def _confidence(value: Any) -> Any:
     text = str(value)
     if text not in {"LOW", "MEDIUM", "HIGH"}:
         raise ArtifactError("finding confidence must be LOW, MEDIUM, or HIGH")
+    return text
+
+
+def _recommendation_applicability(value: Any) -> Any:
+    text = str(value)
+    if text not in {"OBSERVATION_ONLY", "CONDITIONAL", "INVESTIGATE", "ACTIONABLE"}:
+        raise ArtifactError("recommendation applicability is invalid")
+    return text
+
+
+def _expected_metric_direction(value: Any) -> Any:
+    text = str(value)
+    if text not in {
+        "DECREASE",
+        "INCREASE",
+        "NO_REGRESSION",
+        "RESOLVE_OR_IMPROVE_FINDING",
+    }:
+        raise ArtifactError("expected metric direction is invalid")
     return text
 
 

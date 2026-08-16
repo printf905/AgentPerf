@@ -38,6 +38,8 @@ local operating ranges, benchmark methodology, and current limits.
   result, retrieved/file context, and other components.
 - Compare baseline and candidate runs with quality-aware ACCEPT / REJECT /
   INCONCLUSIVE verdicts, including standalone HTML comparison reports.
+- Inspect structured recommendation contracts that state expected metric
+  movement, quality risk, and replay verification requirements.
 - Run offline CI regression checks with explicit quality, performance, finding,
   and task-coverage policies.
 - Manage benchmark suites with reviewed baseline artifacts.
@@ -109,6 +111,11 @@ agentperf compare \
   --format html \
   --output agentperf-comparison.html
 ```
+
+Findings include structured recommendation contracts for supported detector
+families. They describe plausible intervention classes, expected metric
+movement, quality risks, and replay evidence needed for verification. See
+[docs/RECOMMENDATIONS.md](docs/RECOMMENDATIONS.md).
 
 Run an offline regression check:
 
@@ -373,6 +380,8 @@ Useful docs:
 - [docs/EXPERIMENT_SESSION.md](docs/EXPERIMENT_SESSION.md)
 - [docs/REPLAY_COMPARISON.md](docs/REPLAY_COMPARISON.md)
 - [docs/REPLAY_VERIFICATION.md](docs/REPLAY_VERIFICATION.md)
+- [docs/RECOMMENDATIONS.md](docs/RECOMMENDATIONS.md): structured
+  recommendation and replay-verification contracts.
 - [docs/CI_REGRESSION.md](docs/CI_REGRESSION.md)
 - [docs/CI_REPORTING.md](docs/CI_REPORTING.md)
 - [docs/BENCHMARK_SUITES.md](docs/BENCHMARK_SUITES.md)
