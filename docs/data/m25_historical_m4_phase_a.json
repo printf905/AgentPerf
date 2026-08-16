@@ -1,0 +1,146 @@
+{
+  "evidence_status": "historical_phase_a",
+  "source": "docs/MODEL_CHOICE_RESULTS.md",
+  "note": "Machine-readable migration of the preserved 2026-08-09 M4 Phase A table. This is one-role counterfactual evidence only; it is not a mixed-routing replay.",
+  "baseline_config": "strong_all",
+  "quality_constraint": {
+    "mean_score_tolerance": 0.05,
+    "pass_rate_tolerance": 0.1,
+    "objective": "minimize relative cost or latency subject to quality tolerance"
+  },
+  "environment": {
+    "gpu": "NVIDIA GeForce RTX 3090 24GB",
+    "backend": "vLLM 0.26.0+cu129",
+    "model_family": "Qwen3",
+    "execution_strategy": "sequential one-model-at-a-time",
+    "workload": "framework-free M3 research agent with dedup_only evidence carry-forward",
+    "tasks": 10
+  },
+  "model_ladder": {
+    "small": {
+      "model": "Qwen/Qwen3-0.6B",
+      "relative_cost_weight": 0.6
+    },
+    "medium": {
+      "model": "Qwen/Qwen3-1.7B",
+      "relative_cost_weight": 1.7
+    },
+    "strong": {
+      "model": "Qwen/Qwen3-4B",
+      "relative_cost_weight": 4.0
+    }
+  },
+  "configurations": {
+    "strong_all": {
+      "routing": {
+        "planner": "strong",
+        "evidence_reviewer": "strong",
+        "final_synthesizer": "strong"
+      },
+      "correctness": {
+        "mean_score": 0.967,
+        "pass_rate": 0.9
+      },
+      "input_tokens": 95481,
+      "output_tokens": 4872,
+      "ttft_p95_ms": 816.5,
+      "client_latency_p95_ms": 4660.6,
+      "relative_cost": 0.401
+    },
+    "planner_medium": {
+      "routing": {
+        "planner": "medium",
+        "evidence_reviewer": "strong",
+        "final_synthesizer": "strong"
+      },
+      "correctness": {
+        "mean_score": 0.967,
+        "pass_rate": 0.9
+      },
+      "input_tokens": 95481,
+      "output_tokens": 4872,
+      "client_latency_p95_ms": 4403.8,
+      "relative_cost": 0.395
+    },
+    "reviewer_medium": {
+      "routing": {
+        "planner": "strong",
+        "evidence_reviewer": "medium",
+        "final_synthesizer": "strong"
+      },
+      "correctness": {
+        "mean_score": 0.9,
+        "pass_rate": 0.7
+      },
+      "input_tokens": 95481,
+      "output_tokens": 4872,
+      "client_latency_p95_ms": 4767.9,
+      "relative_cost": 0.297
+    },
+    "synthesizer_medium": {
+      "routing": {
+        "planner": "strong",
+        "evidence_reviewer": "strong",
+        "final_synthesizer": "medium"
+      },
+      "correctness": {
+        "mean_score": 0.967,
+        "pass_rate": 0.9
+      },
+      "input_tokens": 95481,
+      "output_tokens": 4872,
+      "client_latency_p95_ms": 2654.1,
+      "relative_cost": 0.28
+    },
+    "planner_small": {
+      "routing": {
+        "planner": "small",
+        "evidence_reviewer": "strong",
+        "final_synthesizer": "strong"
+      },
+      "correctness": {
+        "mean_score": 0.933,
+        "pass_rate": 0.8
+      },
+      "input_tokens": 95481,
+      "output_tokens": 4872,
+      "client_latency_p95_ms": 4759.7,
+      "relative_cost": 0.394
+    },
+    "reviewer_small": {
+      "routing": {
+        "planner": "strong",
+        "evidence_reviewer": "small",
+        "final_synthesizer": "strong"
+      },
+      "correctness": {
+        "mean_score": 0.967,
+        "pass_rate": 0.9
+      },
+      "input_tokens": 95481,
+      "output_tokens": 4872,
+      "client_latency_p95_ms": 4886.7,
+      "relative_cost": 0.248
+    },
+    "synthesizer_small": {
+      "routing": {
+        "planner": "strong",
+        "evidence_reviewer": "strong",
+        "final_synthesizer": "small"
+      },
+      "correctness": {
+        "mean_score": 0.967,
+        "pass_rate": 0.9
+      },
+      "input_tokens": 95481,
+      "output_tokens": 4872,
+      "client_latency_p95_ms": 2654.1,
+      "relative_cost": 0.222
+    }
+  },
+  "proposed_mixed_routing_candidate": {
+    "planner": "medium",
+    "evidence_reviewer": "small",
+    "final_synthesizer": "small"
+  }
+}

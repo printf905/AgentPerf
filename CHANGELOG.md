@@ -25,9 +25,20 @@
   doctor, HTML report, compare, and check scaling.
 - Added compact M21 benchmark result data and an engineering note documenting
   tested local operating ranges and limitations.
+- Added structured model-capacity replay semantics that distinguish local
+  one-role model headroom from full mixed-routing verification.
+- Added optional role/model routing summaries for artifacts and comparison HTML
+  when LLM calls include role and model metadata.
+- Added a migrated historical M4 Phase A model-choice evidence file for
+  regression tests, clearly marked as local role-headroom evidence rather than
+  mixed-routing validation.
 
 ### Improved
 
+- Added a public `role=` alias for `trace_llm(..., semantic_role=...)` so
+  framework-free experiments can record model-routing identity more directly.
+- Added a conservative `MODEL_CHOICE_HEADROOM` recommendation contract requiring
+  quality-preserving full routing replay before accepting routing changes.
 - `agentperf demo` now also writes a local `comparison.html` replay-verification
   report alongside its baseline profiler report.
 - Improved README first-run onboarding so users can see the future package

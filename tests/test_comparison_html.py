@@ -147,6 +147,27 @@ def test_comparison_html_shows_serving_without_calling_missing_zero() -> None:
     assert "not pure GPU prefill kernel latency" in html
 
 
+def test_comparison_html_shows_model_routing_when_roles_exist(tmp_path: Path) -> None:
+    baseline = _write(
+        tmp_path / "baseline.json",
+        _trace("base", task_id="task-1", score=1.0, passed=True, model="model-4b"),
+    )
+    candidate = _write(
+        tmp_path / "candidate.json",
+        _trace("candidate", task_id="task-1", score=1.0, passed=True, model="model-1b"),
+    )
+    comparison = compare_paths(baseline, candidate)
+
+    html = render_comparison_html(
+        build_comparison_html_input(comparison, baseline, candidate)
+    )
+
+    assert "Model Routing" in html
+    assert "planner" in html
+    assert "model-4b" in html
+    assert "model-1b" in html
+
+
 def test_cli_compare_html_and_json_compatibility(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
     baseline = _write(
         tmp_path / "baseline.json",
@@ -231,6 +252,7 @@ def _trace(
     passed: bool | None = None,
     tool_reinjections: int = 3,
     serving: bool = True,
+    model: str = "fixture-model",
 ) -> dict[str, object]:
     tool_text = " ".join(f"evidence{i}" for i in range(180))
     metadata: dict[str, object] = {}
@@ -256,7 +278,8 @@ def _trace(
                 {
                     "llm_call_id": f"llm-{index + 1}",
                     "llm_request_id": f"req-{index + 1}",
-                    "model": "fixture-model",
+                    "semantic_role": "planner",
+                    "model": model,
                     "prompt": prompt,
                     "input_tokens": 220 if index < tool_reinjections else 20,
                     "output_tokens": 8,

@@ -273,6 +273,53 @@ def recommendation_contract_for_id(
             ],
             evidence_level="HIGH" if actionable else "MEDIUM",
         )
+    if finding_id == "MODEL_CHOICE_HEADROOM":
+        return RecommendationContract(
+            objective=(
+                "Reduce unnecessary model capacity for a specific role only when "
+                "counterfactual replay and full routing replay preserve task quality."
+            ),
+            applicability="CONDITIONAL",
+            interventions=[
+                "Route the tested role to the replayed smaller or cheaper model.",
+                (
+                    "Combine multiple role substitutions only as a candidate routing "
+                    "that must be replayed end to end."
+                ),
+                "Keep stronger models for roles whose counterfactual replay failed quality.",
+            ],
+            expected_metric_changes=[
+                ExpectedMetricChange(
+                    metric="model.relative_cost_proxy",
+                    direction="DECREASE",
+                    rationale=(
+                        "M25 uses an explicit relative token-weighted model-capacity "
+                        "proxy unless user-supplied price data is available."
+                    ),
+                ),
+                ExpectedMetricChange(
+                    metric="latency.client_p95_ms",
+                    direction="DECREASE",
+                    required=False,
+                    rationale=(
+                        "Latency may improve, but model-capacity headroom is not "
+                        "defined by latency alone."
+                    ),
+                ),
+            ],
+            risks=[
+                "The role may need the stronger model for tasks outside the replay set.",
+                "Independent role substitutions may interact badly when combined.",
+                "Relative cost proxy is not commercial pricing.",
+            ],
+            verification_requirements=[
+                "Replay one role substitution at a time to estimate local sensitivity.",
+                "Construct candidate routing only from quality-preserving substitutions.",
+                "Replay the full mixed routing end to end before accepting it.",
+                "Require quality to remain within configured tolerance.",
+            ],
+            evidence_level="MEDIUM",
+        )
     return None
 
 
@@ -455,6 +502,16 @@ def _direction_status(delta: MetricDelta, direction: str) -> MetricCheckStatus:
 
 
 def _metric_delta(comparison: RunComparison, metric: str) -> MetricDelta | None:
+    metadata_deltas = comparison.metadata.get("metric_deltas")
+    if isinstance(metadata_deltas, dict) and isinstance(metadata_deltas.get(metric), dict):
+        raw = metadata_deltas[metric]
+        return MetricDelta(
+            baseline=raw.get("baseline"),
+            candidate=raw.get("candidate"),
+            delta=raw.get("delta"),
+            percent_delta=raw.get("percent_delta"),
+            measurement_quality=str(raw.get("measurement_quality", "DERIVED")),
+        )
     if metric == "provider.input_tokens":
         return comparison.token_deltas.input_tokens
     if metric == "provider.output_tokens":

@@ -305,11 +305,14 @@ structural behavior, insufficient evidence, or false positive:
 
 M4 Phase A validated role-level counterfactual replay for planner, reviewer,
 and synthesizer roles across Qwen3 0.6B, 1.7B, and 4B. It found role-specific
-model-capacity headroom. M4 Phase B mixed-routing end-to-end replay is still
-pending, so no mixed-routing quality, latency, or cost improvement is claimed.
+model-capacity headroom. AgentPerf now distinguishes local role headroom from
+verified mixed routing: a one-role substitution can produce a candidate routing,
+but the candidate must still pass a full end-to-end replay before it is accepted.
+No new real mixed-routing quality, latency, or cost improvement is claimed.
 
 Details:
-[docs/MODEL_CHOICE_PROFILING.md](docs/MODEL_CHOICE_PROFILING.md) and
+[docs/M25_MODEL_CAPACITY_REPLAY.md](docs/M25_MODEL_CAPACITY_REPLAY.md),
+[docs/MODEL_CHOICE_PROFILING.md](docs/MODEL_CHOICE_PROFILING.md), and
 [docs/MODEL_CHOICE_RESULTS.md](docs/MODEL_CHOICE_RESULTS.md).
 
 ## Supported Integrations
@@ -425,6 +428,10 @@ Validation and backend evidence:
   mini-SWE-agent profiling result.
 - [docs/M20_REAL_WORLD_GENERALIZATION.md](docs/M20_REAL_WORLD_GENERALIZATION.md):
   heterogeneous workload review and finding-usefulness taxonomy.
+- [docs/M21_OVERHEAD_AND_SCALE.md](docs/M21_OVERHEAD_AND_SCALE.md):
+  instrumentation overhead and local scale characterization.
+- [docs/M25_MODEL_CAPACITY_REPLAY.md](docs/M25_MODEL_CAPACITY_REPLAY.md):
+  model-capacity replay, role headroom, and routing verification semantics.
 - [docs/DOGFOODING_WORKFLOW.md](docs/DOGFOODING_WORKFLOW.md): end-to-end
   workflow dogfooding.
 

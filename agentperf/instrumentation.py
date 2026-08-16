@@ -136,6 +136,7 @@ class TraceRecorder:
         model: str | None = None,
         provider: str | None = None,
         backend: str | None = None,
+        role: str | None = None,
         semantic_role: str | None = None,
         input_tokens: int | None = None,
         output_tokens: int | None = None,
@@ -148,6 +149,7 @@ class TraceRecorder:
         tokenization_mode: TokenizationMode = "APPROXIMATE",
         metadata: dict[str, Any] | None = None,
     ) -> LLMCall:
+        resolved_role = _resolve_role(role=role, semantic_role=semantic_role)
         step = self._current_or_new_step("llm")
         components = _normalize_components(prompt_components)
         observed_input_tokens = input_tokens
@@ -163,7 +165,7 @@ class TraceRecorder:
             llm_request_id=llm_request_id,
             serving_request_id=serving_request_id,
             model=model,
-            semantic_role=semantic_role,
+            semantic_role=resolved_role,
             provider=provider,
             backend=backend,
             started_at=started_at,
@@ -185,6 +187,7 @@ class TraceRecorder:
         model: str | None = None,
         provider: str | None = None,
         backend: str | None = None,
+        role: str | None = None,
         semantic_role: str | None = None,
         llm_call_id: str | None = None,
         tokenization_mode: TokenizationMode = "APPROXIMATE",
@@ -203,6 +206,7 @@ class TraceRecorder:
             model=model,
             provider=provider,
             backend=backend,
+            role=role,
             semantic_role=semantic_role,
             llm_call_id=llm_call_id,
             tokenization_mode=tokenization_mode,
@@ -370,6 +374,7 @@ class LLMCallTrace:
         model: str | None = None,
         provider: str | None = None,
         backend: str | None = None,
+        role: str | None = None,
         semantic_role: str | None = None,
         llm_call_id: str | None = None,
         tokenization_mode: TokenizationMode = "APPROXIMATE",
@@ -380,7 +385,7 @@ class LLMCallTrace:
         self._model = model
         self._provider = provider
         self._backend = backend
-        self._semantic_role = semantic_role
+        self._semantic_role = _resolve_role(role=role, semantic_role=semantic_role)
         self._llm_call_id = llm_call_id
         self._tokenization_mode = tokenization_mode
         self._metadata = metadata or {}
@@ -591,6 +596,7 @@ def trace_llm(
     model: str | None = None,
     provider: str | None = None,
     backend: str | None = None,
+    role: str | None = None,
     semantic_role: str | None = None,
     llm_call_id: str | None = None,
     tokenization_mode: TokenizationMode = "APPROXIMATE",
@@ -604,6 +610,7 @@ def trace_llm(
         model=model,
         provider=provider,
         backend=backend,
+        role=role,
         semantic_role=semantic_role,
         llm_call_id=llm_call_id,
         tokenization_mode=tokenization_mode,
@@ -633,6 +640,12 @@ def _require_current_recorder(api_name: str) -> TraceRecorder:
     if recorder is None:
         raise RuntimeError(f"{api_name} requires an active trace_run or ExperimentSession")
     return recorder
+
+
+def _resolve_role(*, role: str | None, semantic_role: str | None) -> str | None:
+    if role is not None and semantic_role is not None and role != semantic_role:
+        raise ValueError("trace_llm role and semantic_role must match when both are provided")
+    return semantic_role or role
 
 
 def _normalize_components(

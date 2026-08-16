@@ -7,8 +7,15 @@ from collections.abc import Callable
 from pathlib import Path
 
 from agentperf.cli import main as cli_main
+from agentperf.comparison import compare_workloads
+from agentperf.experiments import ExperimentSession
+from agentperf.instrumentation import trace_llm, trace_run
 from agentperf.metrics.roles import role_profiles
-from agentperf.model_choice import analyze_model_choice_data
+from agentperf.model_choice import (
+    analyze_model_choice_data,
+    routing_summary_from_run,
+)
+from agentperf.recommendations import recommendation_contract_for_finding
 from agentperf.schema.trace import parse_agentperf_trace
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,7 +103,18 @@ def test_model_choice_headroom_requires_quality_preserving_replay() -> None:
     assert "planner" in finding_roles
     assert "final_synthesizer" not in finding_roles
     assert sensitivity[("final_synthesizer", "small")].quality_preserving is False
+    assert sensitivity[("planner", "small")].status == "SAFE_WITHIN_TOLERANCE"
     assert report.selected_mixed_config == "mixed_evidence_backed"
+    local = next(
+        finding
+        for finding in report.findings
+        if finding.evidence.get("evidence_source") == "COUNTERFACTUAL_ROLE_REPLAY"
+    )
+    assert local.evidence["headroom_scope"] == "LOCAL_ROLE_HEADROOM"
+    assert (
+        local.provenance.derived_metrics["validation_status"]
+        == "LOCAL_ROLE_HEADROOM_CANDIDATE_TO_VERIFY"
+    )
 
 
 def test_pareto_marks_quality_violating_candidate() -> None:
@@ -116,7 +134,112 @@ def test_end_to_end_mixed_finding_uses_validated_evidence() -> None:
     )
 
     assert mixed.evidence["config_name"] == "mixed_evidence_backed"
+    assert mixed.evidence["headroom_scope"] == "GLOBAL_ROUTING_VERIFIED"
     assert mixed.provenance.derived_metrics["validation_status"] == "END_TO_END_VALIDATED"
+    assert report.routing_verification.status == "VERIFIED"
+    assert report.routing_verification.recommendation_verification is not None
+    assert report.routing_verification.recommendation_verification.status == "VERIFIED"
+
+
+def test_model_choice_contract_requires_full_routing_replay() -> None:
+    report = analyze_model_choice_data(_phase_a_only_fixture())
+    finding = next(finding for finding in report.findings if finding.id == "MODEL_CHOICE_HEADROOM")
+    contract = recommendation_contract_for_finding(finding)
+
+    assert contract is not None
+    assert contract.applicability == "CONDITIONAL"
+    assert any("full mixed routing" in item.lower() for item in contract.verification_requirements)
+    assert report.routing_verification.status == "CANDIDATE_TO_VERIFY"
+    assert report.routing_verification.recommendation_verification is None
+
+
+def test_historical_m4_phase_a_migration_stays_local_headroom_only() -> None:
+    data = json.loads(
+        (ROOT / "docs/data/m25_historical_m4_phase_a.json").read_text(encoding="utf-8")
+    )
+
+    report = analyze_model_choice_data(data)
+
+    assert report.routing_verification.status == "CANDIDATE_TO_VERIFY"
+    assert report.candidate_routing is not None
+    assert report.candidate_routing.routing == data["proposed_mixed_routing_candidate"]
+    assert any(
+        finding.evidence.get("headroom_scope") == "LOCAL_ROLE_HEADROOM"
+        for finding in report.findings
+    )
+    assert not any(
+        finding.evidence.get("headroom_scope") == "GLOBAL_ROUTING_VERIFIED"
+        for finding in report.findings
+    )
+
+
+def test_candidate_routing_prefers_quality_margin_over_tiniest_model() -> None:
+    report = analyze_model_choice_data(_phase_a_non_monotonic_fixture())
+
+    assert report.candidate_routing is not None
+    assert report.candidate_routing.status == "CANDIDATE_TO_VERIFY"
+    assert report.candidate_routing.routing["planner"] == "medium"
+    assert report.candidate_routing.routing["evidence_reviewer"] == "small"
+    assert report.candidate_routing.routing["final_synthesizer"] == "small"
+
+
+def test_mixed_routing_quality_failure_is_rejected() -> None:
+    fixture = _comparison_fixture()
+    mixed = fixture["configurations"]["mixed_evidence_backed"]  # type: ignore[index]
+    assert isinstance(mixed, dict)
+    mixed["correctness"] = {"mean_score": 0.60, "pass_rate": 0.40}
+
+    report = analyze_model_choice_data(fixture)
+
+    assert report.routing_verification.status == "REJECTED_QUALITY_REGRESSION"
+    assert report.routing_verification.recommendation_verification is None
+
+
+def test_role_model_metadata_roundtrips_through_instrumentation(tmp_path: Path) -> None:
+    artifact_path = tmp_path / "artifact"
+    with ExperimentSession(output_path=artifact_path, workload_id="routing-test") as exp:
+        with trace_run(task_id="task-1"):
+            with trace_llm(role="planner", model="model-a") as call:
+                call.record_response(input_tokens=10, output_tokens=2)
+            with trace_llm(semantic_role="reviewer", model="model-b") as call:
+                call.record_response(input_tokens=20, output_tokens=3)
+        exp.record_task_result(task_id="task-1", passed=True, quality_score=1.0)
+
+    trace = json.loads((artifact_path / "trace.json").read_text(encoding="utf-8"))
+    run = parse_agentperf_trace(trace)
+    summary = json.loads((artifact_path / "summary.json").read_text(encoding="utf-8"))
+
+    routing = routing_summary_from_run(run)
+    assert routing["available"] is True
+    assert routing["role_model_map"] == {"planner": "model-a", "reviewer": "model-b"}
+    assert summary["model_routing"]["role_model_map"]["planner"] == "model-a"
+
+
+def test_trace_llm_rejects_conflicting_role_aliases() -> None:
+    try:
+        with (
+            trace_run(task_id="task"),
+            trace_llm(role="planner", semantic_role="reviewer", model="model"),
+        ):
+            pass
+    except ValueError as exc:
+        assert "role and semantic_role" in str(exc)
+    else:  # pragma: no cover - defensive
+        raise AssertionError("conflicting role aliases should fail")
+
+
+def test_comparison_metadata_exposes_model_routing() -> None:
+    baseline = parse_agentperf_trace(_routing_trace("baseline", "planner", "model-4b"))
+    candidate = parse_agentperf_trace(_routing_trace("candidate", "planner", "model-1b"))
+
+    comparison = compare_workloads([baseline], [candidate], mean_score_tolerance=0.05)
+
+    assert comparison.metadata["baseline_model_routing"]["role_model_map"] == {
+        "planner": "model-4b"
+    }
+    assert comparison.metadata["candidate_model_routing"]["role_model_map"] == {
+        "planner": "model-1b"
+    }
 
 
 def test_model_choice_cli_renders_report(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
@@ -129,6 +252,7 @@ def test_model_choice_cli_renders_report(tmp_path: Path, capsys) -> None:  # typ
     assert code == 0
     assert "AgentPerf Model-Choice Report" in output
     assert "MODEL_CHOICE_HEADROOM" in output
+    assert "Full Routing Verification" in output
 
 
 def test_phase_a_sequential_replay_regenerates_downstream_strong_calls(
@@ -340,4 +464,103 @@ def _comparison_fixture() -> dict[str, object]:
                 },
             ),
         },
+    }
+
+
+def _phase_a_only_fixture() -> dict[str, object]:
+    fixture = _comparison_fixture()
+    configs = fixture["configurations"]
+    assert isinstance(configs, dict)
+    configs.pop("mixed_evidence_backed")
+    fixture.pop("selected_mixed_config")
+    return fixture
+
+
+def _phase_a_non_monotonic_fixture() -> dict[str, object]:
+    strong = {
+        "planner": "strong",
+        "evidence_reviewer": "strong",
+        "final_synthesizer": "strong",
+    }
+    return {
+        "baseline_config": "strong_all",
+        "quality_constraint": {
+            "mean_score_tolerance": 0.05,
+            "pass_rate_tolerance": 0.10,
+        },
+        "configurations": {
+            "strong_all": _summary(
+                mean_score=0.967,
+                pass_rate=0.90,
+                cost=0.401,
+                latency=4660.6,
+                routing=strong,
+            ),
+            "planner_medium": _summary(
+                mean_score=0.967,
+                pass_rate=0.90,
+                cost=0.395,
+                latency=4403.8,
+                routing={**strong, "planner": "medium"},
+            ),
+            "planner_small": _summary(
+                mean_score=0.933,
+                pass_rate=0.80,
+                cost=0.394,
+                latency=4759.7,
+                routing={**strong, "planner": "small"},
+            ),
+            "reviewer_medium": _summary(
+                mean_score=0.900,
+                pass_rate=0.70,
+                cost=0.297,
+                latency=4767.9,
+                routing={**strong, "evidence_reviewer": "medium"},
+            ),
+            "reviewer_small": _summary(
+                mean_score=0.967,
+                pass_rate=0.90,
+                cost=0.248,
+                latency=4886.7,
+                routing={**strong, "evidence_reviewer": "small"},
+            ),
+            "synthesizer_medium": _summary(
+                mean_score=0.967,
+                pass_rate=0.90,
+                cost=0.280,
+                latency=2654.1,
+                routing={**strong, "final_synthesizer": "medium"},
+            ),
+            "synthesizer_small": _summary(
+                mean_score=0.967,
+                pass_rate=0.90,
+                cost=0.222,
+                latency=2654.1,
+                routing={**strong, "final_synthesizer": "small"},
+            ),
+        },
+    }
+
+
+def _routing_trace(run_id: str, role: str, model: str) -> dict[str, object]:
+    return {
+        "agent_run": {
+            "agent_run_id": run_id,
+            "metadata": {"task_id": "task", "quality": {"score": 1.0, "passed": True}},
+            "steps": [
+                {
+                    "agent_step_id": "step-1",
+                    "llm_calls": [
+                        {
+                            "llm_call_id": f"{run_id}-llm",
+                            "semantic_role": role,
+                            "model": model,
+                            "input_tokens": 10,
+                            "output_tokens": 2,
+                            "metadata": {"client_elapsed_ms": 10.0},
+                        }
+                    ],
+                }
+            ],
+        }
     }

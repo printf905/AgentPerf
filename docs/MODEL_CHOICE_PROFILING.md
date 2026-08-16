@@ -5,6 +5,10 @@ The first concurrent multi-server attempt did not fit on 24GB, but the
 sequential runner produced a real all-strong baseline and one-role
 counterfactual matrix. Phase B mixed-routing replay has not been run.
 
+M25 adds structured model-capacity replay semantics around this historical
+evidence: local role headroom is now explicitly separated from full
+mixed-routing verification. See `docs/M25_MODEL_CAPACITY_REPLAY.md`.
+
 M4 asks whether each semantic LLM role in the real research agent needs the
 strongest selected model.
 
