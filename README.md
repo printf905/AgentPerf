@@ -46,6 +46,8 @@ local operating ranges, benchmark methodology, and current limits.
 - Generate a standalone local HTML profiler report.
 - Checkpoint long-running local captures so completed evidence can be recovered
   as an explicit `PARTIAL` artifact after interruption.
+- Attribute multi-agent and parallel-branch work when agents, handoffs, and
+  branches are explicitly labeled.
 - Correlate agent LLM requests with vLLM or SGLang serving requests when stable
   request IDs are captured.
 
@@ -125,6 +127,9 @@ Findings include structured recommendation contracts for supported detector
 families. They describe plausible intervention classes, expected metric
 movement, quality risks, and replay evidence needed for verification. See
 [docs/RECOMMENDATIONS.md](https://github.com/printf905/AgentPerf/blob/main/docs/RECOMMENDATIONS.md).
+
+For multi-agent or fan-out/fan-in workloads, see
+[docs/MULTI_AGENT_PROFILING.md](https://github.com/printf905/AgentPerf/blob/main/docs/MULTI_AGENT_PROFILING.md).
 
 Run an offline regression check:
 

@@ -13,6 +13,7 @@ from agentperf.metrics.cache import prefix_cache_hit_ratio
 from agentperf.metrics.latency import percentile, prefill_or_path_latency_ms
 from agentperf.metrics.tokens import call_input_tokens, call_output_tokens
 from agentperf.model_choice import routing_summary_from_runs
+from agentperf.multi_agent import compare_profiles, profile_runs, profile_to_dict
 from agentperf.recommendations import (
     recommendation_verification_to_dict,
     recommendation_verifications,
@@ -229,6 +230,9 @@ def _compare_loaded_workloads(
             material_regression=acceptance.material_regression,
         )
 
+    baseline_multi_agent = profile_runs(baseline_runs)
+    candidate_multi_agent = profile_runs(candidate_runs)
+
     return RunComparison(
         baseline_id=_workload_id(baseline_runs, baseline.artifact),
         candidate_id=_workload_id(candidate_runs, candidate.artifact),
@@ -280,6 +284,12 @@ def _compare_loaded_workloads(
             ),
             "baseline_model_routing": routing_summary_from_runs(baseline_runs),
             "candidate_model_routing": routing_summary_from_runs(candidate_runs),
+            "baseline_multi_agent": profile_to_dict(baseline_multi_agent),
+            "candidate_multi_agent": profile_to_dict(candidate_multi_agent),
+            "multi_agent_comparison": compare_profiles(
+                baseline_multi_agent,
+                candidate_multi_agent,
+            ),
         },
     )
 

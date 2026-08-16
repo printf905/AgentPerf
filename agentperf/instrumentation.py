@@ -329,6 +329,16 @@ class TraceRecorder:
     def write_json(self, path: Path) -> None:
         path.write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
 
+    def current_step_metadata(self) -> dict[str, Any] | None:
+        span_stack = self._span_stack()
+        if span_stack:
+            step = self._steps_by_span_id.get(span_stack[-1])
+            if step is not None and step.ended_at is None:
+                return dict(step.metadata)
+        if self._steps and self._steps[-1].ended_at is None:
+            return dict(self._steps[-1].metadata)
+        return None
+
     def _current_or_new_step(self, name: str) -> _StepBuilder:
         span_stack = self._span_stack()
         if span_stack:
@@ -337,7 +347,7 @@ class TraceRecorder:
                 return step
         if self._steps and self._steps[-1].ended_at is None:
             return self._steps[-1]
-        return self.start_step(name)
+        return self.start_step(name, metadata=_structure_metadata_from(self.metadata))
 
     def _find_step(self, step_id: str) -> _StepBuilder | None:
         return self._steps_by_id.get(step_id)
@@ -366,15 +376,40 @@ def trace_run(
     execution_id: str | None = None,
     agent_run_id: str | None = None,
     trace_id: str | None = None,
+    agent_id: str | None = None,
+    role: str | None = None,
+    agent_role: str | None = None,
+    parent_agent_id: str | None = None,
+    branch_id: str | None = None,
+    parent_branch_id: str | None = None,
+    branch_event: str | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> Iterator[TraceRecorder]:
     active = current_recorder()
     run_name = name or task_id or "agent-run"
+    parent_metadata = active.current_step_metadata() if active is not None else None
+    structure_metadata = _multi_agent_metadata(
+        agent_id=agent_id,
+        agent_role=agent_role or role,
+        parent_agent_id=parent_agent_id
+        if parent_agent_id is not None
+        else _metadata_str(parent_metadata, "agent_id")
+        if agent_id is not None
+        else None,
+        branch_id=branch_id,
+        parent_branch_id=parent_branch_id
+        if parent_branch_id is not None
+        else _metadata_str(parent_metadata, "branch_id")
+        if branch_id is not None
+        else None,
+        branch_event=branch_event,
+    )
     if active is not None and agent_run_id is None and trace_id is None:
         step_metadata = {
             "instrumentation": "agentperf.trace_run",
             **({"task_id": task_id} if task_id is not None else {}),
             **({"execution_id": execution_id} if execution_id is not None else {}),
+            **structure_metadata,
             **(metadata or {}),
         }
         with active.step(run_name, metadata=step_metadata):
@@ -388,6 +423,7 @@ def trace_run(
         metadata={
             **({"task_id": task_id} if task_id is not None else {}),
             **({"execution_id": execution_id} if execution_id is not None else {}),
+            **structure_metadata,
             **(metadata or {}),
         },
     )
@@ -400,6 +436,74 @@ def trace_run(
 
 def current_recorder() -> TraceRecorder | None:
     return _CURRENT_RECORDER.get()
+
+
+def record_handoff(
+    *,
+    from_agent_id: str,
+    to_agent_id: str,
+    context_components: list[PromptComponent] | Mapping[str, object] | None = None,
+    context_tokens: int | None = None,
+    component_tokens: Mapping[str, int] | None = None,
+    branch_id: str | None = None,
+    parent_branch_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    """Record an explicit local agent handoff without storing raw payload text.
+
+    Handoff evidence is represented as a completed zero-work step. The raw
+    transferred payload remains the user's responsibility; AgentPerf records
+    token counts, component types, and bounded metadata for local profiling.
+    """
+
+    recorder = current_recorder()
+    if recorder is None:
+        return
+    parent_metadata = recorder.current_step_metadata()
+    components = _normalize_components(context_components)
+    resolved_component_tokens = dict(component_tokens or {})
+    if components:
+        for component in components:
+            kind = _handoff_component_kind(component.name)
+            resolved_component_tokens[kind] = resolved_component_tokens.get(kind, 0) + token_count(
+                component.text
+            )
+    resolved_context_tokens = context_tokens
+    if resolved_context_tokens is None and resolved_component_tokens:
+        resolved_context_tokens = sum(resolved_component_tokens.values())
+    handoff_metadata = {
+        "instrumentation": "agentperf.handoff",
+        "handoff_from": from_agent_id,
+        "handoff_to": to_agent_id,
+        "agent_id": to_agent_id,
+        "parent_agent_id": from_agent_id,
+        **(
+            {
+                "branch_id": branch_id,
+                "parent_branch_id": parent_branch_id
+                if parent_branch_id is not None
+                else _metadata_str(parent_metadata, "branch_id"),
+            }
+            if branch_id is not None
+            else {}
+        ),
+        **(
+            {"context_tokens": resolved_context_tokens}
+            if resolved_context_tokens is not None
+            else {}
+        ),
+        **(
+            {"component_tokens": resolved_component_tokens}
+            if resolved_component_tokens
+            else {}
+        ),
+        **(metadata or {}),
+    }
+    with recorder.step(
+        f"handoff:{from_agent_id}->{to_agent_id}",
+        metadata=handoff_metadata,
+    ):
+        pass
 
 
 class LLMCallTrace:
@@ -685,6 +789,65 @@ def _resolve_role(*, role: str | None, semantic_role: str | None) -> str | None:
     if role is not None and semantic_role is not None and role != semantic_role:
         raise ValueError("trace_llm role and semantic_role must match when both are provided")
     return semantic_role or role
+
+
+def _multi_agent_metadata(
+    *,
+    agent_id: str | None,
+    agent_role: str | None,
+    parent_agent_id: str | None,
+    branch_id: str | None,
+    parent_branch_id: str | None,
+    branch_event: str | None,
+) -> dict[str, Any]:
+    return {
+        **({"agent_id": agent_id} if agent_id is not None else {}),
+        **({"agent_role": agent_role} if agent_role is not None else {}),
+        **({"parent_agent_id": parent_agent_id} if parent_agent_id is not None else {}),
+        **({"branch_id": branch_id} if branch_id is not None else {}),
+        **({"parent_branch_id": parent_branch_id} if parent_branch_id is not None else {}),
+        **({"branch_event": branch_event} if branch_event is not None else {}),
+    }
+
+
+def _structure_metadata_from(metadata: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        key: metadata[key]
+        for key in (
+            "agent_id",
+            "agent_role",
+            "parent_agent_id",
+            "branch_id",
+            "parent_branch_id",
+            "branch_event",
+        )
+        if key in metadata
+    }
+
+
+def _metadata_str(metadata: Mapping[str, Any] | None, key: str) -> str | None:
+    if metadata is None:
+        return None
+    value = metadata.get(key)
+    return str(value) if value is not None else None
+
+
+def _handoff_component_kind(name: str) -> str:
+    lowered = name.lower().replace("-", "_")
+    if lowered in {
+        "system",
+        "user",
+        "history",
+        "tool_schema",
+        "tool_schemas",
+        "tool_result",
+        "tool_results",
+        "retrieved_context",
+        "other",
+        "other_context",
+    }:
+        return lowered
+    return "other_context"
 
 
 def _normalize_components(
