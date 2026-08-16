@@ -11,6 +11,7 @@ from agentperf import ExperimentSession, trace_llm, trace_run, trace_tool
 from agentperf.comparison import compare_paths
 from agentperf.metrics.tokens import token_count
 from agentperf.regression import evaluate_regression_policy, load_regression_policy
+from agentperf.reporters.comparison_html import write_comparison_html
 from agentperf.reporters.html import write_html_report
 from agentperf.schema.comparison import RunComparison
 from agentperf.schema.trace import PromptComponent
@@ -86,6 +87,7 @@ class DemoResult:
     baseline_path: Path
     candidate_path: Path
     report_path: Path
+    comparison_report_path: Path
     policy_path: Path
     comparison: RunComparison
     regression_status: str
@@ -96,6 +98,7 @@ class DemoResult:
             "baseline_path": str(self.baseline_path),
             "candidate_path": str(self.candidate_path),
             "report_path": str(self.report_path),
+            "comparison_report_path": str(self.comparison_report_path),
             "policy_path": str(self.policy_path),
             "comparison_verdict": self.comparison.acceptance_result.verdict,
             "regression_status": self.regression_status,
@@ -121,6 +124,7 @@ def run_demo(output_dir: Path, *, force: bool = False) -> DemoResult:
     baseline_path = output_dir / "baseline"
     candidate_path = output_dir / "candidate"
     report_path = output_dir / "baseline-report.html"
+    comparison_report_path = output_dir / "comparison.html"
     policy_path = output_dir / "agentperf-regression.yaml"
 
     _run_workload(baseline_path, variant="raw")
@@ -129,11 +133,19 @@ def run_demo(output_dir: Path, *, force: bool = False) -> DemoResult:
     _write_policy(policy_path)
     comparison = compare_paths(baseline_path, candidate_path)
     regression = evaluate_regression_policy(comparison, load_regression_policy(policy_path))
+    write_comparison_html(
+        baseline_path,
+        candidate_path,
+        comparison_report_path,
+        regression_result=regression,
+        title="AgentPerf Demo Replay Verification",
+    )
     return DemoResult(
         output_dir=output_dir,
         baseline_path=baseline_path,
         candidate_path=candidate_path,
         report_path=report_path,
+        comparison_report_path=comparison_report_path,
         policy_path=policy_path,
         comparison=comparison,
         regression_status=regression.status,
@@ -196,6 +208,7 @@ def render_demo_result(result: DemoResult, *, output_format: DemoFormat = "termi
         ),
         "",
         f"Profiler report: {result.report_path}",
+        f"Comparison report: {result.comparison_report_path}",
         "",
         "Next:",
         f"  agentperf doctor {result.baseline_path}",

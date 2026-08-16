@@ -15,6 +15,7 @@ def test_demo_creates_real_artifacts_report_policy_and_accepts_replay(tmp_path: 
     assert result.baseline_path.exists()
     assert result.candidate_path.exists()
     assert result.report_path.exists()
+    assert result.comparison_report_path.exists()
     assert result.policy_path.exists()
     assert result.comparison.acceptance_result.verdict == "ACCEPT"
     assert result.regression_status == "PASS"
@@ -44,6 +45,7 @@ def test_demo_cli_runs_from_non_repo_cwd(tmp_path: Path, monkeypatch, capsys) ->
     assert (tmp_path / "demo" / "baseline").exists()
     assert (tmp_path / "demo" / "candidate").exists()
     assert (tmp_path / "demo" / "baseline-report.html").exists()
+    assert (tmp_path / "demo" / "comparison.html").exists()
 
 
 def test_demo_cli_json_output_is_machine_readable(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
