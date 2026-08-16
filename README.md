@@ -44,6 +44,8 @@ local operating ranges, benchmark methodology, and current limits.
   and task-coverage policies.
 - Manage benchmark suites with reviewed baseline artifacts.
 - Generate a standalone local HTML profiler report.
+- Checkpoint long-running local captures so completed evidence can be recovered
+  as an explicit `PARTIAL` artifact after interruption.
 - Correlate agent LLM requests with vLLM or SGLang serving requests when stable
   request IDs are captured.
 
@@ -177,6 +179,11 @@ with ExperimentSession(output_path=Path("runs/baseline"), workload_id="my-worklo
 A trace tells AgentPerf what happened. An artifact bundle also records task
 quality, findings, environment metadata, and summary data, which lets replay
 verification and CI checks work without experiment-specific JSON glue.
+
+For long-running local applications, `ExperimentSession` supports explicit and
+count-based checkpointing. Recovered checkpoints are analyzed as `PARTIAL`
+artifacts, not silently promoted to complete runs. See
+[docs/LONG_RUNNING_CAPTURE.md](https://github.com/printf905/AgentPerf/blob/main/docs/LONG_RUNNING_CAPTURE.md).
 
 ## Local HTML Profiler
 

@@ -73,6 +73,12 @@ class TraceRecorder:
         self._tool_call_count = 0
         self._tool_call_ids: set[str] = set()
         self._tool_calls_by_id: dict[str, ToolCall] = {}
+        self._completion_callback: Callable[[str], None] | None = None
+
+    def set_completion_callback(self, callback: Callable[[str], None] | None) -> None:
+        """Register a local callback for completed trace evidence events."""
+
+        self._completion_callback = callback
 
     @contextmanager
     def as_current(self) -> Iterator[TraceRecorder]:
@@ -135,10 +141,13 @@ class TraceRecorder:
         step = self._find_step(step_id)
         if step is None:
             return
+        was_open = step.ended_at is None
         step.ended_at = _now_iso()
         span_stack = self._span_stack()
         if span_stack and span_stack[-1] == step.span_id:
             self._set_span_stack(span_stack[:-1])
+        if was_open:
+            self._notify_completed("step")
 
     def record_llm_call(
         self,
@@ -188,6 +197,7 @@ class TraceRecorder:
             metadata={"latency_ms": latency_ms, **(metadata or {})},
         )
         step.llm_calls.append(call)
+        self._notify_completed("llm_call")
         return call
 
     def trace_llm(
@@ -277,6 +287,7 @@ class TraceRecorder:
         step.tool_calls.append(call)
         self._tool_call_ids.add(actual_id)
         self._tool_calls_by_id[actual_id] = call
+        self._notify_completed("tool_call")
         return call
 
     def finish(self) -> AgentRun:
@@ -341,6 +352,10 @@ class TraceRecorder:
         stacks = dict(_CURRENT_SPAN_STACKS.get() or {})
         stacks[id(self)] = stack
         _CURRENT_SPAN_STACKS.set(stacks)
+
+    def _notify_completed(self, event: str) -> None:
+        if self._completion_callback is not None:
+            self._completion_callback(event)
 
 
 @contextmanager

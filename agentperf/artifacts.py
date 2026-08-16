@@ -119,12 +119,19 @@ class ExperimentArtifact:
 
 
 def is_artifact_path(path: Path) -> bool:
-    return path.is_dir() and (path / "manifest.json").is_file()
+    return path.is_dir() and (
+        (path / "manifest.json").is_file() or _latest_checkpoint_path(path) is not None
+    )
 
 
 def load_artifact(path: Path) -> ExperimentArtifact:
     if not path.is_dir():
         raise ArtifactError(f"artifact path is not a directory: {path}")
+    if not (path / "manifest.json").is_file():
+        checkpoint_path = _latest_checkpoint_path(path)
+        if checkpoint_path is None:
+            raise ArtifactError("missing artifact file: manifest.json")
+        return _mark_recovered_checkpoint(load_artifact(checkpoint_path), checkpoint_path)
     manifest = _parse_manifest(_read_json(path / "manifest.json"))
     _check_schema_version(manifest.artifact_schema_version)
     base = path.resolve()
@@ -219,6 +226,43 @@ def _read_optional_json(path: Path, default: Any) -> Any:
     if not path.exists():
         return default
     return _read_json(path)
+
+
+def _latest_checkpoint_path(path: Path) -> Path | None:
+    root = path / ".agentperf_checkpoints"
+    latest_path = root / "latest.json"
+    if not latest_path.is_file():
+        return None
+    try:
+        latest = _dict(_read_json(latest_path), "checkpoint latest")
+        checkpoint = _required_str(latest, "checkpoint", "checkpoint latest")
+        child = _safe_child(root.resolve(), checkpoint)
+    except ArtifactError:
+        return None
+    if not (child / "manifest.json").is_file():
+        return None
+    return child
+
+
+def _mark_recovered_checkpoint(
+    artifact: ExperimentArtifact,
+    checkpoint_path: Path,
+) -> ExperimentArtifact:
+    metadata = {
+        **artifact.manifest.metadata,
+        "capture_state": "RECOVERED_FROM_CHECKPOINT",
+        "checkpoint_path": checkpoint_path.name,
+    }
+    summary = {
+        **artifact.summary,
+        "capture_state": "RECOVERED_FROM_CHECKPOINT",
+        "checkpoint_path": checkpoint_path.name,
+    }
+    return replace(
+        artifact,
+        manifest=replace(artifact.manifest, metadata=metadata),
+        summary=summary,
+    )
 
 
 def _safe_child(base: Path, relative: str) -> Path:
