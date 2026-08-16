@@ -327,7 +327,12 @@ and synthesizer roles across Qwen3 0.6B, 1.7B, and 4B. It found role-specific
 model-capacity headroom. AgentPerf now distinguishes local role headroom from
 verified mixed routing: a one-role substitution can produce a candidate routing,
 but the candidate must still pass a full end-to-end replay before it is accepted.
-No new real mixed-routing quality, latency, or cost improvement is claimed.
+
+M25 Phase B completed one bounded same-environment mixed-routing replay. The
+pre-registered candidate stayed within the predefined quality tolerance and
+reduced a relative model-capacity cost proxy, so AgentPerf marked that specific
+tested routing `GLOBAL_ROUTING_VERIFIED`. This is not a claim of optimal
+routing, universal model downsizing, or production cost savings.
 
 Details:
 [docs/M25_MODEL_CAPACITY_REPLAY.md](https://github.com/printf905/AgentPerf/blob/main/docs/M25_MODEL_CAPACITY_REPLAY.md),
@@ -485,7 +490,8 @@ Release and positioning:
 - vLLM and SGLang both have real cross-layer validation, but their telemetry
   surfaces are not feature-equivalent.
 - Serving metrics are only as complete as the backend and recording path expose.
-- M4 mixed-routing replay is not complete.
+- M25 Phase B verified one bounded mixed-routing candidate; it is not a general
+  model-routing benchmark.
 - The local-corpus and support-triage quality evaluators are deterministic but
   task-specific.
 - mini-SWE-agent validation used bounded local repository-repair tasks, not
@@ -505,7 +511,7 @@ AgentPerf does not claim:
 - pure GPU prefill kernel tracing;
 - that repeated content is always removable waste;
 - that every detector works identically on every backend;
-- that the proposed M4 mixed-routing candidate is validated.
+- optimal model routing or universal model downsizing.
 
 ## License
 

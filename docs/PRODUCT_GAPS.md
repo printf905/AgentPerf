@@ -47,79 +47,51 @@ Recommended timing:
 
 Next. Distribution is now a larger adoption blocker than another feature.
 
-### P1: Long-running production capture lacks incremental recovery
+### P2: Adoption and real-user validation remain limited
 
 Evidence:
 
-- `ExperimentSession` finalizes a complete artifact atomically at session end.
-- New tests confirm failed validation does not publish an incomplete artifact and
-  does not overwrite an existing valid artifact.
-- There is no incremental span flush, crash recovery, append-only capture log, or
-  multi-process writer coordination.
+- AgentPerf now has local/offline product coverage for capture, profiling,
+  diagnosis, recommendations, replay verification, CI checks, HTML reports,
+  checkpoint recovery, and explicit multi-agent/branch semantics.
+- Most validation is still deterministic, local, and maintainer-run.
+- PyPI publication has not happened, so external package-index installation has
+  not yet produced real user feedback.
 
 User impact:
 
-Long-running agents, daemons, or production processes can lose in-memory trace
-data if interrupted before finalization. This is acceptable for current local
-offline experiments but limits broader production capture.
+The next unknown is less about missing core functionality and more about whether
+new users can successfully adopt the package, instrument their own agents, and
+trust the outputs without maintainer guidance.
 
 Reproducer:
 
-Interrupt a process before `ExperimentSession.finalize()` completes. The final
-artifact path is not marked COMPLETE prematurely, but captured in-memory spans
-are not recoverable unless the user emitted their own intermediate data.
+Publish a reviewed release, then ask users outside the project to run
+`pip install agentperf`, `agentperf demo`, and a small BYOA instrumentation path.
 
 Workaround:
 
-Use bounded experiment sessions, frequent task batches, and external process
-supervision. Treat AgentPerf as an offline/local profiler.
+Use local wheel/source installs and the deterministic demo until a package-index
+release is approved.
 
 Minimum fix:
 
-Design an append-only or periodic flush mechanism with explicit PARTIAL artifact
-semantics. This requires product review before implementation.
+Complete a controlled release, publish through the approved PyPI process, and
+collect issue/PR feedback from real users before adding more product surface.
 
 Recommended timing:
 
-After PyPI/distribution if production capture becomes a priority.
-
-### P2: Parallel branch and multi-agent semantics are not first-class
-
-Evidence:
-
-- Hardening tests now cover `asyncio.gather`, concurrent tool/LLM branches,
-  exceptions, cancellation, nested run scopes, and context propagation.
-- The schema still represents spans, runs, roles, and metadata, not explicit
-  branch/fan-in or multi-agent handoff entities.
-
-User impact:
-
-Highly parallel graph agents or multi-agent systems can be profiled, but reports
-may not visually explain branch causality, handoffs, or cross-agent context as
-first-class concepts.
-
-Reproducer:
-
-Create a graph with multiple concurrent branches and a fan-in summarizer. The
-spans attach to the correct run, but branch identity must be inferred from
-metadata.
-
-Workaround:
-
-Add branch, agent, and handoff identifiers in metadata today.
-
-Minimum fix:
-
-Design first-class branch/agent/handoff schema semantics and HTML visualization.
-This is a product design decision, not a small hardening fix.
-
-Recommended timing:
-
-Only after real users need first-class multi-agent or parallel-graph reporting.
+After release-owner approval for package publication.
 
 ## P0 Gaps
 
 No P0 product gap was found in this audit.
+
+## P1 Gaps
+
+No implementation P1 product gap remains for the intended local/offline profiler
+scope. PyPI publication and release-owner setup remain a P1 distribution gap
+because they block the canonical `pip install agentperf` onboarding path.
 
 ## Explicitly Out Of Scope
 

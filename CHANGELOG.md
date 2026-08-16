@@ -32,6 +32,11 @@
 - Added a migrated historical M4 Phase A model-choice evidence file for
   regression tests, clearly marked as local role-headroom evidence rather than
   mixed-routing validation.
+- Added preserved M25 Phase B evidence for one pre-registered mixed-routing
+  replay, marked as bounded `GLOBAL_ROUTING_VERIFIED` evidence rather than
+  optimal or universal routing.
+- Added crash-recoverable long-running local capture with explicit checkpoints
+  and recovered `PARTIAL` artifact semantics.
 - Added optional multi-agent, branch, and handoff metadata for framework-free
   instrumentation, plus agent/branch attribution in single-run and comparison
   HTML reports.
