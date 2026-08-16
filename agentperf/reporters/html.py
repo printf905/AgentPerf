@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path
@@ -1087,6 +1088,8 @@ def _safe_metadata(data: dict[str, Any]) -> str:
 def _safe_metadata_value(key: str, value: Any) -> Any:
     if _secretish_key(key):
         return "[redacted]"
+    if isinstance(value, str) and _secretish_value(value):
+        return "[redacted]"
     if isinstance(value, dict):
         return {
             str(child_key): _safe_metadata_value(str(child_key), child_value)
@@ -1104,11 +1107,44 @@ def _safe_metadata_value(key: str, value: Any) -> Any:
 
 def _secretish_key(key: str) -> bool:
     lower = key.lower()
-    if any(marker in lower for marker in ("password", "secret", "credential", "private_key")):
+    if any(
+        marker in lower
+        for marker in (
+            "password",
+            "secret",
+            "credential",
+            "private_key",
+            "api_key",
+            "apikey",
+            "access_key",
+            "authorization",
+            "bearer",
+        )
+    ):
         return True
     if lower in {"api_key", "apikey", "access_key", "bearer_token", "auth_token"}:
         return True
     return lower.endswith("_token") and not lower.endswith("_tokens")
+
+
+def _secretish_value(value: str) -> bool:
+    lower = value.lower()
+    if any(
+        marker in lower
+        for marker in (
+            "openai_api_key=",
+            "hf_token=",
+            "runpod_api_key=",
+            "authorization:",
+            "bearer ",
+            "password=",
+            "private_key=",
+        )
+    ):
+        return True
+    if re.search(r"\bsk-[a-z0-9_-]{8,}\b", value, flags=re.IGNORECASE):
+        return True
+    return bool(re.search(r"(/users/|/user/|/private/tmp/)", value, flags=re.IGNORECASE))
 
 
 def _safe_value(value: Any) -> str:

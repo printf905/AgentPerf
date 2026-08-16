@@ -430,8 +430,19 @@ Validation and backend evidence:
   heterogeneous workload review and finding-usefulness taxonomy.
 - [docs/M21_OVERHEAD_AND_SCALE.md](docs/M21_OVERHEAD_AND_SCALE.md):
   instrumentation overhead and local scale characterization.
+- [docs/SCALE_CHARACTERIZATION.md](docs/SCALE_CHARACTERIZATION.md): current
+  product-hardening scale smoke results and limits.
 - [docs/M25_MODEL_CAPACITY_REPLAY.md](docs/M25_MODEL_CAPACITY_REPLAY.md):
   model-capacity replay, role headroom, and routing verification semantics.
+- [docs/PRODUCT_COMPLETENESS_AUDIT.md](docs/PRODUCT_COMPLETENESS_AUDIT.md):
+  core workflow completeness matrix and remaining product gaps.
+- [docs/COMPATIBILITY_MATRIX.md](docs/COMPATIBILITY_MATRIX.md): deterministic
+  local compatibility checks across milestones and integrations.
+- [docs/SECURITY_AND_PRIVACY.md](docs/SECURITY_AND_PRIVACY.md): artifact and
+  HTML redaction boundaries.
+- [docs/PYPI_RELEASE_READINESS.md](docs/PYPI_RELEASE_READINESS.md): package
+  index readiness and human publishing steps.
+- [docs/PRODUCT_GAPS.md](docs/PRODUCT_GAPS.md): evidence-backed remaining gaps.
 - [docs/DOGFOODING_WORKFLOW.md](docs/DOGFOODING_WORKFLOW.md): end-to-end
   workflow dogfooding.
 

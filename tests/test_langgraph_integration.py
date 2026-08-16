@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib.util
+import sys
 from pathlib import Path
 from typing import Any, cast
 
@@ -12,6 +13,10 @@ from agentperf.completeness import assess_path
 from agentperf.experiments import ExperimentSession
 from agentperf.integrations import langgraph as langgraph_integration
 from agentperf.integrations.langgraph import AgentPerfLangGraph, LangGraphIntegrationError
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def test_langgraph_integration_import_does_not_require_optional_dependency() -> None:

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from agentperf.artifacts import load_artifact
 from agentperf.comparison import compare_paths
 from agentperf.experiments import ExperimentSession, QualityResult
@@ -172,6 +174,74 @@ def test_compare_warns_for_partial_artifact_task_coverage(tmp_path: Path) -> Non
     assert any("status is PARTIAL" in warning for warning in comparison.warnings)
     assert any("expected task results" in warning for warning in comparison.warnings)
     assert comparison.acceptance_result.verdict == "INCONCLUSIVE"
+
+
+def test_finalization_failure_does_not_publish_incomplete_artifact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output = tmp_path / "publish-target"
+    session = ExperimentSession(
+        output_path=output,
+        artifact_id="publish-failure",
+        workload_id="publish-failure",
+        expected_task_count=1,
+    )
+    session.record_task_result(
+        task_id="task-1",
+        passed=True,
+        quality_score=1.0,
+        status="COMPLETE",
+    )
+
+    def fail_to_validate(path: Path) -> None:
+        raise RuntimeError(f"cannot validate {path.name}")
+
+    monkeypatch.setattr("agentperf.experiments.load_artifact", fail_to_validate)
+
+    with pytest.raises(RuntimeError, match="cannot validate"):
+        session.finalize()
+
+    assert not output.exists()
+    assert not session._finished
+    tmp_dirs = list(tmp_path.glob(".publish-target.tmp-*"))
+    assert len(tmp_dirs) == 1
+
+
+def test_failed_replacement_leaves_existing_artifact_intact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output = _run_session_artifact(
+        tmp_path / "existing",
+        artifact_id="existing-good",
+        task_scores=[1.0],
+    )
+    original = load_artifact(output)
+    replacement = ExperimentSession(
+        output_path=output,
+        artifact_id="replacement",
+        workload_id="replacement",
+        expected_task_count=1,
+    )
+    replacement.record_task_result(
+        task_id="task-1",
+        passed=True,
+        quality_score=1.0,
+        status="COMPLETE",
+    )
+
+    def fail_to_validate(path: Path) -> None:
+        raise RuntimeError(f"cannot validate {path.name}")
+
+    monkeypatch.setattr("agentperf.experiments.load_artifact", fail_to_validate)
+
+    with pytest.raises(RuntimeError, match="cannot validate"):
+        replacement.finalize()
+
+    preserved = load_artifact(output)
+    assert preserved.manifest.artifact_id == original.manifest.artifact_id
+    assert preserved.manifest.workload_id == original.manifest.workload_id
 
 
 def _run_session_artifact(

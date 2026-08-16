@@ -110,6 +110,29 @@ def test_comparison_html_renders_task_mismatch_and_escaping(tmp_path: Path) -> N
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
 
 
+def test_comparison_html_redacts_secret_like_task_and_metadata_values(tmp_path: Path) -> None:
+    secret_task = "OPENAI_API_KEY=sk-test-secret"
+    baseline = _write(
+        tmp_path / "baseline.json",
+        _trace("base", task_id=secret_task, score=1.0, passed=True),
+    )
+    candidate = _write(
+        tmp_path / "candidate.json",
+        _trace("candidate", task_id=secret_task, score=0.5, passed=False),
+    )
+    comparison = compare_paths(baseline, candidate, mean_score_tolerance=0.05)
+
+    html = render_comparison_html(
+        build_comparison_html_input(comparison, baseline, candidate)
+    )
+
+    assert "OPENAI_API_KEY=sk-test-secret" not in html
+    assert "Authorization: Bearer fake-secret" not in html
+    assert "RUNPOD_API_KEY=fake" not in html
+    assert "/user/private/path" not in html
+    assert "[redacted]" in html
+
+
 def test_comparison_html_embeds_policy_check_table() -> None:
     baseline = ROOT / "examples/artifacts/m3_raw_full"
     candidate = ROOT / "examples/artifacts/m3_dedup_only"
@@ -258,6 +281,9 @@ def _trace(
     metadata: dict[str, object] = {}
     if task_id is not None:
         metadata["task_id"] = task_id
+        metadata["auth_header"] = "Authorization: Bearer fake-secret"
+        metadata["runpod_hint"] = "RUNPOD_API_KEY=fake"
+        metadata["private_path"] = "/user/private/path"
     if score is not None:
         metadata["quality"] = {"score": score, "passed": bool(passed)}
     steps: list[dict[str, Any]] = []
