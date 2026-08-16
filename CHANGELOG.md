@@ -32,6 +32,9 @@
 - Added a migrated historical M4 Phase A model-choice evidence file for
   regression tests, clearly marked as local role-headroom evidence rather than
   mixed-routing validation.
+- Added optional multi-agent, branch, and handoff metadata for framework-free
+  instrumentation, plus agent/branch attribution in single-run and comparison
+  HTML reports.
 
 ### Improved
 
@@ -39,6 +42,8 @@
   framework-free experiments can record model-routing identity more directly.
 - Added a conservative `MODEL_CHOICE_HEADROOM` recommendation contract requiring
   quality-preserving full routing replay before accepting routing changes.
+- Preserved model-capacity role semantics separately from multi-agent identity
+  so `semantic_role` routing analysis and `agent_id` attribution can coexist.
 - `agentperf demo` now also writes a local `comparison.html` replay-verification
   report alongside its baseline profiler report.
 - Improved README first-run onboarding so users can see the future package

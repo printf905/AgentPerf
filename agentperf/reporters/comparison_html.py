@@ -127,6 +127,7 @@ def render_comparison_html(report_input: ComparisonHtmlInput) -> str:
         _context_growth(comparison, report_input),
         _tool_output_carry_forward(report_input),
         _model_routing(comparison),
+        _multi_agent(comparison),
         _latency(comparison),
         _cache(comparison),
         _serving(report_input),
@@ -633,6 +634,86 @@ def _routing_delta(baseline: str | None, candidate: str | None) -> str:
     if baseline == candidate:
         return "unchanged"
     return f"{baseline} -> {candidate}"
+
+
+def _multi_agent(comparison: RunComparison) -> str:
+    data = comparison.metadata.get("multi_agent_comparison")
+    if not isinstance(data, dict) or not data.get("has_metadata"):
+        return ""
+    rows = []
+    deltas = data.get("agent_deltas")
+    if isinstance(deltas, list):
+        for item in deltas:
+            if not isinstance(item, dict):
+                continue
+            rows.append(
+                [
+                    str(item.get("agent_id") or "unknown"),
+                    _fmt_optional(item.get("baseline_provider_input_tokens"), integer=True),
+                    _fmt_optional(item.get("candidate_provider_input_tokens"), integer=True),
+                    _fmt_optional(
+                        item.get("provider_input_token_delta"),
+                        integer=True,
+                        signed=True,
+                    ),
+                    _fmt_optional(item.get("baseline_component_processed_tokens"), integer=True),
+                    _fmt_optional(item.get("candidate_component_processed_tokens"), integer=True),
+                    _fmt_optional(
+                        item.get("component_processed_token_delta"),
+                        integer=True,
+                        signed=True,
+                    ),
+                    _fmt_optional(item.get("llm_call_delta"), integer=True, signed=True),
+                    _fmt_optional(item.get("tool_call_delta"), integer=True, signed=True),
+                ]
+            )
+    summary = (
+        '<div class="metric-grid compact">'
+        + _metric("Added agents", _list_value(data.get("added_agents")))
+        + _metric("Removed agents", _list_value(data.get("removed_agents")))
+        + _metric("Added branches", _list_value(data.get("added_branches")))
+        + _metric("Removed branches", _list_value(data.get("removed_branches")))
+        + _metric(
+            "Branch count",
+            f"{_fmt_optional(data.get('baseline_branch_count'), integer=True)} -> "
+            f"{_fmt_optional(data.get('candidate_branch_count'), integer=True)}",
+        )
+        + _metric(
+            "Handoff count",
+            f"{_fmt_optional(data.get('baseline_handoff_count'), integer=True)} -> "
+            f"{_fmt_optional(data.get('candidate_handoff_count'), integer=True)}",
+        )
+        + "</div>"
+    )
+    return _section(
+        "Multi-Agent Comparison",
+        summary
+        + _metric_table(
+            [
+                "Agent",
+                "Baseline input",
+                "Candidate input",
+                "Input delta",
+                "Baseline component",
+                "Candidate component",
+                "Component delta",
+                "LLM delta",
+                "Tool delta",
+            ],
+            rows,
+        )
+        + (
+            '<p class="note">Agent and branch comparison uses explicit stable IDs. '
+            "Changed identities are reported as added or removed instead of inferred "
+            "through graph matching.</p>"
+        ),
+    )
+
+
+def _list_value(value: object) -> str:
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value) or "none"
+    return "none"
 
 
 def _latency(comparison: RunComparison) -> str:

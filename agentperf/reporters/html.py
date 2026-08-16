@@ -17,6 +17,7 @@ from agentperf.metrics.attribution import (
 )
 from agentperf.metrics.components import COMPONENT_ORDER, component_kind
 from agentperf.metrics.tokens import call_input_tokens, token_count
+from agentperf.multi_agent import profile_runs, profile_to_dict, scope_for_call_id, scope_for_step
 from agentperf.recommendations import recommendation_contract_for_finding
 from agentperf.schema.artifacts import QualityMetric, TaskResult
 from agentperf.schema.findings import Finding
@@ -89,6 +90,7 @@ def render_html_report(report_input: HtmlReportInput) -> str:
             "llm_calls": aggregate["llm_calls"],
             "tool_calls": aggregate["tool_calls"],
             "findings": len(report_input.findings),
+            "multi_agent": profile_to_dict(profile_runs(report_input.runs)),
         },
         sort_keys=True,
     )
@@ -97,6 +99,7 @@ def render_html_report(report_input: HtmlReportInput) -> str:
         _instrumentation(report_input),
         _tasks(report_input),
         _timeline(report_input),
+        _multi_agent(report_input),
         _token_attribution(report_input),
         _context_growth(report_input),
         _tool_reinjections(report_input),
@@ -338,6 +341,111 @@ def _timeline(report_input: HtmlReportInput) -> str:
     return _section("Execution Timeline", "".join(blocks))
 
 
+def _multi_agent(report_input: HtmlReportInput) -> str:
+    profile = profile_runs(report_input.runs)
+    if not profile.has_metadata:
+        return ""
+
+    agent_rows = [
+        "<tr>"
+        f"<td>{_h(agent.agent_id)}</td>"
+        f"<td>{_h(agent.role or 'not recorded')}</td>"
+        f"<td>{_h(', '.join(sorted(agent.parent_agent_ids)) or 'none')}</td>"
+        f"<td>{_fmt_int(agent.llm_calls)}</td>"
+        f"<td>{_fmt_int(agent.tool_calls)}</td>"
+        f"<td>{_fmt_int(agent.provider_input_tokens)}</td>"
+        f"<td>{_fmt_int(agent.component_processed_tokens)}</td>"
+        f"<td>{_h(_fmt_ms(agent.work_duration_ms))}</td>"
+        "</tr>"
+        for agent in profile.agents
+    ]
+    branch_rows = [
+        "<tr>"
+        f"<td>{_h(branch.branch_id)}</td>"
+        f"<td>{_h(branch.parent_branch_id or 'none')}</td>"
+        f"<td>{_h(branch.agent_id or 'not recorded')}</td>"
+        f"<td>{_h(branch.branch_event or 'work')}</td>"
+        f"<td>{_fmt_int(branch.llm_calls)}</td>"
+        f"<td>{_fmt_int(branch.tool_calls)}</td>"
+        f"<td>{_fmt_int(branch.provider_input_tokens)}</td>"
+        f"<td>{_h(_fmt_ms(branch.elapsed_ms))}</td>"
+        f"<td>{_h(_fmt_ms(branch.work_duration_ms))}</td>"
+        "</tr>"
+        for branch in profile.branches
+    ]
+    handoff_rows = [
+        "<tr>"
+        f"<td>{_h(handoff.from_agent_id)}</td>"
+        f"<td>{_h(handoff.to_agent_id)}</td>"
+        f"<td>{_h(handoff.branch_id or 'not recorded')}</td>"
+        f"<td>{_fmt_int(handoff.context_tokens)}</td>"
+        f"<td>{_fmt_int(handoff.downstream_provider_input_tokens)}</td>"
+        f"<td>{_h(_safe_metadata(handoff.component_tokens))}</td>"
+        "</tr>"
+        for handoff in profile.handoffs
+    ]
+    fanout_rows = [
+        "<tr>"
+        f"<td>{_h(fanout.parent_branch_id)}</td>"
+        f"<td>{_h(', '.join(fanout.branch_ids))}</td>"
+        f"<td>{_h(_fmt_ms(fanout.work_duration_ms))}</td>"
+        f"<td>{_h(_fmt_ms(fanout.critical_path_ms))}</td>"
+        "</tr>"
+        for fanout in profile.fanouts
+    ]
+    return _section(
+        "Multi-Agent and Parallel Structure",
+        '<p class="note">Parallel work is reported separately from elapsed wall-clock '
+        "duration. Summed branch work is not treated as user-visible latency.</p>"
+        "<h3>Agent Attribution</h3>"
+        + _table(
+            [
+                "Agent",
+                "Role",
+                "Parent agent",
+                "LLM calls",
+                "Tool calls",
+                "Provider input tokens",
+                "Component processed tokens",
+                "Summed work",
+            ],
+            agent_rows,
+        )
+        + "<h3>Branch Attribution</h3>"
+        + _table(
+            [
+                "Branch",
+                "Parent branch",
+                "Agent",
+                "Event",
+                "LLM calls",
+                "Tool calls",
+                "Provider input tokens",
+                "Elapsed",
+                "Summed work",
+            ],
+            branch_rows,
+        )
+        + "<h3>Handoffs</h3>"
+        + _table(
+            [
+                "From",
+                "To",
+                "Branch",
+                "Transferred tokens",
+                "Downstream input tokens",
+                "Component tokens",
+            ],
+            handoff_rows,
+        )
+        + "<h3>Fan-Out / Fan-In</h3>"
+        + _table(
+            ["Parent branch", "Branches", "Summed branch work", "Critical path"],
+            fanout_rows,
+        ),
+    )
+
+
 def _step_rows(
     step: AgentStep,
     run: AgentRun,
@@ -351,7 +459,14 @@ def _step_rows(
             _timeline_item(
                 kind="LLM",
                 title=f"{call.llm_call_id}",
-                subtitle=f"step {step_index} · model {_unknown(call.model)}",
+                subtitle=(
+                    f"step {step_index} · model {_unknown(call.model)}"
+                    + (
+                        f" · {scope_for_step(step, run.metadata)}"
+                        if scope_for_step(step, run.metadata)
+                        else ""
+                    )
+                ),
                 duration_ms=duration,
                 max_duration=max_duration,
                 detail=_llm_detail(call, run),
@@ -363,7 +478,14 @@ def _step_rows(
             _timeline_item(
                 kind="Tool",
                 title=f"{tool_call.name}",
-                subtitle=f"step {step_index} · {tool_call.tool_call_id}",
+                subtitle=(
+                    f"step {step_index} · {tool_call.tool_call_id}"
+                    + (
+                        f" · {scope_for_step(step, run.metadata)}"
+                        if scope_for_step(step, run.metadata)
+                        else ""
+                    )
+                ),
                 duration_ms=_tool_duration(tool_call),
                 max_duration=max_duration,
                 detail=_tool_detail(tool_call),
@@ -678,7 +800,7 @@ def _findings(report_input: HtmlReportInput) -> str:
             f'<span class="materiality">{_h(_finding_materiality(finding))}</span></div>'
             f"<h3>{_h(finding.id)} · {_h(finding.title)}</h3>"
             f"<p>{_h(finding.summary)}</p>"
-            f"<p><strong>Scope:</strong> {_h(str(finding.evidence.get('scope', 'trace')))}</p>"
+            f"<p><strong>Scope:</strong> {_h(_finding_scope_text(report_input, finding))}</p>"
             f"<p><strong>Affected:</strong> {_affected_html(finding, provenance_links)}</p>"
             f"<p><strong>Evidence:</strong> <code>{_h(evidence)}</code></p>"
             f"{materiality}"
@@ -730,6 +852,16 @@ def _recommendation_contract_html(finding: Finding) -> str:
         f"<ul>{verification or '<li>none recorded</li>'}</ul>"
         "</details>"
     )
+
+
+def _finding_scope_text(report_input: HtmlReportInput, finding: Finding) -> str:
+    existing = str(finding.evidence.get("scope", "trace"))
+    for call_id in [*finding.provenance.llm_call_ids, *finding.affected_spans]:
+        for run in report_input.runs:
+            scope = scope_for_call_id(run, call_id)
+            if scope:
+                return f"{existing} · {scope}"
+    return existing
 
 
 def _serving(report_input: HtmlReportInput) -> str:

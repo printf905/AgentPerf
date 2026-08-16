@@ -7,6 +7,7 @@ from agentperf.experiments import ExperimentSession, QualityResult
 from agentperf.instrumentation import (
     TraceRecorder,
     current_recorder,
+    record_handoff,
     trace_llm,
     trace_run,
     trace_tool,
@@ -30,6 +31,7 @@ __all__ = [
     "load_artifact",
     "load_suite",
     "load_regression_policy",
+    "record_handoff",
     "trace_run",
     "trace_llm",
     "trace_tool",
