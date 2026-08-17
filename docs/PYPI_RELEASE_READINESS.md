@@ -110,6 +110,12 @@ Human/repository-owner steps still required:
 6. Recheck package-name availability immediately before the first upload.
 7. Perform one explicit release authorization before upload.
 8. After upload, verify installation from PyPI in a fresh environment.
+9. For TestPyPI, use the separate pending publisher:
+   - GitHub owner: `printf905`;
+   - repository: `AgentPerf`;
+   - workflow filename: `publish-testpypi.yml`;
+   - environment: `testpypi`.
+10. Configure the GitHub `testpypi` environment with human approval.
 
 ## Recommended Safe Workflow
 
@@ -122,6 +128,8 @@ and the `pypi` environment approval gate.
 
 See [PYPI_TRUSTED_PUBLISHING.md](PYPI_TRUSTED_PUBLISHING.md) for the detailed
 plan and post-publish verification commands.
+See [RELEASE_OPERATOR_RUNBOOK.md](RELEASE_OPERATOR_RUNBOOK.md) for the
+human-executable TestPyPI and production sequence.
 
 ## Non-Goals
 

@@ -16,6 +16,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Verify release tag matches package version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python - <<'PY'
+          import os
+          import tomllib
+
+          tag = os.environ["RELEASE_TAG"]
+          with open("pyproject.toml", "rb") as fh:
+              version = tomllib.load(fh)["project"]["version"]
+          expected = f"v{version}"
+          if tag != expected:
+              raise SystemExit(f"release tag {tag!r} does not match package version {version!r}")
+          if version != "0.5.0":
+              raise SystemExit(f"this workflow is prepared for 0.5.0, found {version!r}")
+          print(f"Publishing production PyPI release for {expected}")
+          PY
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip

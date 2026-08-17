@@ -156,7 +156,8 @@ Recommended sequence:
 4. Configure the GitHub `pypi` environment with human approval.
 5. Recheck `https://pypi.org/pypi/agentperf/json`.
 6. Prefer a TestPyPI publish first because this will be AgentPerf's first
-   package-index publication.
+   package-index publication. Use the separate `publish-testpypi.yml` workflow
+   and `testpypi` environment.
 7. Run final main validation.
 8. Create the `v0.5.0` tag.
 9. Publish the GitHub Release.
@@ -185,5 +186,7 @@ without consuming the real PyPI name/version.
 - Configure PyPI account ownership and required security controls.
 - Configure pending PyPI Trusted Publisher.
 - Configure GitHub `pypi` environment approval.
+- Configure pending TestPyPI Trusted Publisher using `publish-testpypi.yml` and
+  the `testpypi` environment.
 - Authorize any TestPyPI or PyPI upload.
 - Verify post-publish installation.
