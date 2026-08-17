@@ -85,7 +85,12 @@ Check tracked files and package contents for:
   - workflow filename: `publish-pypi.yml`;
   - environment: `pypi`.
 - Configure the GitHub `pypi` environment to require human approval.
-- Configure equivalent TestPyPI pending publisher settings if using TestPyPI.
+- Configure a separate TestPyPI pending publisher with:
+  - owner: `printf905`;
+  - repository: `AgentPerf`;
+  - workflow filename: `publish-testpypi.yml`;
+  - environment: `testpypi`.
+- Configure the GitHub `testpypi` environment to require human approval.
 - Create and push the release tag only after validation passes.
 - Create the GitHub Release from the tag.
 - Publish to PyPI only after explicit approval.

@@ -96,14 +96,12 @@ wheel installation without consuming the real PyPI project name/version.
 
 TestPyPI human steps:
 
-1. Configure a TestPyPI pending Trusted Publisher with the same owner,
-   repository, workflow filename, and environment.
-2. Temporarily run an approved TestPyPI publish workflow or use a dedicated
-   TestPyPI workflow that points `pypa/gh-action-pypi-publish` at
-   `https://test.pypi.org/legacy/`.
+1. Configure a TestPyPI pending Trusted Publisher with the same owner and
+   repository, but with the dedicated TestPyPI workflow and environment.
+2. Run the dedicated manual TestPyPI workflow, which points
+   `pypa/gh-action-pypi-publish` at `https://test.pypi.org/legacy/`.
 3. Install from TestPyPI in a fresh environment.
-4. Remove or keep the TestPyPI path clearly separated from the production PyPI
-   workflow.
+4. Keep the TestPyPI path clearly separated from the production PyPI workflow.
 
 Do not publish to TestPyPI from normal CI.
 
@@ -113,14 +111,12 @@ Recommended TestPyPI publisher settings:
 TestPyPI project: agentperf
 GitHub owner: printf905
 GitHub repository: AgentPerf
-Workflow filename: publish-pypi.yml
-Environment: pypi
+Workflow filename: publish-testpypi.yml
+Environment: testpypi
 Repository URL in publish action: https://test.pypi.org/legacy/
 ```
 
-Use the same reviewed distributions as production PyPI. Do not maintain a
-permanent TestPyPI path in the normal release workflow unless the maintainer
-explicitly chooses that operational model.
+Do not reuse the production PyPI environment or workflow for TestPyPI.
 
 After a human-authorized TestPyPI upload:
 
