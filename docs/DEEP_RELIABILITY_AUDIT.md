@@ -34,8 +34,7 @@ None found.
 
 | Finding | Evidence | User Impact | Workaround | Minimum Fix |
 | --- | --- | --- | --- | --- |
-| Single-run HTML generation is slow for very large local artifacts | Synthetic 5,000-call report generation took 96,044.9 ms and produced a 7.941 MB HTML file. | Users can still analyze/compare/report smaller artifacts, but very large single-run reports may feel slow. | Use comparison HTML, CLI/JSON outputs, or smaller scoped artifacts for inspection. | Optimize static HTML rendering/data shaping without changing report semantics. |
-| High-frequency checkpointing writes full recoverable artifacts | 10,000-span checkpoint stress with `checkpoint_interval=250` took 170,169.0 ms; checkpoint P95 was 2,523.6 ms. | Long-running local capture works, but frequent checkpoints on large runs add overhead. | Increase checkpoint interval or call `flush()` at meaningful task boundaries. | Consider a future incremental checkpoint format only with a schema/product decision. |
+| High-frequency checkpointing writes full recoverable artifacts | 10,000-span checkpoint stress with `checkpoint_interval=250` took 279,668.8 ms; checkpoint P95 was 3,926.6 ms in the validation-marathon rerun. | Long-running local capture works, but frequent checkpoints on large runs add overhead. | Increase checkpoint interval or call `flush()` at meaningful task boundaries. | Consider a future incremental checkpoint format only with a schema/product decision. |
 
 ### INFO
 
@@ -46,6 +45,10 @@ None found.
   generated invariant tests.
 - Fake secrets are covered by renderer redaction tests; raw artifacts remain
   local plaintext by design.
+- The previous large single-run HTML hotspot was fixed during the validation
+  marathon by indexing call scopes once per report. A profiled 1,000-call
+  single-run HTML render dropped from roughly 8.1 seconds to roughly
+  1.3 seconds on the audited host.
 
 ## Tests Added
 
@@ -114,9 +117,8 @@ guard post-v0.4 additive capabilities and preserved v0.4 artifact semantics.
 
 No public-distribution blocker was identified. Remaining gaps are P2:
 
-1. large single-run HTML generation cost;
-2. high-frequency full-artifact checkpoint cost;
-3. broader external-user adoption evidence after PyPI publication.
+1. high-frequency full-artifact checkpoint cost;
+2. broader external-user adoption evidence after PyPI publication.
 
 ## Result
 

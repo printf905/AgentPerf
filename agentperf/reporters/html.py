@@ -17,7 +17,7 @@ from agentperf.metrics.attribution import (
 )
 from agentperf.metrics.components import COMPONENT_ORDER, component_kind
 from agentperf.metrics.tokens import call_input_tokens, token_count
-from agentperf.multi_agent import profile_runs, profile_to_dict, scope_for_call_id, scope_for_step
+from agentperf.multi_agent import profile_runs, profile_to_dict, scope_for_step
 from agentperf.recommendations import recommendation_contract_for_finding
 from agentperf.schema.artifacts import QualityMetric, TaskResult
 from agentperf.schema.findings import Finding
@@ -780,6 +780,7 @@ def _findings(report_input: HtmlReportInput) -> str:
     if not report_input.findings:
         return _section("Findings", '<p class="empty">No AgentPerf findings recorded.</p>')
     findings = sorted(report_input.findings, key=_finding_sort_key)
+    scope_index = _call_scope_index(report_input.runs)
     cards = []
     for finding in findings:
         provenance_links = _provenance_links(finding)
@@ -800,7 +801,7 @@ def _findings(report_input: HtmlReportInput) -> str:
             f'<span class="materiality">{_h(_finding_materiality(finding))}</span></div>'
             f"<h3>{_h(finding.id)} · {_h(finding.title)}</h3>"
             f"<p>{_h(finding.summary)}</p>"
-            f"<p><strong>Scope:</strong> {_h(_finding_scope_text(report_input, finding))}</p>"
+            f"<p><strong>Scope:</strong> {_h(_finding_scope_text(scope_index, finding))}</p>"
             f"<p><strong>Affected:</strong> {_affected_html(finding, provenance_links)}</p>"
             f"<p><strong>Evidence:</strong> <code>{_h(evidence)}</code></p>"
             f"{materiality}"
@@ -854,14 +855,27 @@ def _recommendation_contract_html(finding: Finding) -> str:
     )
 
 
-def _finding_scope_text(report_input: HtmlReportInput, finding: Finding) -> str:
+def _finding_scope_text(scope_index: dict[str, str], finding: Finding) -> str:
     existing = str(finding.evidence.get("scope", "trace"))
     for call_id in [*finding.provenance.llm_call_ids, *finding.affected_spans]:
-        for run in report_input.runs:
-            scope = scope_for_call_id(run, call_id)
-            if scope:
-                return f"{existing} · {scope}"
+        scope = scope_index.get(call_id)
+        if scope:
+            return f"{existing} · {scope}"
     return existing
+
+
+def _call_scope_index(runs: list[AgentRun]) -> dict[str, str]:
+    scopes: dict[str, str] = {}
+    for run in runs:
+        for step in run.steps:
+            scope = scope_for_step(step, run.metadata)
+            if scope is None:
+                continue
+            for call in step.llm_calls:
+                scopes[call.llm_call_id] = scope
+            for tool_call in step.tool_calls:
+                scopes[tool_call.tool_call_id] = scope
+    return scopes
 
 
 def _serving(report_input: HtmlReportInput) -> str:
